@@ -1,0 +1,20 @@
+{
+  "name": "RelicsOfTheFallen.GameState.Composition",
+  "rootNamespace": "RelicsOfTheFallen.GameState.Composition",
+  "references": [
+    "RelicsOfTheFallen.GameState",
+    "RelicsOfTheFallen.ConnectionManagement",
+    "Unity.Netcode.Runtime",
+    "Unity.ugui",
+    "VContainer"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

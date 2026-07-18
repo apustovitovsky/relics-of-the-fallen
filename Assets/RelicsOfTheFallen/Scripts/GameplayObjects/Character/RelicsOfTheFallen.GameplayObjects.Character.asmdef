@@ -1,0 +1,17 @@
+{
+    "name": "RelicsOfTheFallen.GameplayObjects.Character",
+    "rootNamespace": "RelicsOfTheFallen.GameplayObjects.Character",
+    "references": [
+        "RelicsOfTheFallen.GameplayObjects",
+        "Unity.Netcode.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

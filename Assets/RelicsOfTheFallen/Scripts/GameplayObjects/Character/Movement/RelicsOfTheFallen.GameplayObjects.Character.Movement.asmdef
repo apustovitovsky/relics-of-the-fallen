@@ -1,0 +1,17 @@
+{
+    "name": "RelicsOfTheFallen.GameplayObjects.Character.Movement",
+    "rootNamespace": "RelicsOfTheFallen.GameplayObjects.Character.Movement",
+    "references": [
+        "RelicsOfTheFallen.GameplayObjects.Character",
+        "Unity.Netcode.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

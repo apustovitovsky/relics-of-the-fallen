@@ -6,7 +6,14 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/RelicsOfTheFallen/Scenes/Startup.unity
+    guid: cdd620aee1309354abe15d98c54798a6
+  - enabled: 1
+    path: Assets/RelicsOfTheFallen/Scenes/MainMenu.unity
+    guid: a8cc9d875751e2d4da9f1e7fda48ea8e
+  - enabled: 1
+    path: Assets/RelicsOfTheFallen/Scenes/Raid.unity
+    guid: ab6a4e06bfff6ce488323024a07eaa95
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 99f9c9493070a9d4c979a8fec7c5a8d3, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

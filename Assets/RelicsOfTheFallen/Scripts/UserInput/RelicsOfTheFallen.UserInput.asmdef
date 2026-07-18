@@ -1,0 +1,18 @@
+{
+    "name": "RelicsOfTheFallen.UserInput",
+    "rootNamespace": "RelicsOfTheFallen.UserInput",
+    "references": [
+        "RelicsOfTheFallen.GameplayObjects.Character",
+        "Unity.InputSystem",
+        "Unity.Netcode.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

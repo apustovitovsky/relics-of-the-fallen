@@ -1,0 +1,17 @@
+{
+  "name": "RelicsOfTheFallen.ConnectionManagement",
+  "rootNamespace": "RelicsOfTheFallen.ConnectionManagement",
+  "references": [
+    "Unity.Netcode.Runtime",
+    "VContainer"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

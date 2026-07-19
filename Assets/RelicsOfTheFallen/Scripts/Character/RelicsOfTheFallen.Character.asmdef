@@ -1,9 +1,7 @@
 {
-    "name": "RelicsOfTheFallen.GameplayObjects.Character.Look",
-    "rootNamespace": "RelicsOfTheFallen.GameplayObjects.Character.Look",
+    "name": "RelicsOfTheFallen.Character",
+    "rootNamespace": "RelicsOfTheFallen.Character",
     "references": [
-        "RelicsOfTheFallen.GameplayObjects.Character",
-        "Unity.InputSystem",
         "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [],

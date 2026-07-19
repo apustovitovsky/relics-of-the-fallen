@@ -1,13 +1,13 @@
 ﻿<Solution>
   <Project Path="RelicsOfTheFallen.ConnectionManagement.csproj" />
-  <Project Path="RelicsOfTheFallen.GameplayObjects.Character.csproj" />
+  <Project Path="RelicsOfTheFallen.Player.csproj" />
   <Project Path="RelicsOfTheFallen.ApplicationLifecycle.csproj" />
-  <Project Path="RelicsOfTheFallen.GameplayObjects.csproj" />
-  <Project Path="RelicsOfTheFallen.GameplayObjects.Character.Movement.csproj" />
+  <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Character.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Composition.csproj" />
-  <Project Path="RelicsOfTheFallen.GameplayObjects.Character.Cinemachine.csproj" />
-  <Project Path="RelicsOfTheFallen.GameplayObjects.Character.Look.csproj" />
+  <Project Path="RelicsOfTheFallen.Character.csproj" />
+  <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
+  <Project Path="RelicsOfTheFallen.Character.Look.csproj" />
   <Project Path="RelicsOfTheFallen.UserInput.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.csproj" />
 </Solution>

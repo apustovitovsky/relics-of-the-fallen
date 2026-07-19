@@ -3,7 +3,7 @@
     "rootNamespace": "RelicsOfTheFallen.GameState.Character",
     "references": [
         "RelicsOfTheFallen.GameState",
-        "RelicsOfTheFallen.GameplayObjects.Character",
+        "RelicsOfTheFallen.Character",
         "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [],

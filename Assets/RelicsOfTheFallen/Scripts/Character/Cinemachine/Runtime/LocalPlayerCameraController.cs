@@ -2,7 +2,7 @@ using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace RelicsOfTheFallen.GameplayObjects.Character.Cinemachine
+namespace RelicsOfTheFallen.Character.Cinemachine
 {
     public sealed class LocalPlayerCameraController : NetworkBehaviour
     {

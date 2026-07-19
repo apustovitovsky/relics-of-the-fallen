@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace RelicsOfTheFallen.GameplayObjects.Character
+namespace RelicsOfTheFallen.Character
 {
     [RequireComponent(typeof(NetworkObject))]
     public class ServerCharacter : NetworkBehaviour

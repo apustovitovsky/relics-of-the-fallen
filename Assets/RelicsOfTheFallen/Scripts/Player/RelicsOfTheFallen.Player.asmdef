@@ -1,6 +1,6 @@
 {
-    "name": "RelicsOfTheFallen.GameplayObjects",
-    "rootNamespace": "RelicsOfTheFallen.GameplayObjects",
+    "name": "RelicsOfTheFallen.Player",
+    "rootNamespace": "RelicsOfTheFallen.Player",
     "references": [
         "Unity.Netcode.Runtime"
     ],

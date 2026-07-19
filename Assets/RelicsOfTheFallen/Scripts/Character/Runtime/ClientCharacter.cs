@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace RelicsOfTheFallen.GameplayObjects.Character
+namespace RelicsOfTheFallen.Character
 {
     /// <summary>
     /// Responsible for displaying a character on the client's screen

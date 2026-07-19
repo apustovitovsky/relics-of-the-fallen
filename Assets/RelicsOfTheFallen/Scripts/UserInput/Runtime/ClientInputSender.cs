@@ -1,4 +1,4 @@
-using RelicsOfTheFallen.GameplayObjects.Character;
+using RelicsOfTheFallen.Character;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;

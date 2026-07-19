@@ -1,8 +1,8 @@
-using RelicsOfTheFallen.GameplayObjects.Character;
+using RelicsOfTheFallen.Character;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace RelicsOfTheFallen.GameplayObjects.Character.Movement
+namespace RelicsOfTheFallen.Character.Movement
 {
     [RequireComponent(typeof(CharacterController))]
     public class ServerCharacterMovement : NetworkBehaviour

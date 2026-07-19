@@ -2,7 +2,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace RelicsOfTheFallen.GameplayObjects.Character.Look
+namespace RelicsOfTheFallen.Character.Look
 {
     public sealed class LocalPlayerLookController : NetworkBehaviour
     {

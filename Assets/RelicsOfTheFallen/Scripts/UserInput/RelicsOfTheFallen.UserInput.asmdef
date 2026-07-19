@@ -2,7 +2,7 @@
     "name": "RelicsOfTheFallen.UserInput",
     "rootNamespace": "RelicsOfTheFallen.UserInput",
     "references": [
-        "RelicsOfTheFallen.GameplayObjects.Character",
+        "RelicsOfTheFallen.Character",
         "Unity.InputSystem",
         "Unity.Netcode.Runtime"
     ],

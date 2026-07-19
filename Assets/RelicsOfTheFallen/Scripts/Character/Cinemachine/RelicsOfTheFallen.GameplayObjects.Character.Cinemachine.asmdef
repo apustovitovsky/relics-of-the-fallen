@@ -1,8 +1,9 @@
 {
-    "name": "RelicsOfTheFallen.GameplayObjects.Character.Movement",
-    "rootNamespace": "RelicsOfTheFallen.GameplayObjects.Character.Movement",
+    "name": "RelicsOfTheFallen.Character.Cinemachine",
+    "rootNamespace": "RelicsOfTheFallen.Character.Cinemachine",
     "references": [
-        "RelicsOfTheFallen.GameplayObjects.Character",
+        "RelicsOfTheFallen.Character",
+        "Unity.Cinemachine",
         "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [],

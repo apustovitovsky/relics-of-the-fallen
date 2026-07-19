@@ -59,6 +59,9 @@ namespace RelicsOfTheFallen.Character.Movement
             m_CharacterController.Move(
                 velocity * Time.deltaTime);
 
+            m_CharLogic.IsGrounded.Value =
+                m_CharacterController.isGrounded;
+
             if (movementInput != Vector3.zero)
             {
                 transform.rotation =

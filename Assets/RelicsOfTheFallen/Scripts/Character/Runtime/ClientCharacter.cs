@@ -18,6 +18,10 @@ namespace RelicsOfTheFallen.Character
 
         public ServerCharacter ServerCharacter => m_ServerCharacter;
 
+        public bool IsGrounded =>
+            m_ServerCharacter != null &&
+            m_ServerCharacter.IsGrounded.Value;
+
         void Awake()
         {
             enabled = false;

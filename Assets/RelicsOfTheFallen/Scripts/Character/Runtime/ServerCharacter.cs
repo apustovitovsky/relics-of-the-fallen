@@ -10,6 +10,9 @@ namespace RelicsOfTheFallen.Character
 
         public ClientCharacter clientCharacter => m_ClientCharacter;
 
+        public NetworkVariable<bool> IsGrounded { get; } =
+            new(true);
+
         public Vector3 MovementInput { get; private set; }
 
         public override void OnNetworkSpawn()

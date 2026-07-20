@@ -13,9 +13,11 @@ namespace RelicsOfTheFallen.UserInput
         [SerializeField] ServerCharacter m_ServerCharacter;
         [SerializeField] Transform m_CameraPivot;
         [SerializeField] InputActionReference m_MoveAction;
+        [SerializeField] InputActionReference m_SprintAction;
 
         float m_LastSentMove;
-        Vector3 m_LastSentMovementInput;
+        uint m_NextInputTick;
+        CharacterInputCommand m_LastSentInputCommand;
 
         public override void OnNetworkSpawn()
         {
@@ -45,35 +47,51 @@ namespace RelicsOfTheFallen.UserInput
                     m_MoveAction.action.ReadValue<Vector2>(),
                     1f);
 
-            Vector3 forward = m_CameraPivot.forward;
-            forward.y = 0f;
-            forward.Normalize();
+            CharacterInputButtons buttons =
+                m_SprintAction.action.IsPressed()
+                    ? CharacterInputButtons.SprintHeld
+                    : CharacterInputButtons.None;
 
-            Vector3 right = m_CameraPivot.right;
-            right.y = 0f;
-            right.Normalize();
-
-            Vector3 movementInput =
-                Vector3.ClampMagnitude(
-                    forward * moveInput.y + right * moveInput.x,
-                    1f);
+            CharacterInputCommand inputCommand =
+                new CharacterInputCommand
+                {
+                    Move = moveInput,
+                    LookYaw = m_CameraPivot.eulerAngles.y,
+                    LookPitch = NormalizePitch(
+                        m_CameraPivot.eulerAngles.x),
+                    Buttons = buttons
+                };
 
             bool inputChanged =
-                movementInput != m_LastSentMovementInput;
+                inputCommand.Move != m_LastSentInputCommand.Move ||
+                !Mathf.Approximately(
+                    inputCommand.LookYaw,
+                    m_LastSentInputCommand.LookYaw) ||
+                !Mathf.Approximately(
+                    inputCommand.LookPitch,
+                    m_LastSentInputCommand.LookPitch) ||
+                inputCommand.Buttons !=
+                m_LastSentInputCommand.Buttons;
 
-            bool shouldSend =
-                inputChanged || movementInput != Vector3.zero;
-
-            if (!shouldSend ||
-                Time.time - m_LastSentMove < k_MoveSendRateSeconds)
+            if (!inputChanged ||
+                Time.time - m_LastSentMove <
+                k_MoveSendRateSeconds)
             {
                 return;
             }
 
-            m_LastSentMove = Time.time;
-            m_LastSentMovementInput = movementInput;
+            inputCommand.Tick = ++m_NextInputTick;
 
-            m_ServerCharacter.ServerSendCharacterInputRpc(movementInput);
+            m_LastSentMove = Time.time;
+            m_LastSentInputCommand = inputCommand;
+
+            m_ServerCharacter
+                .ServerSendCharacterInputRpc(inputCommand);
+        }
+
+        static float NormalizePitch(float pitch)
+        {
+            return pitch > 180f ? pitch - 360f : pitch;
         }
     }
 }

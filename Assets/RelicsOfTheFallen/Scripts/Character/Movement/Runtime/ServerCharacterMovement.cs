@@ -9,10 +9,12 @@ namespace RelicsOfTheFallen.Character.Movement
     {
         [SerializeField] ServerCharacter m_CharLogic;
         [SerializeField] CharacterController m_CharacterController;
-        [SerializeField] float m_MoveSpeed = 5f;
+        [SerializeField] float m_RunSpeed = 5f;
+        [SerializeField] float m_SprintSpeed = 7f;
         [SerializeField] float m_GravityMultiplier = 2f;
 
         float m_VerticalVelocity;
+        uint m_ServerTick;
 
         void Awake()
         {
@@ -34,13 +36,24 @@ namespace RelicsOfTheFallen.Character.Movement
         public override void OnNetworkDespawn()
         {
             m_VerticalVelocity = 0f;
+            m_ServerTick = 0;
             m_CharacterController.enabled = false;
             enabled = false;
         }
 
         void Update()
         {
-            Vector3 movementInput = m_CharLogic.MovementInput;
+            CharacterInputCommand inputCommand =
+                m_CharLogic.InputCommand;
+
+            Vector3 movementInput =
+                GetMovementDirection(inputCommand);
+
+            bool isMoving = movementInput != Vector3.zero;
+            bool isSprinting =
+                isMoving &&
+                inputCommand.IsPressed(
+                    CharacterInputButtons.SprintHeld);
 
             if (m_CharacterController.isGrounded &&
                 m_VerticalVelocity < 0f)
@@ -53,20 +66,71 @@ namespace RelicsOfTheFallen.Character.Movement
                 m_GravityMultiplier *
                 Time.deltaTime;
 
-            Vector3 velocity = movementInput * m_MoveSpeed;
+            float moveSpeed =
+                isSprinting ? m_SprintSpeed : m_RunSpeed;
+
+            Vector3 velocity = movementInput * moveSpeed;
             velocity.y = m_VerticalVelocity;
 
             m_CharacterController.Move(
                 velocity * Time.deltaTime);
 
-            m_CharLogic.IsGrounded.Value =
-                m_CharacterController.isGrounded;
-
-            if (movementInput != Vector3.zero)
+            if (isMoving)
             {
                 transform.rotation =
                     Quaternion.LookRotation(movementInput);
             }
+
+            bool isGrounded =
+                m_CharacterController.isGrounded;
+
+            m_CharLogic.LocomotionState.Value =
+                new CharacterLocomotionState
+                {
+                    ServerTick = ++m_ServerTick,
+                    LastProcessedInputTick = inputCommand.Tick,
+                    Velocity = velocity,
+                    MoveInput = inputCommand.Move,
+                    FacingYaw = transform.eulerAngles.y,
+                    AimYaw = inputCommand.LookYaw,
+                    AimPitch = inputCommand.LookPitch,
+                    Gait = GetGait(isMoving, isSprinting),
+                    IsGrounded = isGrounded
+                };
+        }
+
+        static Vector3 GetMovementDirection(
+            CharacterInputCommand inputCommand)
+        {
+            Quaternion lookRotation =
+                Quaternion.Euler(
+                    0f,
+                    inputCommand.LookYaw,
+                    0f);
+
+            Vector3 movementInput =
+                lookRotation * Vector3.forward *
+                inputCommand.Move.y;
+
+            movementInput +=
+                lookRotation * Vector3.right *
+                inputCommand.Move.x;
+
+            return Vector3.ClampMagnitude(movementInput, 1f);
+        }
+
+        static CharacterGait GetGait(
+            bool isMoving,
+            bool isSprinting)
+        {
+            if (!isMoving)
+            {
+                return CharacterGait.Idle;
+            }
+
+            return isSprinting
+                ? CharacterGait.Sprint
+                : CharacterGait.Run;
         }
     }
 }

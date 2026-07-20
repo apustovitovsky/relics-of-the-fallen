@@ -56,13 +56,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3677458844434366617}
+  - component: {fileID: 488070572988780736}
   - component: {fileID: 1129847991267564940}
   - component: {fileID: 2036630668422577615}
+  - component: {fileID: 1629530579702205739}
   - component: {fileID: 5654982762208430432}
   - component: {fileID: 9171125177328360435}
-  - component: {fileID: 1629530579702205739}
   - component: {fileID: 5151467596525535815}
-  - component: {fileID: 488070572988780736}
   - component: {fileID: 6423850705544837297}
   m_Layer: 3
   m_Name: PlayerAvatar
@@ -88,6 +88,31 @@ Transform:
   - {fileID: 6169450114621488848}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!143 &488070572988780736
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0.9, z: 0}
 --- !u!114 &1129847991267564940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -160,6 +185,20 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &1629530579702205739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b424aff7aeda30f4595567e75228c550, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ServerCharacter
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_ClientCharacter: {fileID: 4635120103884252889}
 --- !u!114 &5654982762208430432
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -189,22 +228,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_CharLogic: {fileID: 1629530579702205739}
   m_CharacterController: {fileID: 488070572988780736}
-  m_MoveSpeed: 5
+  m_RunSpeed: 5
+  m_SprintSpeed: 7
   m_GravityMultiplier: 2
---- !u!114 &1629530579702205739
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b424aff7aeda30f4595567e75228c550, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ServerCharacter
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_ClientCharacter: {fileID: 4635120103884252889}
 --- !u!114 &5151467596525535815
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -221,31 +247,7 @@ MonoBehaviour:
   m_ServerCharacter: {fileID: 1629530579702205739}
   m_CameraPivot: {fileID: 6169450114621488848}
   m_MoveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
---- !u!143 &488070572988780736
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0.9, z: 0}
+  m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &6423850705544837297
 MonoBehaviour:
   m_ObjectHideFlags: 0

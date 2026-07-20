@@ -18,9 +18,7 @@ namespace RelicsOfTheFallen.Character.Movement
         [SerializeField] Animator m_Animator;
         [SerializeField] float m_SpeedDampTime = 0.1f;
 
-        Vector3 m_LastPosition;
         float m_FallStartTime;
-        bool m_IsInitialized;
         bool m_WasGrounded;
 
         void Awake()
@@ -39,7 +37,6 @@ namespace RelicsOfTheFallen.Character.Movement
 
         void OnEnable()
         {
-            m_IsInitialized = false;
             m_WasGrounded = true;
             m_FallStartTime = Time.time;
         }
@@ -59,48 +56,43 @@ namespace RelicsOfTheFallen.Character.Movement
         void Update()
         {
             if (m_ClientCharacter == null ||
-                m_ClientCharacter.ServerCharacter == null ||
                 m_Animator == null)
             {
                 return;
             }
 
-            Vector3 position =
-                m_ClientCharacter.ServerCharacter.transform.position;
+            CharacterLocomotionState locomotionState =
+                m_ClientCharacter.LocomotionState;
 
-            if (!m_IsInitialized)
-            {
-                m_LastPosition = position;
-                m_IsInitialized = true;
-            }
+            Vector3 horizontalVelocity =
+                locomotionState.Velocity;
 
-            float speed =
-                (position - m_LastPosition).magnitude /
-                Time.deltaTime;
+            horizontalVelocity.y = 0f;
 
             m_Animator.SetFloat(
                 s_MoveSpeed,
-                speed,
+                horizontalVelocity.magnitude,
                 m_SpeedDampTime,
                 Time.deltaTime);
 
-            bool isGrounded = m_ClientCharacter.IsGrounded;
-
-            if (!isGrounded && m_WasGrounded)
+            if (!locomotionState.IsGrounded &&
+                m_WasGrounded)
             {
                 m_FallStartTime = Time.time;
             }
 
-            m_Animator.SetBool(s_IsGrounded, isGrounded);
+            m_Animator.SetBool(
+                s_IsGrounded,
+                locomotionState.IsGrounded);
 
             m_Animator.SetFloat(
                 s_FallingDuration,
-                isGrounded
+                locomotionState.IsGrounded
                     ? 0f
                     : Time.time - m_FallStartTime);
 
-            m_LastPosition = position;
-            m_WasGrounded = isGrounded;
+            m_WasGrounded =
+                locomotionState.IsGrounded;
         }
     }
 }

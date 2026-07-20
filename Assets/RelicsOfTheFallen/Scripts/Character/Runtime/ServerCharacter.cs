@@ -10,10 +10,11 @@ namespace RelicsOfTheFallen.Character
 
         public ClientCharacter clientCharacter => m_ClientCharacter;
 
-        public NetworkVariable<bool> IsGrounded { get; } =
-            new(true);
+        public NetworkVariable<CharacterLocomotionState>
+            LocomotionState
+        { get; } = new();
 
-        public Vector3 MovementInput { get; private set; }
+        public CharacterInputCommand InputCommand { get; private set; }
 
         public override void OnNetworkSpawn()
         {
@@ -25,16 +26,28 @@ namespace RelicsOfTheFallen.Character
 
         public override void OnNetworkDespawn()
         {
-            MovementInput = Vector3.zero;
+            InputCommand = default;
         }
 
         [Rpc(SendTo.Server)]
-        public void ServerSendCharacterInputRpc(Vector3 movementInput)
+        public void ServerSendCharacterInputRpc(
+            CharacterInputCommand inputCommand)
         {
-            movementInput.y = 0f;
+            if (inputCommand.Tick <= InputCommand.Tick)
+            {
+                return;
+            }
 
-            MovementInput =
-                Vector3.ClampMagnitude(movementInput, 1f);
+            inputCommand.Move =
+                Vector2.ClampMagnitude(inputCommand.Move, 1f);
+
+            inputCommand.LookYaw =
+                Mathf.Repeat(inputCommand.LookYaw, 360f);
+
+            inputCommand.LookPitch =
+                Mathf.Clamp(inputCommand.LookPitch, -89f, 89f);
+
+            InputCommand = inputCommand;
         }
     }
 }

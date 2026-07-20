@@ -15,12 +15,12 @@ namespace RelicsOfTheFallen.Character
         public Animator OurAnimator => m_ClientVisualsAnimator;
 
         ServerCharacter m_ServerCharacter;
+        CharacterLocomotionState m_LocomotionState;
 
         public ServerCharacter ServerCharacter => m_ServerCharacter;
 
-        public bool IsGrounded =>
-            m_ServerCharacter != null &&
-            m_ServerCharacter.IsGrounded.Value;
+        public CharacterLocomotionState LocomotionState =>
+            m_LocomotionState;
 
         void Awake()
         {
@@ -39,13 +39,32 @@ namespace RelicsOfTheFallen.Character
             m_ServerCharacter =
                 GetComponentInParent<ServerCharacter>();
 
+            m_ServerCharacter.LocomotionState.OnValueChanged +=
+                OnLocomotionStateChanged;
+
+            m_LocomotionState =
+                m_ServerCharacter.LocomotionState.Value;
+
             name = "AvatarGraphics" +
                 m_ServerCharacter.OwnerClientId;
         }
 
         public override void OnNetworkDespawn()
         {
+            if (m_ServerCharacter != null)
+            {
+                m_ServerCharacter.LocomotionState.OnValueChanged -=
+                    OnLocomotionStateChanged;
+            }
+
             enabled = false;
+        }
+
+        void OnLocomotionStateChanged(
+            CharacterLocomotionState previousValue,
+            CharacterLocomotionState newValue)
+        {
+            m_LocomotionState = newValue;
         }
     }
 }

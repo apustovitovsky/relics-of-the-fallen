@@ -7,7 +7,11 @@ namespace RelicsOfTheFallen.Character
     public enum CharacterInputButtons : ushort
     {
         None = 0,
-        SprintHeld = 1 << 0
+        SprintHeld = 1 << 0,
+        WalkToggle = 1 << 1,
+        AimHeld = 1 << 2,
+        JumpPressed = 1 << 3,
+        CrouchToggle = 1 << 4
     }
 
     public struct CharacterInputCommand : INetworkSerializable
@@ -23,8 +27,7 @@ namespace RelicsOfTheFallen.Character
             return (Buttons & button) != 0;
         }
 
-        public void NetworkSerialize<T>(
-            BufferSerializer<T> serializer)
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
             where T : IReaderWriter
         {
             serializer.SerializeValue(ref Tick);

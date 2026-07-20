@@ -226,11 +226,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character.Movement::RelicsOfTheFallen.GameplayObjects.Character.Movement.ServerCharacterMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  m_CharLogic: {fileID: 1629530579702205739}
+  m_ServerCharacter: {fileID: 1629530579702205739}
   m_CharacterController: {fileID: 488070572988780736}
+  m_AlwaysStrafe: 1
+  m_WalkSpeed: 1.4
   m_RunSpeed: 5
   m_SprintSpeed: 7
+  m_JumpForce: 10
   m_GravityMultiplier: 2
+  m_RotationSmoothing: 10
+  m_CrouchingHeight: 1.2
+  m_CrouchingCenter: 0.6
+  m_CeilingCheckRadiusPadding: 0.02
+  m_TurnInPlaceThreshold: 5
+  m_TurnInPlaceSpeed: 120
+  m_GroundLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_GroundProbeDistance: 0.2
+  m_GroundProbeStartOffset: 0.05
+  m_GroundProbeRadiusPadding: 0.02
+  m_MaxGroundAngle: 60
 --- !u!114 &5151467596525535815
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,6 +264,10 @@ MonoBehaviour:
   m_CameraPivot: {fileID: 6169450114621488848}
   m_MoveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_WalkAction: {fileID: -4497677220184583906, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_AimAction: {fileID: -8822460519771437598, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_JumpAction: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_CrouchAction: {fileID: 7040659881675835329, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &6423850705544837297
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -643,6 +663,10 @@ MonoBehaviour:
   m_ClientCharacter: {fileID: 4635120103884252889}
   m_Animator: {fileID: 2011592693146839204}
   m_SpeedDampTime: 0.1
+  m_ButtonHoldThreshold: 0.15
+  m_StrafeDirectionDampTime: 0.2
+  m_ForwardStrafeMinThreshold: -55
+  m_ForwardStrafeMaxThreshold: 125
 --- !u!95 &2011592693146839204 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 2912641971833747560, guid: 2e89a1389f399d247baab96c01cb3bdb, type: 3}

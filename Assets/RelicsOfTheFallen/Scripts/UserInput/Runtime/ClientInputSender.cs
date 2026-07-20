@@ -5,91 +5,179 @@ using UnityEngine.InputSystem;
 
 namespace RelicsOfTheFallen.UserInput
 {
-    [RequireComponent(typeof(ServerCharacter))]
     public class ClientInputSender : NetworkBehaviour
     {
-        const float k_MoveSendRateSeconds = 0.04f;
+        private const float k_SendInterval = 0.04f;
 
-        [SerializeField] ServerCharacter m_ServerCharacter;
-        [SerializeField] Transform m_CameraPivot;
-        [SerializeField] InputActionReference m_MoveAction;
-        [SerializeField] InputActionReference m_SprintAction;
+        [SerializeField]
+        private ServerCharacter m_ServerCharacter;
 
-        float m_LastSentMove;
-        uint m_NextInputTick;
-        CharacterInputCommand m_LastSentInputCommand;
+        [SerializeField]
+        private Transform m_CameraPivot;
+
+        [Header("Actions")]
+        [SerializeField]
+        private InputActionReference m_MoveAction;
+
+        [SerializeField]
+        private InputActionReference m_SprintAction;
+
+        [SerializeField]
+        private InputActionReference m_WalkAction;
+
+        [SerializeField]
+        private InputActionReference m_AimAction;
+
+        [SerializeField]
+        private InputActionReference m_JumpAction;
+
+        [SerializeField]
+        private InputActionReference m_CrouchAction;
+
+        private uint m_NextTick;
+        private float m_NextSendTime;
+        private CharacterInputCommand m_LastSentCommand;
+        private bool m_HasSentCommand;
+        private bool m_WalkToggleQueued;
+        private bool m_JumpPressedQueued;
+        private bool m_CrouchToggleQueued;
 
         public override void OnNetworkSpawn()
         {
-            if (!IsClient || !IsOwner)
+            if (!IsOwner)
             {
                 enabled = false;
                 return;
             }
 
-            m_MoveAction.action.actionMap.Enable();
+            m_MoveAction.action.Enable();
+            m_SprintAction.action.Enable();
+            m_WalkAction.action.Enable();
+            m_AimAction.action.Enable();
+            m_JumpAction.action.Enable();
+            m_CrouchAction.action.Enable();
+
+            m_WalkAction.action.performed += OnWalkPerformed;
+            m_JumpAction.action.performed += OnJumpPerformed;
+            m_CrouchAction.action.performed += OnCrouchPerformed;
         }
 
         public override void OnNetworkDespawn()
         {
-            if (IsOwner)
-            {
-                m_MoveAction.action.actionMap.Disable();
-            }
-
-            enabled = false;
-        }
-
-        void Update()
-        {
-            Vector2 moveInput =
-                Vector2.ClampMagnitude(
-                    m_MoveAction.action.ReadValue<Vector2>(),
-                    1f);
-
-            CharacterInputButtons buttons =
-                m_SprintAction.action.IsPressed()
-                    ? CharacterInputButtons.SprintHeld
-                    : CharacterInputButtons.None;
-
-            CharacterInputCommand inputCommand =
-                new CharacterInputCommand
-                {
-                    Move = moveInput,
-                    LookYaw = m_CameraPivot.eulerAngles.y,
-                    LookPitch = NormalizePitch(
-                        m_CameraPivot.eulerAngles.x),
-                    Buttons = buttons
-                };
-
-            bool inputChanged =
-                inputCommand.Move != m_LastSentInputCommand.Move ||
-                !Mathf.Approximately(
-                    inputCommand.LookYaw,
-                    m_LastSentInputCommand.LookYaw) ||
-                !Mathf.Approximately(
-                    inputCommand.LookPitch,
-                    m_LastSentInputCommand.LookPitch) ||
-                inputCommand.Buttons !=
-                m_LastSentInputCommand.Buttons;
-
-            if (!inputChanged ||
-                Time.time - m_LastSentMove <
-                k_MoveSendRateSeconds)
+            if (!IsOwner)
             {
                 return;
             }
 
-            inputCommand.Tick = ++m_NextInputTick;
+            m_WalkAction.action.performed -= OnWalkPerformed;
+            m_JumpAction.action.performed -= OnJumpPerformed;
+            m_CrouchAction.action.performed -= OnCrouchPerformed;
 
-            m_LastSentMove = Time.time;
-            m_LastSentInputCommand = inputCommand;
-
-            m_ServerCharacter
-                .ServerSendCharacterInputRpc(inputCommand);
+            m_MoveAction.action.Disable();
+            m_SprintAction.action.Disable();
+            m_WalkAction.action.Disable();
+            m_AimAction.action.Disable();
+            m_JumpAction.action.Disable();
+            m_CrouchAction.action.Disable();
         }
 
-        static float NormalizePitch(float pitch)
+        private void Update()
+        {
+            CharacterInputCommand command = CreateCommand();
+
+            if (!ShouldSend(command))
+            {
+                return;
+            }
+
+            m_ServerCharacter.ServerSendCharacterInputRpc(command);
+
+            m_LastSentCommand = command;
+            m_HasSentCommand = true;
+            m_NextSendTime = Time.unscaledTime + k_SendInterval;
+
+            m_WalkToggleQueued = false;
+            m_JumpPressedQueued = false;
+            m_CrouchToggleQueued = false;
+        }
+
+        private CharacterInputCommand CreateCommand()
+        {
+            CharacterInputButtons buttons = CharacterInputButtons.None;
+
+            if (m_SprintAction.action.IsPressed())
+            {
+                buttons |= CharacterInputButtons.SprintHeld;
+            }
+
+            if (m_AimAction.action.IsPressed())
+            {
+                buttons |= CharacterInputButtons.AimHeld;
+            }
+
+            if (m_WalkToggleQueued)
+            {
+                buttons |= CharacterInputButtons.WalkToggle;
+            }
+
+            if (m_JumpPressedQueued)
+            {
+                buttons |= CharacterInputButtons.JumpPressed;
+            }
+
+            if (m_CrouchToggleQueued)
+            {
+                buttons |= CharacterInputButtons.CrouchToggle;
+            }
+
+            Vector3 pivotEulerAngles = m_CameraPivot.eulerAngles;
+
+            return new CharacterInputCommand
+            {
+                Tick = m_NextTick++,
+                Move = m_MoveAction.action.ReadValue<Vector2>(),
+                LookYaw = pivotEulerAngles.y,
+                LookPitch = NormalizePitch(pivotEulerAngles.x),
+                Buttons = buttons
+            };
+        }
+
+        private bool ShouldSend(CharacterInputCommand command)
+        {
+            if (!m_HasSentCommand)
+            {
+                return true;
+            }
+
+            if (command.Buttons != CharacterInputButtons.None)
+            {
+                return true;
+            }
+
+            if (command.Move != m_LastSentCommand.Move)
+            {
+                return true;
+            }
+
+            return Time.unscaledTime >= m_NextSendTime;
+        }
+
+        private void OnWalkPerformed(InputAction.CallbackContext context)
+        {
+            m_WalkToggleQueued = true;
+        }
+
+        private void OnJumpPerformed(InputAction.CallbackContext context)
+        {
+            m_JumpPressedQueued = true;
+        }
+
+        private void OnCrouchPerformed(InputAction.CallbackContext context)
+        {
+            m_CrouchToggleQueued = true;
+        }
+
+        private static float NormalizePitch(float pitch)
         {
             return pitch > 180f ? pitch - 360f : pitch;
         }

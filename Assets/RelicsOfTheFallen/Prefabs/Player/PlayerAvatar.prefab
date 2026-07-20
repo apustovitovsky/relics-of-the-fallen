@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7260478434399741425}
   - component: {fileID: 4635120103884252889}
+  - component: {fileID: 7155673433953730455}
   m_Layer: 3
   m_Name: AvatarGraphics
   m_TagString: Untagged
@@ -47,6 +48,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ClientCharacter
   ShowTopMostFoldoutHeaderGroup: 1
   m_ClientVisualsAnimator: {fileID: 2011592693146839204}
+--- !u!114 &7155673433953730455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 160202576757752543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f457d695d84f4db46be5602287a79ce4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Look::RelicsOfTheFallen.Character.Look.CharacterAimPresenter
+  m_ClientCharacter: {fileID: 4635120103884252889}
+  m_MaxYawOffset: 90
+  m_HeadYawMultiplier: 1
+  m_BodyYawMultiplier: 0.6
+  m_MinLookPitch: -0.1
+  m_MaxLookPitch: 1
+  m_BodyPitchMultiplier: 1
+  m_AimDampTime: 0.1
 --- !u!1 &2852317345503029682
 GameObject:
   m_ObjectHideFlags: 0
@@ -64,6 +85,8 @@ GameObject:
   - component: {fileID: 9171125177328360435}
   - component: {fileID: 5151467596525535815}
   - component: {fileID: 6423850705544837297}
+  - component: {fileID: 1642886813161725911}
+  - component: {fileID: 6162878235220185361}
   m_Layer: 3
   m_Name: PlayerAvatar
   m_TagString: Untagged
@@ -198,6 +221,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ServerCharacter
   ShowTopMostFoldoutHeaderGroup: 1
+  m_InputTimeoutSeconds: 0.2
+  m_InputBufferCapacity: 64
   m_ClientCharacter: {fileID: 4635120103884252889}
 --- !u!114 &5654982762208430432
 MonoBehaviour:
@@ -227,26 +252,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character.Movement::RelicsOfTheFallen.GameplayObjects.Character.Movement.ServerCharacterMovement
   ShowTopMostFoldoutHeaderGroup: 1
   m_ServerCharacter: {fileID: 1629530579702205739}
-  m_CharacterController: {fileID: 488070572988780736}
+  m_CharacterControllerMotor: {fileID: 1642886813161725911}
   m_AlwaysStrafe: 1
   m_WalkSpeed: 1.4
   m_RunSpeed: 5
   m_SprintSpeed: 7
+  m_SpeedChangeDamping: 10
   m_JumpForce: 10
   m_GravityMultiplier: 2
   m_RotationSmoothing: 10
-  m_CrouchingHeight: 1.2
-  m_CrouchingCenter: 0.6
-  m_CeilingCheckRadiusPadding: 0.02
   m_TurnInPlaceThreshold: 5
   m_TurnInPlaceSpeed: 120
-  m_GroundLayerMask:
-    serializedVersion: 2
-    m_Bits: 1
-  m_GroundProbeDistance: 0.2
-  m_GroundProbeStartOffset: 0.05
-  m_GroundProbeRadiusPadding: 0.02
-  m_MaxGroundAngle: 60
 --- !u!114 &5151467596525535815
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -262,6 +278,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_ServerCharacter: {fileID: 1629530579702205739}
   m_CameraPivot: {fileID: 6169450114621488848}
+  m_SentInputHistoryCapacity: 128
   m_MoveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_WalkAction: {fileID: -4497677220184583906, guid: 052faaac586de48259a63d0c4782560b, type: 3}
@@ -292,6 +309,46 @@ MonoBehaviour:
   m_PitchBounds: {x: -70, y: 70}
   m_PositionLag: 0.2
   m_RotationLag: 0.2
+--- !u!114 &1642886813161725911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cece67a8d6f924419057a4216986b1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.CharacterControllerMotor
+  m_CharacterController: {fileID: 488070572988780736}
+  m_CrouchingHeight: 1.2
+  m_CrouchingCenter: 0.6
+  m_CeilingCheckRadiusPadding: 0.02
+  m_GroundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_GroundProbeDistance: 0.2
+  m_GroundProbeStartOffset: 0.02
+  m_GroundProbeRadiusPadding: 0.05
+  m_MaxGroundAngle: 60
+--- !u!114 &6162878235220185361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5905ec3a5f0caf24cafacf3d2761defe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.CharacterPredictionDriver
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_ServerCharacter: {fileID: 1629530579702205739}
+  m_ServerCharacterMovement: {fileID: 9171125177328360435}
+  m_CharacterControllerMotor: {fileID: 1642886813161725911}
+  m_InputHistoryProvider: {fileID: 5151467596525535815}
 --- !u!1 &4820389488702256883
 GameObject:
   m_ObjectHideFlags: 0

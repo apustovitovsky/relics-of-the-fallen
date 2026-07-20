@@ -1,10 +1,10 @@
 ﻿<Solution>
   <Project Path="RelicsOfTheFallen.Character.Look.csproj" />
   <Project Path="RelicsOfTheFallen.ConnectionManagement.csproj" />
-  <Project Path="RelicsOfTheFallen.Player.csproj" />
-  <Project Path="RelicsOfTheFallen.Character.csproj" />
-  <Project Path="RelicsOfTheFallen.ApplicationLifecycle.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
+  <Project Path="RelicsOfTheFallen.Character.csproj" />
+  <Project Path="RelicsOfTheFallen.Player.csproj" />
+  <Project Path="RelicsOfTheFallen.ApplicationLifecycle.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Character.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Composition.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />

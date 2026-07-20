@@ -17,7 +17,7 @@ namespace RelicsOfTheFallen.Character
         IEquatable<CharacterLocomotionState>
     {
         public uint ServerTick;
-        public uint LastProcessedInputTick;
+        public uint LastProcessedInputSequence;
 
         public Vector3 Velocity;
         public Vector2 MoveInput;
@@ -40,7 +40,8 @@ namespace RelicsOfTheFallen.Character
             where T : IReaderWriter
         {
             serializer.SerializeValue(ref ServerTick);
-            serializer.SerializeValue(ref LastProcessedInputTick);
+            serializer.SerializeValue(
+                ref LastProcessedInputSequence);
 
             serializer.SerializeValue(ref Velocity);
             serializer.SerializeValue(ref MoveInput);
@@ -49,7 +50,8 @@ namespace RelicsOfTheFallen.Character
             serializer.SerializeValue(ref AimYaw);
             serializer.SerializeValue(ref AimPitch);
             serializer.SerializeValue(ref InclineAngle);
-            serializer.SerializeValue(ref CameraRotationOffset);
+            serializer.SerializeValue(
+                ref CameraRotationOffset);
 
             byte gait = (byte)Gait;
             serializer.SerializeValue(ref gait);
@@ -69,20 +71,30 @@ namespace RelicsOfTheFallen.Character
         public bool Equals(CharacterLocomotionState other)
         {
             return ServerTick == other.ServerTick &&
-                   LastProcessedInputTick == other.LastProcessedInputTick &&
+                   LastProcessedInputSequence ==
+                   other.LastProcessedInputSequence &&
                    Velocity.Equals(other.Velocity) &&
                    MoveInput.Equals(other.MoveInput) &&
-                   Mathf.Approximately(FacingYaw, other.FacingYaw) &&
-                   Mathf.Approximately(AimYaw, other.AimYaw) &&
-                   Mathf.Approximately(AimPitch, other.AimPitch) &&
-                   Mathf.Approximately(InclineAngle, other.InclineAngle) &&
+                   Mathf.Approximately(
+                       FacingYaw,
+                       other.FacingYaw) &&
+                   Mathf.Approximately(
+                       AimYaw,
+                       other.AimYaw) &&
+                   Mathf.Approximately(
+                       AimPitch,
+                       other.AimPitch) &&
+                   Mathf.Approximately(
+                       InclineAngle,
+                       other.InclineAngle) &&
                    Mathf.Approximately(
                        CameraRotationOffset,
                        other.CameraRotationOffset) &&
                    Gait == other.Gait &&
                    IsGrounded == other.IsGrounded &&
                    IsStrafing == other.IsStrafing &&
-                   IsTurningInPlace == other.IsTurningInPlace &&
+                   IsTurningInPlace ==
+                   other.IsTurningInPlace &&
                    IsJumping == other.IsJumping &&
                    IsCrouching == other.IsCrouching;
         }

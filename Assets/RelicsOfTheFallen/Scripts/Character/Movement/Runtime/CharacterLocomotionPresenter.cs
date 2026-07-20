@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace RelicsOfTheFallen.Character.Movement
 {
-    public sealed class MovementController : MonoBehaviour
+    public sealed class CharacterLocomotionPresenter : MonoBehaviour
     {
         static readonly int s_MovementInputTapped =
             Animator.StringToHash("MovementInputTapped");

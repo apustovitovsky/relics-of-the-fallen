@@ -1,3 +1,4 @@
+using System;
 using RelicsOfTheFallen.Character;
 using Unity.Netcode;
 using UnityEngine;
@@ -5,15 +6,20 @@ using UnityEngine.InputSystem;
 
 namespace RelicsOfTheFallen.UserInput
 {
-    public class ClientInputSender : NetworkBehaviour
+    public class ClientInputSender :
+        NetworkBehaviour,
+        ICharacterInputHistoryProvider
     {
-        private const float k_SendInterval = 0.04f;
-
         [SerializeField]
         private ServerCharacter m_ServerCharacter;
 
         [SerializeField]
         private Transform m_CameraPivot;
+
+        [Header("Prediction")]
+        [SerializeField]
+        [Min(1)]
+        private int m_SentInputHistoryCapacity = 128;
 
         [Header("Actions")]
         [SerializeField]
@@ -34,13 +40,24 @@ namespace RelicsOfTheFallen.UserInput
         [SerializeField]
         private InputActionReference m_CrouchAction;
 
-        private uint m_NextTick;
-        private float m_NextSendTime;
-        private CharacterInputCommand m_LastSentCommand;
-        private bool m_HasSentCommand;
+        private CharacterInputHistory m_SentInputHistory;
+
+        private uint m_NextSequence;
         private bool m_WalkToggleQueued;
         private bool m_JumpPressedQueued;
         private bool m_CrouchToggleQueued;
+
+        public CharacterInputHistory SentInputHistory =>
+            m_SentInputHistory;
+
+        public event Action<CharacterInputCommand>
+            CommandRecorded;
+
+        private void Awake()
+        {
+            m_SentInputHistory = new CharacterInputHistory(
+                m_SentInputHistoryCapacity);
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -49,6 +66,14 @@ namespace RelicsOfTheFallen.UserInput
                 enabled = false;
                 return;
             }
+
+            m_NextSequence = 1;
+
+            m_WalkToggleQueued = false;
+            m_JumpPressedQueued = false;
+            m_CrouchToggleQueued = false;
+
+            m_SentInputHistory.Clear();
 
             m_MoveAction.action.Enable();
             m_SprintAction.action.Enable();
@@ -60,6 +85,15 @@ namespace RelicsOfTheFallen.UserInput
             m_WalkAction.action.performed += OnWalkPerformed;
             m_JumpAction.action.performed += OnJumpPerformed;
             m_CrouchAction.action.performed += OnCrouchPerformed;
+
+            m_ServerCharacter.OwnerSnapshot.OnValueChanged +=
+                OnOwnerSnapshotChanged;
+
+            NetworkManager.NetworkTickSystem.Tick +=
+                OnNetworkTick;
+
+            AcknowledgeInputThrough(
+                m_ServerCharacter.OwnerSnapshot.Value);
         }
 
         public override void OnNetworkDespawn()
@@ -68,6 +102,12 @@ namespace RelicsOfTheFallen.UserInput
             {
                 return;
             }
+
+            NetworkManager.NetworkTickSystem.Tick -=
+                OnNetworkTick;
+
+            m_ServerCharacter.OwnerSnapshot.OnValueChanged -=
+                OnOwnerSnapshotChanged;
 
             m_WalkAction.action.performed -= OnWalkPerformed;
             m_JumpAction.action.performed -= OnJumpPerformed;
@@ -79,22 +119,28 @@ namespace RelicsOfTheFallen.UserInput
             m_AimAction.action.Disable();
             m_JumpAction.action.Disable();
             m_CrouchAction.action.Disable();
+
+            m_SentInputHistory.Clear();
         }
 
-        private void Update()
+        private void OnNetworkTick()
         {
             CharacterInputCommand command = CreateCommand();
 
-            if (!ShouldSend(command))
+            if (!m_SentInputHistory.TryRecord(command))
             {
+                Debug.LogError(
+                    "The sent character input history is full.",
+                    this);
+
                 return;
             }
 
+            CommandRecorded?.Invoke(command);
+
             m_ServerCharacter.ServerSendCharacterInputRpc(command);
 
-            m_LastSentCommand = command;
-            m_HasSentCommand = true;
-            m_NextSendTime = Time.unscaledTime + k_SendInterval;
+            m_NextSequence++;
 
             m_WalkToggleQueued = false;
             m_JumpPressedQueued = false;
@@ -103,76 +149,81 @@ namespace RelicsOfTheFallen.UserInput
 
         private CharacterInputCommand CreateCommand()
         {
-            CharacterInputButtons buttons = CharacterInputButtons.None;
+            CharacterInputHeldButtons heldButtons =
+                CharacterInputHeldButtons.None;
 
             if (m_SprintAction.action.IsPressed())
             {
-                buttons |= CharacterInputButtons.SprintHeld;
+                heldButtons |= CharacterInputHeldButtons.Sprint;
             }
 
             if (m_AimAction.action.IsPressed())
             {
-                buttons |= CharacterInputButtons.AimHeld;
+                heldButtons |= CharacterInputHeldButtons.Aim;
             }
+
+            CharacterInputPressedButtons pressedButtons =
+                CharacterInputPressedButtons.None;
 
             if (m_WalkToggleQueued)
             {
-                buttons |= CharacterInputButtons.WalkToggle;
+                pressedButtons |=
+                    CharacterInputPressedButtons.WalkToggle;
             }
 
             if (m_JumpPressedQueued)
             {
-                buttons |= CharacterInputButtons.JumpPressed;
+                pressedButtons |=
+                    CharacterInputPressedButtons.Jump;
             }
 
             if (m_CrouchToggleQueued)
             {
-                buttons |= CharacterInputButtons.CrouchToggle;
+                pressedButtons |=
+                    CharacterInputPressedButtons.CrouchToggle;
             }
 
             Vector3 pivotEulerAngles = m_CameraPivot.eulerAngles;
 
             return new CharacterInputCommand
             {
-                Tick = m_NextTick++,
+                Sequence = m_NextSequence,
                 Move = m_MoveAction.action.ReadValue<Vector2>(),
                 LookYaw = pivotEulerAngles.y,
                 LookPitch = NormalizePitch(pivotEulerAngles.x),
-                Buttons = buttons
+                HeldButtons = heldButtons,
+                PressedButtons = pressedButtons
             };
         }
 
-        private bool ShouldSend(CharacterInputCommand command)
+        private void OnOwnerSnapshotChanged(
+            CharacterOwnerSnapshot previousValue,
+            CharacterOwnerSnapshot newValue)
         {
-            if (!m_HasSentCommand)
-            {
-                return true;
-            }
-
-            if (command.Buttons != CharacterInputButtons.None)
-            {
-                return true;
-            }
-
-            if (command.Move != m_LastSentCommand.Move)
-            {
-                return true;
-            }
-
-            return Time.unscaledTime >= m_NextSendTime;
+            AcknowledgeInputThrough(newValue);
         }
 
-        private void OnWalkPerformed(InputAction.CallbackContext context)
+        private void AcknowledgeInputThrough(
+            CharacterOwnerSnapshot snapshot)
+        {
+            m_SentInputHistory.DiscardThrough(
+                snapshot.LastProcessedInputSequence);
+        }
+
+        private void OnWalkPerformed(
+            InputAction.CallbackContext context)
         {
             m_WalkToggleQueued = true;
         }
 
-        private void OnJumpPerformed(InputAction.CallbackContext context)
+        private void OnJumpPerformed(
+            InputAction.CallbackContext context)
         {
             m_JumpPressedQueued = true;
         }
 
-        private void OnCrouchPerformed(InputAction.CallbackContext context)
+        private void OnCrouchPerformed(
+            InputAction.CallbackContext context)
         {
             m_CrouchToggleQueued = true;
         }

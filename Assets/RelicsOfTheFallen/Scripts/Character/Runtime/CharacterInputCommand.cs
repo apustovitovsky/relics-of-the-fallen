@@ -4,43 +4,63 @@ using UnityEngine;
 namespace RelicsOfTheFallen.Character
 {
     [System.Flags]
-    public enum CharacterInputButtons : ushort
+    public enum CharacterInputHeldButtons : byte
     {
         None = 0,
-        SprintHeld = 1 << 0,
-        WalkToggle = 1 << 1,
-        AimHeld = 1 << 2,
-        JumpPressed = 1 << 3,
-        CrouchToggle = 1 << 4
+        Sprint = 1 << 0,
+        Aim = 1 << 1,
+
+        All = Sprint | Aim
+    }
+
+    [System.Flags]
+    public enum CharacterInputPressedButtons : byte
+    {
+        None = 0,
+        WalkToggle = 1 << 0,
+        Jump = 1 << 1,
+        CrouchToggle = 1 << 2,
+
+        All = WalkToggle | Jump | CrouchToggle
     }
 
     public struct CharacterInputCommand : INetworkSerializable
     {
-        public uint Tick;
+        public uint Sequence;
         public Vector2 Move;
         public float LookYaw;
         public float LookPitch;
-        public CharacterInputButtons Buttons;
+        public CharacterInputHeldButtons HeldButtons;
+        public CharacterInputPressedButtons PressedButtons;
 
-        public bool IsPressed(CharacterInputButtons button)
+        public bool IsHeld(CharacterInputHeldButtons button)
         {
-            return (Buttons & button) != 0;
+            return (HeldButtons & button) != 0;
+        }
+
+        public bool IsPressed(CharacterInputPressedButtons button)
+        {
+            return (PressedButtons & button) != 0;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer)
             where T : IReaderWriter
         {
-            serializer.SerializeValue(ref Tick);
+            serializer.SerializeValue(ref Sequence);
             serializer.SerializeValue(ref Move);
             serializer.SerializeValue(ref LookYaw);
             serializer.SerializeValue(ref LookPitch);
 
-            ushort buttons = (ushort)Buttons;
-            serializer.SerializeValue(ref buttons);
+            byte heldButtons = (byte)HeldButtons;
+            serializer.SerializeValue(ref heldButtons);
+
+            byte pressedButtons = (byte)PressedButtons;
+            serializer.SerializeValue(ref pressedButtons);
 
             if (serializer.IsReader)
             {
-                Buttons = (CharacterInputButtons)buttons;
+                HeldButtons = (CharacterInputHeldButtons)heldButtons;
+                PressedButtons = (CharacterInputPressedButtons)pressedButtons;
             }
         }
     }

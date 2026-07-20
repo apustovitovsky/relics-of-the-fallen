@@ -82,6 +82,35 @@ namespace RelicsOfTheFallen.Character.Movement
             m_CharacterController.center = m_StandingCenter;
         }
 
+        /// <summary>
+        /// Repositions the physical capsule without leaving the
+        /// CharacterController enabled while its Transform is changed.
+        /// </summary>
+        public void Teleport(
+            Vector3 position,
+            Quaternion rotation,
+            bool isCrouching,
+            Vector3 groundProbeDirection)
+        {
+            bool wasControllerEnabled =
+                m_CharacterController.enabled;
+
+            m_CharacterController.enabled = false;
+
+            transform.SetPositionAndRotation(
+                position,
+                rotation);
+
+            ApplyCapsule(isCrouching);
+
+            m_CharacterController.enabled =
+                wasControllerEnabled;
+
+            GroundInfo = m_GroundProbe.Probe(
+                m_CharacterController,
+                groundProbeDirection);
+        }
+
         public bool CanStandUp()
         {
             if (Mathf.Approximately(
@@ -173,8 +202,11 @@ namespace RelicsOfTheFallen.Character.Movement
             Vector3 crouchingCenter = m_StandingCenter;
             crouchingCenter.y = m_CrouchingCenter;
 
-            m_CharacterController.height = m_CrouchingHeight;
-            m_CharacterController.center = crouchingCenter;
+            m_CharacterController.height =
+                m_CrouchingHeight;
+
+            m_CharacterController.center =
+                crouchingCenter;
         }
     }
 }

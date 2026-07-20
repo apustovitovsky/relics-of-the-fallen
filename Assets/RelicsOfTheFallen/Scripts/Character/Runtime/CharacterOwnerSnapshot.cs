@@ -13,8 +13,8 @@ namespace RelicsOfTheFallen.Character
 
     /// <summary>
     /// A server-authoritative locomotion snapshot sent only to the
-    /// owning client. It contains the complete state needed to restore
-    /// and replay the local locomotion simulation.
+    /// owning client. It contains the state that affects future local
+    /// locomotion simulation and is therefore required for replay.
     /// </summary>
     public struct CharacterOwnerSnapshot :
         INetworkSerializable,
@@ -27,6 +27,7 @@ namespace RelicsOfTheFallen.Character
         public Quaternion Rotation;
 
         public Vector3 HorizontalVelocity;
+        public Vector3 ActualVelocity;
         public float VerticalVelocity;
         public float CameraRotationOffset;
 
@@ -50,6 +51,9 @@ namespace RelicsOfTheFallen.Character
 
             serializer.SerializeValue(
                 ref HorizontalVelocity);
+
+            serializer.SerializeValue(
+                ref ActualVelocity);
 
             serializer.SerializeValue(
                 ref VerticalVelocity);
@@ -82,6 +86,8 @@ namespace RelicsOfTheFallen.Character
                    Rotation.Equals(other.Rotation) &&
                    HorizontalVelocity.Equals(
                        other.HorizontalVelocity) &&
+                   ActualVelocity.Equals(
+                       other.ActualVelocity) &&
                    Mathf.Approximately(
                        VerticalVelocity,
                        other.VerticalVelocity) &&

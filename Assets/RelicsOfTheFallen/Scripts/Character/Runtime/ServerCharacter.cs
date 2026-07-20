@@ -1,3 +1,4 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,23 +12,26 @@ namespace RelicsOfTheFallen.Character
         private float m_InputTimeoutSeconds = 0.2f;
 
         [SerializeField]
-        [Min(1)]
-        private int m_InputBufferCapacity = 64;
-
-        [SerializeField]
         private ClientCharacter m_ClientCharacter;
 
-        private CharacterInputBuffer m_InputBuffer;
+        private CharacterInputInbox m_InputInbox;
         private CharacterInputCommand m_CurrentInputCommand;
         private float m_LastInputReceivedTime;
         private bool m_HasReceivedInput;
 
         public ClientCharacter clientCharacter => m_ClientCharacter;
 
+        /// <summary>
+        /// Latest server locomotion state for host and owner presentation.
+        /// Remote observers consume the buffered unreliable snapshot stream.
+        /// </summary>
         public NetworkVariable<CharacterLocomotionState>
             LocomotionState
         { get; } = new();
 
+        /// <summary>
+        /// Server-authoritative rollback state visible only to the owner.
+        /// </summary>
         public NetworkVariable<CharacterOwnerSnapshot>
             OwnerSnapshot
         {
@@ -37,10 +41,16 @@ namespace RelicsOfTheFallen.Character
             NetworkVariableReadPermission.Owner,
             NetworkVariableWritePermission.Server);
 
+        /// <summary>
+        /// Raised only on non-owning clients by the unreliable observer
+        /// snapshot RPC. The snapshot is visual data, not gameplay truth.
+        /// </summary>
+        public event Action<CharacterRenderSnapshot>
+            RenderSnapshotReceived;
+
         private void Awake()
         {
-            m_InputBuffer = new CharacterInputBuffer(
-                m_InputBufferCapacity);
+            m_InputInbox = new CharacterInputInbox();
         }
 
         public override void OnNetworkSpawn()
@@ -54,12 +64,13 @@ namespace RelicsOfTheFallen.Character
         public override void OnNetworkDespawn()
         {
             ClearInput();
+            RenderSnapshotReceived = null;
         }
 
         public CharacterInputCommand ConsumeInputCommand()
         {
             if (!m_HasReceivedInput &&
-                m_InputBuffer.Count == 0)
+                !m_InputInbox.HasInput)
             {
                 return default;
             }
@@ -67,25 +78,27 @@ namespace RelicsOfTheFallen.Character
             if (Time.unscaledTime - m_LastInputReceivedTime >
                 m_InputTimeoutSeconds)
             {
-                ClearBufferedInput();
+                m_InputInbox.ClearPendingInput();
 
                 m_CurrentInputCommand.Move = Vector2.zero;
                 m_CurrentInputCommand.HeldButtons =
                     CharacterInputHeldButtons.None;
+
                 m_CurrentInputCommand.PressedButtons =
                     CharacterInputPressedButtons.None;
 
                 return m_CurrentInputCommand;
             }
 
-            if (m_InputBuffer.TryDequeue(
+            if (m_InputInbox.TryConsume(
                     out CharacterInputCommand receivedCommand))
             {
                 m_CurrentInputCommand = receivedCommand;
                 m_HasReceivedInput = true;
             }
 
-            CharacterInputCommand command = m_CurrentInputCommand;
+            CharacterInputCommand command =
+                m_CurrentInputCommand;
 
             m_CurrentInputCommand.PressedButtons =
                 CharacterInputPressedButtons.None;
@@ -125,7 +138,7 @@ namespace RelicsOfTheFallen.Character
             inputCommand.PressedButtons &=
                 CharacterInputPressedButtons.All;
 
-            if (!m_InputBuffer.TryEnqueue(inputCommand))
+            if (!m_InputInbox.TryPush(inputCommand))
             {
                 return;
             }
@@ -133,18 +146,27 @@ namespace RelicsOfTheFallen.Character
             m_LastInputReceivedTime = Time.unscaledTime;
         }
 
+        /// <summary>
+        /// Sends a visual snapshot to all non-owning clients. Unreliable
+        /// delivery prevents an old pose from delaying a newer one.
+        /// </summary>
+        [Rpc(
+            SendTo.NotOwner,
+            Delivery = RpcDelivery.Unreliable,
+            InvokePermission = RpcInvokePermission.Server)]
+        public void ClientReceiveRenderSnapshotRpc(
+            CharacterRenderSnapshot snapshot)
+        {
+            RenderSnapshotReceived?.Invoke(snapshot);
+        }
+
         private void ClearInput()
         {
-            ClearBufferedInput();
+            m_InputInbox.Clear();
 
             m_CurrentInputCommand = default;
             m_LastInputReceivedTime = 0f;
             m_HasReceivedInput = false;
-        }
-
-        private void ClearBufferedInput()
-        {
-            m_InputBuffer.Clear();
         }
 
         private static bool IsFinite(

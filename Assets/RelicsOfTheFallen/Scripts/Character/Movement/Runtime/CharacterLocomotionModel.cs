@@ -106,9 +106,15 @@ namespace RelicsOfTheFallen.Character.Movement
         }
     }
 
+    /// <summary>
+    /// Complete state required to reproduce the next locomotion step.
+    /// This contains both requested simulation velocity and actual
+    /// collision-constrained velocity.
+    /// </summary>
     public readonly struct CharacterLocomotionSimulationState
     {
         public readonly Vector3 HorizontalVelocity;
+        public readonly Vector3 ActualVelocity;
         public readonly float VerticalVelocity;
         public readonly float CameraRotationOffset;
 
@@ -120,6 +126,7 @@ namespace RelicsOfTheFallen.Character.Movement
 
         public CharacterLocomotionSimulationState(
             Vector3 horizontalVelocity,
+            Vector3 actualVelocity,
             float verticalVelocity,
             float cameraRotationOffset,
             bool isWalking,
@@ -128,6 +135,7 @@ namespace RelicsOfTheFallen.Character.Movement
             CharacterAirState airState)
         {
             HorizontalVelocity = horizontalVelocity;
+            ActualVelocity = actualVelocity;
             VerticalVelocity = verticalVelocity;
             CameraRotationOffset = cameraRotationOffset;
             IsWalking = isWalking;
@@ -290,6 +298,7 @@ namespace RelicsOfTheFallen.Character.Movement
         {
             return new CharacterLocomotionSimulationState(
                 m_HorizontalVelocity,
+                m_ActualVelocity,
                 m_VerticalVelocity,
                 m_CameraRotationOffset,
                 m_IsWalking,
@@ -302,6 +311,7 @@ namespace RelicsOfTheFallen.Character.Movement
             in CharacterLocomotionSimulationState state)
         {
             m_HorizontalVelocity = state.HorizontalVelocity;
+            m_ActualVelocity = state.ActualVelocity;
             m_VerticalVelocity = state.VerticalVelocity;
             m_CameraRotationOffset =
                 state.CameraRotationOffset;
@@ -312,8 +322,6 @@ namespace RelicsOfTheFallen.Character.Movement
 
             m_IsCrouching = state.IsCrouching;
             m_AirState = state.AirState;
-
-            m_ActualVelocity = Vector3.zero;
         }
 
         public void Reset()

@@ -48,6 +48,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ClientCharacter
   ShowTopMostFoldoutHeaderGroup: 1
   m_ClientVisualsAnimator: {fileID: 2011592693146839204}
+  m_HostGraphicsSmoothingTime: 0.1
+  m_PredictionCorrectionSmoothingTime: 0.1
 --- !u!114 &7155673433953730455
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -222,7 +224,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ServerCharacter
   ShowTopMostFoldoutHeaderGroup: 1
   m_InputTimeoutSeconds: 0.2
-  m_InputBufferCapacity: 64
   m_ClientCharacter: {fileID: 4635120103884252889}
 --- !u!114 &5654982762208430432
 MonoBehaviour:
@@ -261,6 +262,7 @@ MonoBehaviour:
   m_JumpForce: 10
   m_GravityMultiplier: 2
   m_RotationSmoothing: 10
+  m_MovementStartSpeed: 0.05
   m_TurnInPlaceThreshold: 5
   m_TurnInPlaceSpeed: 120
 --- !u!114 &5151467596525535815
@@ -339,7 +341,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5905ec3a5f0caf24cafacf3d2761defe, type: 3}
   m_Name: 
@@ -349,6 +351,10 @@ MonoBehaviour:
   m_ServerCharacterMovement: {fileID: 9171125177328360435}
   m_CharacterControllerMotor: {fileID: 1642886813161725911}
   m_InputHistoryProvider: {fileID: 5151467596525535815}
+  m_PredictedFrameHistoryCapacity: 128
+  m_PositionCorrectionThreshold: 0.03
+  m_RotationCorrectionThreshold: 1
+  m_VelocityCorrectionThreshold: 0.01
 --- !u!1 &4820389488702256883
 GameObject:
   m_ObjectHideFlags: 0
@@ -721,6 +727,7 @@ MonoBehaviour:
   m_Animator: {fileID: 2011592693146839204}
   m_SpeedDampTime: 0.1
   m_ButtonHoldThreshold: 0.15
+  m_ActualMovementThreshold: 0.05
   m_StrafeDirectionDampTime: 0.2
   m_ForwardStrafeMinThreshold: -55
   m_ForwardStrafeMaxThreshold: 125

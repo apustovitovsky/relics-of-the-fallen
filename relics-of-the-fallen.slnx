@@ -1,13 +1,27 @@
 ﻿<Solution>
+  <Project Path="Unity.Mirror.CodeGen.csproj" />
+  <Project Path="Edgegap.csproj" />
+  <Project Path="Mirror.Components.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Look.csproj" />
+  <Project Path="Mirror.Editor.csproj" />
+  <Project Path="Mirror.Examples.csproj" />
+  <Project Path="kcp2k.csproj" />
+  <Project Path="Mirror.csproj" />
+  <Project Path="SimpleWebTransport.csproj" />
+  <Project Path="Mirror.Authenticators.csproj" />
+  <Project Path="Mirror.Transports.csproj" />
+  <Project Path="EncryptionTransportEditor.csproj" />
   <Project Path="RelicsOfTheFallen.ConnectionManagement.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
   <Project Path="RelicsOfTheFallen.Character.csproj" />
+  <Project Path="Telepathy.csproj" />
   <Project Path="RelicsOfTheFallen.Player.csproj" />
   <Project Path="RelicsOfTheFallen.ApplicationLifecycle.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Character.csproj" />
+  <Project Path="Mirror.CompilerSymbols.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.Composition.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="RelicsOfTheFallen.UserInput.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.csproj" />
 </Solution>

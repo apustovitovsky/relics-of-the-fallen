@@ -3,7 +3,9 @@
     "rootNamespace": "RelicsOfTheFallen.Application.Composition",
     "references": [
         "Mirror",
-        "VContainer"
+        "RelicsOfTheFallen.Application",
+        "RelicsOfTheFallen.Networking",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

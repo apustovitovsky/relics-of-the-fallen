@@ -1,10 +1,7 @@
 {
     "name": "RelicsOfTheFallen.Application",
     "rootNamespace": "RelicsOfTheFallen.Application",
-    "references": [
-        "Mirror",
-        "VContainer"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

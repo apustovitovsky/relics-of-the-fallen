@@ -17,6 +17,7 @@
   <Project Path="EasyButtons.Editor.csproj" />
   <Project Path="RelicsOfTheFallen.Character.csproj" />
   <Project Path="Telepathy.csproj" />
+  <Project Path="RelicsOfTheFallen.Application.Composition.csproj" />
   <Project Path="Mirror.CompilerSymbols.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />

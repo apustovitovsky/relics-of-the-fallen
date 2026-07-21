@@ -23,5 +23,6 @@
   <Project Path="RelicsOfTheFallen.UserInput.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="RelicsOfTheFallen.Networking.Character.csproj" />
   <Project Path="RelicsOfTheFallen.GameState.csproj" />
 </Solution>

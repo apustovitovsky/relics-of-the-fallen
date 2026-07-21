@@ -63,8 +63,7 @@ namespace RelicsOfTheFallen.Character.Movement
             Animator.StringToHash("FallingDuration");
 
         [SerializeField]
-        ClientAuthoritativeCharacterMovement
-            m_CharacterMovement;
+        MonoBehaviour m_LocomotionStateProviderComponent;
 
         [SerializeField]
         Animator m_Animator;
@@ -88,6 +87,9 @@ namespace RelicsOfTheFallen.Character.Movement
         [SerializeField]
         float m_ForwardStrafeMaxThreshold = 125f;
 
+        ICharacterLocomotionStateProvider
+            m_LocomotionStateProvider;
+
         float m_StrafeDirectionX;
         float m_StrafeDirectionZ = 1f;
         float m_ForwardStrafe = 1f;
@@ -103,17 +105,7 @@ namespace RelicsOfTheFallen.Character.Movement
 
         void Awake()
         {
-            if (m_CharacterMovement == null)
-            {
-                m_CharacterMovement =
-                    GetComponentInParent<
-                        ClientAuthoritativeCharacterMovement>();
-            }
-
-            if (m_Animator == null)
-            {
-                m_Animator = GetComponent<Animator>();
-            }
+            TryResolveDependencies();
         }
 
         void OnEnable()
@@ -156,6 +148,7 @@ namespace RelicsOfTheFallen.Character.Movement
             m_Animator.SetFloat(s_StrafeDirectionZ, 1f);
             m_Animator.SetFloat(s_ForwardStrafe, 1f);
             m_Animator.SetFloat(s_IsStrafing, 0f);
+
             m_Animator.SetFloat(
                 s_CameraRotationOffset,
                 0f);
@@ -169,14 +162,13 @@ namespace RelicsOfTheFallen.Character.Movement
 
         void Update()
         {
-            if (m_CharacterMovement == null ||
-                m_Animator == null)
+            if (!TryResolveDependencies())
             {
                 return;
             }
 
             CharacterLocomotionState state =
-                m_CharacterMovement.LocomotionState;
+                m_LocomotionStateProvider.LocomotionState;
 
             Vector3 horizontalVelocity = state.Velocity;
             horizontalVelocity.y = 0f;
@@ -303,6 +295,24 @@ namespace RelicsOfTheFallen.Character.Movement
                     ? 0f
                     : Time.time -
                       m_AirborneStartedTime);
+        }
+
+        bool TryResolveDependencies()
+        {
+            if (m_LocomotionStateProvider == null)
+            {
+                m_LocomotionStateProvider =
+                    m_LocomotionStateProviderComponent as
+                    ICharacterLocomotionStateProvider;
+            }
+
+            if (m_Animator == null)
+            {
+                m_Animator = GetComponent<Animator>();
+            }
+
+            return m_LocomotionStateProvider != null &&
+                   m_Animator != null;
         }
 
         bool HasLocomotionStarted(

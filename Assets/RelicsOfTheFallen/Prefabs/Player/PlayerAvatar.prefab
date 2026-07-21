@@ -48,7 +48,8 @@ GameObject:
   - component: {fileID: 5105772167283530454}
   - component: {fileID: 634930540390059913}
   - component: {fileID: 1686502319967824922}
-  - component: {fileID: 6877060754754901105}
+  - component: {fileID: -8374595827761260112}
+  - component: {fileID: 6321706467198511672}
   m_Layer: 3
   m_Name: PlayerAvatar
   m_TagString: Untagged
@@ -65,7 +66,7 @@ Transform:
   m_GameObject: {fileID: 2852317345503029682}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -233,7 +234,7 @@ MonoBehaviour:
   m_AimAction: {fileID: -8822460519771437598, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_JumpAction: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_CrouchAction: {fileID: 7040659881675835329, guid: 052faaac586de48259a63d0c4782560b, type: 3}
---- !u!114 &6877060754754901105
+--- !u!114 &-8374595827761260112
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -242,13 +243,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 2852317345503029682}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80b769207c205464da449857a04accf6, type: 3}
+  m_Script: {fileID: 11500000, guid: d74d3a2aae6ef9c4d84ea38f1f56667c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.ClientAuthoritativeCharacterMovement
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  m_LocalCharacterInput: {fileID: 1686502319967824922}
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.CharacterLocomotionController
   m_CharacterControllerMotor: {fileID: 1642886813161725911}
   m_AlwaysStrafe: 1
   m_WalkSpeed: 1.4
@@ -261,6 +258,23 @@ MonoBehaviour:
   m_MovementStartSpeed: 0.05
   m_TurnInPlaceThreshold: 5
   m_TurnInPlaceSpeed: 120
+--- !u!114 &6321706467198511672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 548772ea00b560f4e8398c5a4a16d9db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Networking.Character::RelicsOfTheFallen.Networking.Character.NetworkCharacter
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  m_LocalCharacterInput: {fileID: 1686502319967824922}
+  m_LocomotionController: {fileID: -8374595827761260112}
 --- !u!1 &4820389488702256883
 GameObject:
   m_ObjectHideFlags: 0
@@ -632,7 +646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73099fe6ebb01b24b84d8d9ff3601fae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.MovementController
-  m_CharacterMovement: {fileID: 6877060754754901105}
+  m_LocomotionStateProviderComponent: {fileID: 5654982762208430432}
   m_Animator: {fileID: 2011592693146839204}
   m_SpeedDampTime: 0.1
   m_ButtonHoldThreshold: 0.15

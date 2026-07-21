@@ -1,0 +1,19 @@
+{
+    "name": "RelicsOfTheFallen.Networking.Character",
+    "rootNamespace": "RelicsOfTheFallen.Networking.Character",
+    "references": [
+        "RelicsOfTheFallen.Character",
+        "RelicsOfTheFallen.Character.Movement",
+        "RelicsOfTheFallen.UserInput",
+        "Mirror"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,8 +1,7 @@
 {
-    "name": "RelicsOfTheFallen.Character.Movement",
-    "rootNamespace": "RelicsOfTheFallen.Character.Movement",
+    "name": "RelicsOfTheFallen.Networking",
+    "rootNamespace": "RelicsOfTheFallen.Networking",
     "references": [
-        "RelicsOfTheFallen.Character",
         "Mirror"
     ],
     "includePlatforms": [],

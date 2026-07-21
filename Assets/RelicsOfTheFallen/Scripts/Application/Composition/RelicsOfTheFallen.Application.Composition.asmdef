@@ -1,9 +1,9 @@
 {
-    "name": "RelicsOfTheFallen.Character.Movement",
-    "rootNamespace": "RelicsOfTheFallen.Character.Movement",
+    "name": "RelicsOfTheFallen.Application.Composition",
+    "rootNamespace": "RelicsOfTheFallen.Application.Composition",
     "references": [
-        "RelicsOfTheFallen.Character",
-        "Mirror"
+        "Mirror",
+        "VContainer"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

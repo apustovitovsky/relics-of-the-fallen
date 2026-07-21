@@ -1,9 +1,7 @@
 {
     "name": "RelicsOfTheFallen.Character",
     "rootNamespace": "RelicsOfTheFallen.Character",
-    "references": [
-        "Mirror"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

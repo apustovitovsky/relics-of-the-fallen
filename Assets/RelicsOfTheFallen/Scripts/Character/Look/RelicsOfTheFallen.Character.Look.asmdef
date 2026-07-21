@@ -2,9 +2,8 @@
     "name": "RelicsOfTheFallen.Character.Look",
     "rootNamespace": "RelicsOfTheFallen.Character.Look",
     "references": [
-        "RelicsOfTheFallen.Character",
         "Mirror",
-        "Unity.InputSystem"
+        "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

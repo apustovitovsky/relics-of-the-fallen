@@ -2,9 +2,9 @@
     "name": "RelicsOfTheFallen.Character.Cinemachine",
     "rootNamespace": "RelicsOfTheFallen.Character.Cinemachine",
     "references": [
-        "RelicsOfTheFallen.Character",
         "Mirror",
-        "Unity.Cinemachine"
+        "Unity.Cinemachine",
+        "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -145,4 +145,24 @@ namespace RelicsOfTheFallen.Character.Movement
                 Mathf.Rad2Deg;
         }
     }
+
+    public class GroundInfo
+    {
+        private bool v;
+        private bool isGrounded;
+        private Vector3 point;
+        private Vector3 normal;
+        private float slopeAngle;
+        private float inclineAngle;
+
+        public GroundInfo(bool v, bool isGrounded, Vector3 point, Vector3 normal, float slopeAngle, float inclineAngle)
+        {
+            this.v = v;
+            this.isGrounded = isGrounded;
+            this.point = point;
+            this.normal = normal;
+            this.slopeAngle = slopeAngle;
+            this.inclineAngle = inclineAngle;
+        }
+    }
 }

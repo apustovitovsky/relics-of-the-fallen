@@ -1,100 +1,64 @@
-using System.Collections.Generic;
-using Unity.Netcode;
+using Mirror;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace RelicsOfTheFallen.GameState.Character
 {
-    [RequireComponent(typeof(NetworkObject))]
-    public sealed class ServerRaidState : NetworkBehaviour
+    public sealed class ServerRaidState : MonoBehaviour
     {
         [SerializeField]
-        NetworkObject m_PlayerAvatarPrefab;
+        NetworkIdentity m_PlayerAvatarPrefab;
 
         [SerializeField]
         Transform[] m_PlayerSpawnPoints;
 
-        readonly HashSet<ulong> m_SpawnedClientIds = new();
+        int m_NextSpawnPointIndex;
 
-        public override void OnNetworkSpawn()
+        public bool TrySpawnPlayerAvatar(
+            NetworkConnectionToClient connection)
         {
-            if (!IsServer)
+            if (!NetworkServer.active ||
+                connection == null ||
+                !connection.isReady ||
+                connection.identity != null)
             {
-                enabled = false;
-                return;
-            }
-
-            NetworkManager.SceneManager.OnLoadEventCompleted +=
-                OnLoadEventCompleted;
-            NetworkManager.SceneManager.OnSynchronizeComplete +=
-                OnSynchronizeComplete;
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            if (NetworkManager != null)
-            {
-                NetworkManager.SceneManager.OnLoadEventCompleted -=
-                    OnLoadEventCompleted;
-                NetworkManager.SceneManager.OnSynchronizeComplete -=
-                    OnSynchronizeComplete;
-            }
-        }
-
-        void OnLoadEventCompleted(
-            string sceneName,
-            LoadSceneMode loadSceneMode,
-            List<ulong> clientsCompleted,
-            List<ulong> clientsTimedOut)
-        {
-            if (sceneName != gameObject.scene.name ||
-                loadSceneMode != LoadSceneMode.Single)
-            {
-                return;
-            }
-
-            foreach (var clientId in clientsCompleted)
-            {
-                SpawnPlayerAvatar(clientId);
-            }
-        }
-
-        void OnSynchronizeComplete(ulong clientId)
-        {
-            SpawnPlayerAvatar(clientId);
-        }
-
-        void SpawnPlayerAvatar(ulong clientId)
-        {
-            if (m_SpawnedClientIds.Contains(clientId) ||
-                !NetworkManager.ConnectedClients.ContainsKey(clientId))
-            {
-                return;
+                return false;
             }
 
             if (m_PlayerAvatarPrefab == null ||
+                m_PlayerSpawnPoints == null ||
                 m_PlayerSpawnPoints.Length == 0)
             {
                 Debug.LogError(
-                    $"{nameof(ServerRaidState)} requires a player avatar " +
-                    "prefab and at least one spawn point.",
+                    $"{nameof(ServerRaidState)} requires a " +
+                    "player avatar prefab and at least one " +
+                    "spawn point.",
                     this);
 
-                return;
+                return false;
             }
 
-            var spawnPoint =
+            Transform spawnPoint =
                 m_PlayerSpawnPoints[
-                    m_SpawnedClientIds.Count %
+                    m_NextSpawnPointIndex %
                     m_PlayerSpawnPoints.Length];
+
+            m_NextSpawnPointIndex++;
 
             var playerAvatar = Instantiate(
                 m_PlayerAvatarPrefab,
                 spawnPoint.position,
                 spawnPoint.rotation);
 
-            playerAvatar.SpawnWithOwnership(clientId, true);
-            m_SpawnedClientIds.Add(clientId);
+            if (!NetworkServer.AddPlayerForConnection(
+                    connection,
+                    playerAvatar.gameObject))
+            {
+                Destroy(playerAvatar.gameObject);
+
+                return false;
+            }
+
+            return true;
         }
     }
 }

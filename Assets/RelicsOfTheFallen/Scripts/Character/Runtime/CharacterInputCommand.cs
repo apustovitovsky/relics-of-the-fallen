@@ -1,4 +1,3 @@
-using Unity.Netcode;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Character
@@ -24,7 +23,7 @@ namespace RelicsOfTheFallen.Character
         All = WalkToggle | Jump | CrouchToggle
     }
 
-    public struct CharacterInputCommand : INetworkSerializable
+    public struct CharacterInputCommand
     {
         public uint Sequence;
         public Vector2 Move;
@@ -38,30 +37,10 @@ namespace RelicsOfTheFallen.Character
             return (HeldButtons & button) != 0;
         }
 
-        public bool IsPressed(CharacterInputPressedButtons button)
+        public bool IsPressed(
+            CharacterInputPressedButtons button)
         {
             return (PressedButtons & button) != 0;
-        }
-
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer)
-            where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref Sequence);
-            serializer.SerializeValue(ref Move);
-            serializer.SerializeValue(ref LookYaw);
-            serializer.SerializeValue(ref LookPitch);
-
-            byte heldButtons = (byte)HeldButtons;
-            serializer.SerializeValue(ref heldButtons);
-
-            byte pressedButtons = (byte)PressedButtons;
-            serializer.SerializeValue(ref pressedButtons);
-
-            if (serializer.IsReader)
-            {
-                HeldButtons = (CharacterInputHeldButtons)heldButtons;
-                PressedButtons = (CharacterInputPressedButtons)pressedButtons;
-            }
         }
     }
 }

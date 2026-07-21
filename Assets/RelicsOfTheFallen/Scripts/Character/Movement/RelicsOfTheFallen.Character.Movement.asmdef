@@ -3,7 +3,8 @@
     "rootNamespace": "RelicsOfTheFallen.Character.Movement",
     "references": [
         "RelicsOfTheFallen.Character",
-        "Unity.Netcode.Runtime"
+        "RelicsOfTheFallen.UserInput",
+        "Mirror"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

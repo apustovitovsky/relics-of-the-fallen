@@ -1,8 +1,7 @@
 using GameStateId = RelicsOfTheFallen.GameState.GameState;
+using Mirror;
 using RelicsOfTheFallen.ConnectionManagement;
-using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using VContainer;
 
@@ -50,9 +49,7 @@ namespace RelicsOfTheFallen.GameState.Composition
         {
             if (m_ConnectionManager.StartHost())
             {
-                m_NetworkManager.SceneManager.LoadScene(
-                    "Raid",
-                    LoadSceneMode.Single);
+                m_NetworkManager.ServerChangeScene("Raid");
             }
         }
 

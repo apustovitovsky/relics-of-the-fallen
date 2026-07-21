@@ -9,8 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7260478434399741425}
-  - component: {fileID: 4635120103884252889}
-  - component: {fileID: 7155673433953730455}
   m_Layer: 3
   m_Name: AvatarGraphics
   m_TagString: Untagged
@@ -34,42 +32,6 @@ Transform:
   - {fileID: 9203516100202221584}
   m_Father: {fileID: 3677458844434366617}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4635120103884252889
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 160202576757752543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aea97027333d7d64bae4336f6fb1d311, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ClientCharacter
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_ClientVisualsAnimator: {fileID: 2011592693146839204}
-  m_HostGraphicsSmoothingTime: 0.1
-  m_PredictionCorrectionSmoothingTime: 0.1
---- !u!114 &7155673433953730455
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 160202576757752543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f457d695d84f4db46be5602287a79ce4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Look::RelicsOfTheFallen.Character.Look.CharacterAimPresenter
-  m_ClientCharacter: {fileID: 4635120103884252889}
-  m_MaxYawOffset: 90
-  m_HeadYawMultiplier: 1
-  m_BodyYawMultiplier: 0.6
-  m_MinLookPitch: -0.1
-  m_MaxLookPitch: 1
-  m_BodyPitchMultiplier: 1
-  m_AimDampTime: 0.1
 --- !u!1 &2852317345503029682
 GameObject:
   m_ObjectHideFlags: 0
@@ -80,15 +42,13 @@ GameObject:
   m_Component:
   - component: {fileID: 3677458844434366617}
   - component: {fileID: 488070572988780736}
-  - component: {fileID: 1129847991267564940}
-  - component: {fileID: 2036630668422577615}
-  - component: {fileID: 1629530579702205739}
   - component: {fileID: 5654982762208430432}
-  - component: {fileID: 9171125177328360435}
-  - component: {fileID: 5151467596525535815}
   - component: {fileID: 6423850705544837297}
   - component: {fileID: 1642886813161725911}
-  - component: {fileID: 6162878235220185361}
+  - component: {fileID: 5105772167283530454}
+  - component: {fileID: 634930540390059913}
+  - component: {fileID: 1686502319967824922}
+  - component: {fileID: 6877060754754901105}
   m_Layer: 3
   m_Name: PlayerAvatar
   m_TagString: Untagged
@@ -138,93 +98,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0.9, z: 0}
---- !u!114 &1129847991267564940
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2415755007
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  <InScenePlaced>k__BackingField: 0
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
---- !u!114 &2036630668422577615
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkTransformExpanded: 0
-  AutoOwnerAuthorityTickOffset: 1
-  PositionInterpolationType: 0
-  RotationInterpolationType: 0
-  ScaleInterpolationType: 0
-  PositionLerpSmoothing: 1
-  PositionMaxInterpolationTime: 0.1
-  RotationLerpSmoothing: 1
-  RotationMaxInterpolationTime: 0.1
-  ScaleLerpSmoothing: 1
-  ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
-  TickSyncChildren: 0
-  UseUnreliableDeltas: 0
-  SyncPositionX: 1
-  SyncPositionY: 1
-  SyncPositionZ: 1
-  SyncRotAngleX: 1
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 1
-  SyncScaleX: 1
-  SyncScaleY: 1
-  SyncScaleZ: 1
-  PositionThreshold: 0.001
-  RotAngleThreshold: 0.01
-  ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
-  InLocalSpace: 0
-  SwitchTransformSpaceWhenParented: 0
-  Interpolate: 1
-  SlerpPosition: 0
---- !u!114 &1629530579702205739
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b424aff7aeda30f4595567e75228c550, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character::RelicsOfTheFallen.GameplayObjects.Character.ServerCharacter
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_InputTimeoutSeconds: 0.2
-  m_ClientCharacter: {fileID: 4635120103884252889}
 --- !u!114 &5654982762208430432
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -237,56 +110,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca581db02988124789a15d1797bd097, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character.Cinemachine::RelicsOfTheFallen.GameplayObjects.Character.Cinemachine.LocalPlayerCameraController
-  ShowTopMostFoldoutHeaderGroup: 1
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   m_CameraPivot: {fileID: 6169450114621488848}
---- !u!114 &9171125177328360435
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2018df87cf8704a44a9de307b44aa807, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.GameplayObjects.Character.Movement::RelicsOfTheFallen.GameplayObjects.Character.Movement.ServerCharacterMovement
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_ServerCharacter: {fileID: 1629530579702205739}
-  m_CharacterControllerMotor: {fileID: 1642886813161725911}
-  m_AlwaysStrafe: 1
-  m_WalkSpeed: 1.4
-  m_RunSpeed: 5
-  m_SprintSpeed: 7
-  m_SpeedChangeDamping: 10
-  m_JumpForce: 10
-  m_GravityMultiplier: 2
-  m_RotationSmoothing: 10
-  m_MovementStartSpeed: 0.05
-  m_TurnInPlaceThreshold: 5
-  m_TurnInPlaceSpeed: 120
---- !u!114 &5151467596525535815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6957d66c8fe3f414fb7581acc6464ec4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.UserInput::RelicsOfTheFallen.UserInput.ClientInputSender
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_ServerCharacter: {fileID: 1629530579702205739}
-  m_CameraPivot: {fileID: 6169450114621488848}
-  m_SentInputHistoryCapacity: 128
-  m_MoveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  m_WalkAction: {fileID: -4497677220184583906, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  m_AimAction: {fileID: -8822460519771437598, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  m_JumpAction: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  m_CrouchAction: {fileID: 7040659881675835329, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!114 &6423850705544837297
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299,7 +126,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4361e2f53b2f3bc4b9cf2fd4cd8097b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.Character.Look::RelicsOfTheFallen.Character.Look.CharacterLookController
-  ShowTopMostFoldoutHeaderGroup: 1
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   m_Pivot: {fileID: 6169450114621488848}
   m_Origin: {fileID: 3677458844434366617}
   m_TargetProxy: {fileID: 0}
@@ -334,27 +163,104 @@ MonoBehaviour:
   m_GroundProbeStartOffset: 0.02
   m_GroundProbeRadiusPadding: 0.05
   m_MaxGroundAngle: 60
---- !u!114 &6162878235220185361
+--- !u!114 &5105772167283530454
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2852317345503029682}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5905ec3a5f0caf24cafacf3d2761defe, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.CharacterPredictionDriver
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_ServerCharacter: {fileID: 1629530579702205739}
-  m_ServerCharacterMovement: {fileID: 9171125177328360435}
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 0
+  _assetId: 201000473
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &634930540390059913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a553cb17010b2403e8523b558bffbc14, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 1
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 3677458844434366617}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 0
+  coordinateSpace: 0
+  timelineOffset: 0
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  bufferResetMultiplier: 2
+  useFixedUpdate: 0
+  positionSensitivity: 0.01
+  rotationSensitivity: 0.01
+  scaleSensitivity: 0.01
+--- !u!114 &1686502319967824922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7ceca0f23b2f2a49b33d23bb732aeae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.UserInput::RelicsOfTheFallen.UserInput.LocalCharacterInput
+  m_CameraPivot: {fileID: 6169450114621488848}
+  m_MoveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_WalkAction: {fileID: -4497677220184583906, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_AimAction: {fileID: -8822460519771437598, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_JumpAction: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_CrouchAction: {fileID: 7040659881675835329, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+--- !u!114 &6877060754754901105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2852317345503029682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80b769207c205464da449857a04accf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.ClientAuthoritativeCharacterMovement
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  m_LocalCharacterInput: {fileID: 1686502319967824922}
   m_CharacterControllerMotor: {fileID: 1642886813161725911}
-  m_InputHistoryProvider: {fileID: 5151467596525535815}
-  m_PredictedFrameHistoryCapacity: 128
-  m_PositionCorrectionThreshold: 0.03
-  m_RotationCorrectionThreshold: 1
-  m_VelocityCorrectionThreshold: 0.01
+  m_AlwaysStrafe: 1
+  m_WalkSpeed: 1.4
+  m_RunSpeed: 5
+  m_SprintSpeed: 7
+  m_SpeedChangeDamping: 10
+  m_JumpForce: 10
+  m_GravityMultiplier: 2
+  m_RotationSmoothing: 10
+  m_MovementStartSpeed: 0.05
+  m_TurnInPlaceThreshold: 5
+  m_TurnInPlaceSpeed: 120
 --- !u!1 &4820389488702256883
 GameObject:
   m_ObjectHideFlags: 0
@@ -705,6 +611,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2912641971843204566, guid: 2e89a1389f399d247baab96c01cb3bdb, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1711475182984039360}
+    - targetCorrespondingSourceObject: {fileID: 2912641971843204566, guid: 2e89a1389f399d247baab96c01cb3bdb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 611183959490296412}
   m_SourcePrefab: {fileID: 100100000, guid: 2e89a1389f399d247baab96c01cb3bdb, type: 3}
 --- !u!1 &2011592693139461402 stripped
 GameObject:
@@ -723,7 +632,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73099fe6ebb01b24b84d8d9ff3601fae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.Character.Movement::RelicsOfTheFallen.Character.Movement.MovementController
-  m_ClientCharacter: {fileID: 4635120103884252889}
+  m_CharacterMovement: {fileID: 6877060754754901105}
   m_Animator: {fileID: 2011592693146839204}
   m_SpeedDampTime: 0.1
   m_ButtonHoldThreshold: 0.15
@@ -731,6 +640,27 @@ MonoBehaviour:
   m_StrafeDirectionDampTime: 0.2
   m_ForwardStrafeMinThreshold: -55
   m_ForwardStrafeMaxThreshold: 125
+--- !u!114 &611183959490296412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011592693139461402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f457d695d84f4db46be5602287a79ce4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character.Look::RelicsOfTheFallen.Character.Look.CharacterAimPresenter
+  m_LocomotionStateProviderComponent: {fileID: 5654982762208430432}
+  m_Animator: {fileID: 2011592693146839204}
+  m_MaxYawOffset: 90
+  m_HeadYawMultiplier: 1
+  m_BodyYawMultiplier: 0.6
+  m_MinLookPitch: -0.1
+  m_MaxLookPitch: 1
+  m_BodyPitchMultiplier: 1
+  m_AimDampTime: 0.1
 --- !u!95 &2011592693146839204 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 2912641971833747560, guid: 2e89a1389f399d247baab96c01cb3bdb, type: 3}

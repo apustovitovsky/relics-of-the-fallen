@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 84767717}
-  - component: {fileID: 84767716}
   - component: {fileID: 84767718}
   m_Layer: 0
   m_Name: ServerRaidState
@@ -137,32 +136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &84767716
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 84767715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 419309675
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  <InScenePlaced>k__BackingField: 0
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!4 &84767717
 Transform:
   m_ObjectHideFlags: 0
@@ -190,8 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ef5198f5b8f23e47938d3f14c04ab35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.GameState.Character::RelicsOfTheFallen.GameState.Character.ServerRaidState
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_PlayerAvatarPrefab: {fileID: 1129847991267564940, guid: 429be6dd9ec164a4f8d354fcfdad90d1, type: 3}
+  m_PlayerAvatarPrefab: {fileID: 5105772167283530454, guid: 429be6dd9ec164a4f8d354fcfdad90d1, type: 3}
   m_PlayerSpawnPoints:
   - {fileID: 413092671}
   - {fileID: 1306294396}
@@ -205,6 +177,7 @@ GameObject:
   m_Component:
   - component: {fileID: 372344264}
   - component: {fileID: 372344263}
+  - component: {fileID: 372344265}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -292,6 +265,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &372344265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 372344262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &413092670
 GameObject:
   m_ObjectHideFlags: 0

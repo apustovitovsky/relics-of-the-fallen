@@ -1,35 +1,32 @@
+using Mirror;
 using Unity.Cinemachine;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Character.Cinemachine
 {
-    public sealed class LocalPlayerCameraController : NetworkBehaviour
+    public sealed class LocalPlayerCameraController :
+        NetworkBehaviour
     {
         const string k_CinemachineCameraTag = "CMCamera";
 
         [SerializeField]
         Transform m_CameraPivot;
 
-        public override void OnNetworkSpawn()
+        public override void OnStartAuthority()
         {
-            if (!IsClient || !IsOwner)
-            {
-                enabled = false;
-                return;
-            }
-
             if (m_CameraPivot == null)
             {
                 Debug.LogError(
-                    $"{nameof(LocalPlayerCameraController)} requires a camera pivot.",
+                    $"{nameof(LocalPlayerCameraController)} requires " +
+                    "a camera pivot.",
                     this);
 
                 return;
             }
 
             var cameraGameObject =
-                GameObject.FindGameObjectWithTag(k_CinemachineCameraTag);
+                GameObject.FindGameObjectWithTag(
+                    k_CinemachineCameraTag);
 
             if (cameraGameObject == null)
             {
@@ -51,7 +48,8 @@ namespace RelicsOfTheFallen.Character.Cinemachine
                 return;
             }
 
-            if (!cameraGameObject.TryGetComponent<CinemachineThirdPersonFollow>(
+            if (!cameraGameObject.TryGetComponent<
+                    CinemachineThirdPersonFollow>(
                     out _))
             {
                 Debug.LogError(

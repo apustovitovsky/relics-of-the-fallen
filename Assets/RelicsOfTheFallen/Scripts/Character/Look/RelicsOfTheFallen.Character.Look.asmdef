@@ -3,8 +3,8 @@
     "rootNamespace": "RelicsOfTheFallen.Character.Look",
     "references": [
         "RelicsOfTheFallen.Character",
-        "Unity.InputSystem",
-        "Unity.Netcode.Runtime"
+        "Mirror",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

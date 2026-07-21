@@ -1,4 +1,4 @@
-using Unity.Netcode;
+using Mirror;
 using UnityEngine;
 using VContainer;
 
@@ -16,20 +16,48 @@ namespace RelicsOfTheFallen.ConnectionManagement
 
         public bool StartHost()
         {
-            return !m_NetworkManager.IsListening && m_NetworkManager.StartHost();
+            if (IsNetworkActive)
+            {
+                return false;
+            }
+
+            m_NetworkManager.StartHost();
+
+            return NetworkServer.active &&
+                   NetworkClient.active;
         }
 
         public bool StartClient()
         {
-            return !m_NetworkManager.IsListening && m_NetworkManager.StartClient();
+            if (IsNetworkActive)
+            {
+                return false;
+            }
+
+            m_NetworkManager.StartClient();
+
+            return NetworkClient.active;
         }
 
         public void Shutdown()
         {
-            if (m_NetworkManager.IsListening)
+            if (NetworkServer.active &&
+                NetworkClient.active)
             {
-                m_NetworkManager.Shutdown();
+                m_NetworkManager.StopHost();
+            }
+            else if (NetworkServer.active)
+            {
+                m_NetworkManager.StopServer();
+            }
+            else if (NetworkClient.active)
+            {
+                m_NetworkManager.StopClient();
             }
         }
+
+        bool IsNetworkActive =>
+            NetworkServer.active ||
+            NetworkClient.active;
     }
 }

@@ -1,14 +1,14 @@
-using Unity.Netcode;
+using Mirror;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Player
 {
-    [RequireComponent(typeof(NetworkObject))]
+    [RequireComponent(typeof(NetworkIdentity))]
     public sealed class PersistentPlayer : NetworkBehaviour
     {
-        public override void OnNetworkSpawn()
+        public override void OnStartClient()
         {
-            gameObject.name = $"PersistentPlayer-{OwnerClientId}";
+            gameObject.name = $"PersistentPlayer-{netId}";
         }
     }
 }

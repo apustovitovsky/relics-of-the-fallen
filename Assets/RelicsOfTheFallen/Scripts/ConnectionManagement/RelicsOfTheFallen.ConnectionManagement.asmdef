@@ -2,7 +2,7 @@
   "name": "RelicsOfTheFallen.ConnectionManagement",
   "rootNamespace": "RelicsOfTheFallen.ConnectionManagement",
   "references": [
-    "Unity.Netcode.Runtime",
+    "Mirror",
     "VContainer"
   ],
   "includePlatforms": [],

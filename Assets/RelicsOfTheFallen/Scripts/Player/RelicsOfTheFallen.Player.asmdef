@@ -2,7 +2,7 @@
     "name": "RelicsOfTheFallen.Player",
     "rootNamespace": "RelicsOfTheFallen.Player",
     "references": [
-        "Unity.Netcode.Runtime"
+        "Mirror"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -3,8 +3,8 @@
     "rootNamespace": "RelicsOfTheFallen.Character.Cinemachine",
     "references": [
         "RelicsOfTheFallen.Character",
-        "Unity.Cinemachine",
-        "Unity.Netcode.Runtime"
+        "Mirror",
+        "Unity.Cinemachine"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

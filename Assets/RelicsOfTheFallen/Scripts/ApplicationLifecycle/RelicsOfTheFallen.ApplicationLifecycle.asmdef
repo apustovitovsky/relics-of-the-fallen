@@ -3,7 +3,8 @@
   "rootNamespace": "RelicsOfTheFallen.ApplicationLifecycle",
   "references": [
     "RelicsOfTheFallen.ConnectionManagement",
-    "Unity.Netcode.Runtime",
+    "RelicsOfTheFallen.GameState.Character",
+    "Mirror",
     "VContainer"
   ],
   "includePlatforms": [],

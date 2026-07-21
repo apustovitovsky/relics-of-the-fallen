@@ -1,5 +1,4 @@
 using RelicsOfTheFallen.Character;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Character.Movement
@@ -64,43 +63,51 @@ namespace RelicsOfTheFallen.Character.Movement
             Animator.StringToHash("FallingDuration");
 
         [SerializeField]
-        private ClientCharacter m_ClientCharacter;
+        ClientAuthoritativeCharacterMovement
+            m_CharacterMovement;
 
         [SerializeField]
-        private Animator m_Animator;
+        Animator m_Animator;
 
         [SerializeField]
-        private float m_SpeedDampTime = 0.1f;
+        float m_SpeedDampTime = 0.1f;
 
         [SerializeField]
-        private float m_ButtonHoldThreshold = 0.15f;
+        float m_ButtonHoldThreshold = 0.15f;
 
         [SerializeField]
         [Min(0f)]
-        private float m_ActualMovementThreshold = 0.05f;
+        float m_ActualMovementThreshold = 0.05f;
 
         [SerializeField]
-        private float m_StrafeDirectionDampTime = 0.2f;
+        float m_StrafeDirectionDampTime = 0.2f;
 
         [SerializeField]
-        private float m_ForwardStrafeMinThreshold = -55f;
+        float m_ForwardStrafeMinThreshold = -55f;
 
         [SerializeField]
-        private float m_ForwardStrafeMaxThreshold = 125f;
+        float m_ForwardStrafeMaxThreshold = 125f;
 
-        private float m_StrafeDirectionX;
-        private float m_StrafeDirectionZ = 1f;
-        private float m_ForwardStrafe = 1f;
+        float m_StrafeDirectionX;
+        float m_StrafeDirectionZ = 1f;
+        float m_ForwardStrafe = 1f;
 
-        private ushort m_LastLocomotionStartSequence;
-        private bool m_HasLocomotionStartSequence;
+        ushort m_LastLocomotionStartSequence;
+        bool m_HasLocomotionStartSequence;
 
-        private void Awake()
+        bool m_HadMovementInput;
+        float m_MovementInputStartedTime;
+
+        bool m_WasGrounded = true;
+        float m_AirborneStartedTime;
+
+        void Awake()
         {
-            if (m_ClientCharacter == null)
+            if (m_CharacterMovement == null)
             {
-                m_ClientCharacter =
-                    GetComponentInParent<ClientCharacter>();
+                m_CharacterMovement =
+                    GetComponentInParent<
+                        ClientAuthoritativeCharacterMovement>();
             }
 
             if (m_Animator == null)
@@ -109,7 +116,7 @@ namespace RelicsOfTheFallen.Character.Movement
             }
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
             m_StrafeDirectionX = 0f;
             m_StrafeDirectionZ = 1f;
@@ -117,9 +124,15 @@ namespace RelicsOfTheFallen.Character.Movement
 
             m_LastLocomotionStartSequence = 0;
             m_HasLocomotionStartSequence = false;
+
+            m_HadMovementInput = false;
+            m_MovementInputStartedTime = Time.time;
+
+            m_WasGrounded = true;
+            m_AirborneStartedTime = Time.time;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
             if (m_Animator == null)
             {
@@ -135,6 +148,7 @@ namespace RelicsOfTheFallen.Character.Movement
             m_Animator.SetBool(s_IsStopped, true);
             m_Animator.SetBool(s_IsStarting, false);
             m_Animator.SetBool(s_IsGrounded, true);
+            m_Animator.SetBool(s_IsTurningInPlace, false);
 
             m_Animator.SetFloat(s_MoveSpeed, 0f);
             m_Animator.SetFloat(s_InclineAngle, 0f);
@@ -142,32 +156,47 @@ namespace RelicsOfTheFallen.Character.Movement
             m_Animator.SetFloat(s_StrafeDirectionZ, 1f);
             m_Animator.SetFloat(s_ForwardStrafe, 1f);
             m_Animator.SetFloat(s_IsStrafing, 0f);
-            m_Animator.SetFloat(s_CameraRotationOffset, 0f);
-            m_Animator.SetFloat(s_FallingDuration, 0f);
+            m_Animator.SetFloat(
+                s_CameraRotationOffset,
+                0f);
 
-            m_Animator.SetBool(s_IsTurningInPlace, false);
+            m_Animator.SetFloat(s_FallingDuration, 0f);
 
             m_Animator.SetInteger(
                 s_CurrentGait,
                 (int)CharacterGait.Idle);
         }
 
-        private void Update()
+        void Update()
         {
-            if (m_ClientCharacter == null ||
+            if (m_CharacterMovement == null ||
                 m_Animator == null)
             {
                 return;
             }
 
             CharacterLocomotionState state =
-                m_ClientCharacter.LocomotionState;
+                m_CharacterMovement.LocomotionState;
 
             Vector3 horizontalVelocity = state.Velocity;
             horizontalVelocity.y = 0f;
 
             bool hasMovementInput =
                 state.MoveInput.sqrMagnitude > 0.0001f;
+
+            if (hasMovementInput && !m_HadMovementInput)
+            {
+                m_MovementInputStartedTime = Time.time;
+            }
+
+            m_HadMovementInput = hasMovementInput;
+
+            if (!state.IsGrounded && m_WasGrounded)
+            {
+                m_AirborneStartedTime = Time.time;
+            }
+
+            m_WasGrounded = state.IsGrounded;
 
             bool isActuallyMoving =
                 horizontalVelocity.sqrMagnitude >
@@ -179,9 +208,7 @@ namespace RelicsOfTheFallen.Character.Movement
 
             float movementDuration =
                 hasMovementInput
-                    ? GetDurationSeconds(
-                        state.ServerTick,
-                        state.MovementStartedTick)
+                    ? Time.time - m_MovementInputStartedTime
                     : 0f;
 
             bool movementPressed =
@@ -274,12 +301,11 @@ namespace RelicsOfTheFallen.Character.Movement
                 s_FallingDuration,
                 state.IsGrounded
                     ? 0f
-                    : GetDurationSeconds(
-                        state.ServerTick,
-                        state.AirborneSinceTick));
+                    : Time.time -
+                      m_AirborneStartedTime);
         }
 
-        private bool HasLocomotionStarted(
+        bool HasLocomotionStarted(
             in CharacterLocomotionState state)
         {
             if (!m_HasLocomotionStartSequence)
@@ -303,22 +329,7 @@ namespace RelicsOfTheFallen.Character.Movement
             return true;
         }
 
-        private static float GetDurationSeconds(
-            uint currentTick,
-            uint startedTick)
-        {
-            if (currentTick < startedTick ||
-                NetworkManager.Singleton == null)
-            {
-                return 0f;
-            }
-
-            return (currentTick - startedTick) /
-                   (float)NetworkManager.Singleton
-                       .NetworkTickSystem.TickRate;
-        }
-
-        private void UpdateStrafeParameters(
+        void UpdateStrafeParameters(
             bool isStrafing,
             Vector3 localDirection)
         {

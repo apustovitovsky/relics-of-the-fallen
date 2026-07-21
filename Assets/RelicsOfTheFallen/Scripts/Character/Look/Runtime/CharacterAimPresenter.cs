@@ -4,9 +4,8 @@ using UnityEngine;
 namespace RelicsOfTheFallen.Character.Look
 {
     /// <summary>
-    /// Applies replicated gameplay aim to the currently selected
-    /// character visual. It never controls the local camera,
-    /// root Transform or network state.
+    /// Reads locomotion state and applies aim values to the Animator.
+    /// It never controls the local camera, root Transform, or network state.
     /// </summary>
     public sealed class CharacterAimPresenter : MonoBehaviour
     {
@@ -24,68 +23,62 @@ namespace RelicsOfTheFallen.Character.Look
 
         [Header("References")]
         [SerializeField]
-        private ClientCharacter m_ClientCharacter;
+        MonoBehaviour m_LocomotionStateProviderComponent;
+
+        [SerializeField]
+        Animator m_Animator;
 
         [Header("Horizontal Aim")]
         [SerializeField]
         [Min(1f)]
-        private float m_MaxYawOffset = 90f;
+        float m_MaxYawOffset = 90f;
 
         [SerializeField]
         [Range(0f, 1f)]
-        private float m_HeadYawMultiplier = 1f;
+        float m_HeadYawMultiplier = 1f;
 
         [SerializeField]
         [Range(0f, 1f)]
-        private float m_BodyYawMultiplier = 0.6f;
+        float m_BodyYawMultiplier = 0.6f;
 
         [Header("Vertical Aim")]
         [SerializeField]
-        private float m_MinLookPitch = -0.1f;
+        float m_MinLookPitch = -0.1f;
 
         [SerializeField]
-        private float m_MaxLookPitch = 1f;
+        float m_MaxLookPitch = 1f;
 
         [SerializeField]
         [Range(0f, 1f)]
-        private float m_BodyPitchMultiplier = 1f;
+        float m_BodyPitchMultiplier = 1f;
 
         [Header("Smoothing")]
         [SerializeField]
         [Min(0f)]
-        private float m_AimDampTime = 0.1f;
+        float m_AimDampTime = 0.1f;
 
-        private Animator m_Animator;
+        ICharacterLocomotionStateProvider
+            m_LocomotionStateProvider;
 
-        private void Awake()
+        void Awake()
         {
-            if (m_ClientCharacter == null)
-            {
-                m_ClientCharacter =
-                    GetComponent<ClientCharacter>();
-            }
-
-            if (m_ClientCharacter == null)
-            {
-                m_ClientCharacter =
-                    GetComponentInParent<ClientCharacter>();
-            }
+            TryResolveDependencies();
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
             ResetAnimatorParameters();
         }
 
-        private void Update()
+        void Update()
         {
-            if (!TryResolveAnimator())
+            if (!TryResolveDependencies())
             {
                 return;
             }
 
             CharacterLocomotionState locomotionState =
-                m_ClientCharacter.LocomotionState;
+                m_LocomotionStateProvider.LocomotionState;
 
             float aimYawOffset = Mathf.DeltaAngle(
                 locomotionState.FacingYaw,
@@ -127,22 +120,41 @@ namespace RelicsOfTheFallen.Character.Look
                 Time.deltaTime);
         }
 
-        private bool TryResolveAnimator()
+        bool TryResolveDependencies()
         {
-            if (m_ClientCharacter == null)
+            if (m_LocomotionStateProvider == null)
             {
-                return false;
+                if (m_LocomotionStateProviderComponent == null)
+                {
+                    foreach (MonoBehaviour component in
+                             GetComponentsInParent<
+                                 MonoBehaviour>(true))
+                    {
+                        if (component is
+                            ICharacterLocomotionStateProvider)
+                        {
+                            m_LocomotionStateProviderComponent =
+                                component;
+                            break;
+                        }
+                    }
+                }
+
+                m_LocomotionStateProvider =
+                    m_LocomotionStateProviderComponent as
+                    ICharacterLocomotionStateProvider;
             }
 
             if (m_Animator == null)
             {
-                m_Animator = m_ClientCharacter.OurAnimator;
+                m_Animator = GetComponent<Animator>();
             }
 
-            return m_Animator != null;
+            return m_LocomotionStateProvider != null &&
+                   m_Animator != null;
         }
 
-        private void ResetAnimatorParameters()
+        void ResetAnimatorParameters()
         {
             if (m_Animator == null)
             {

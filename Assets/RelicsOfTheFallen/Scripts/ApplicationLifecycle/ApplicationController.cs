@@ -1,6 +1,6 @@
 using System.Collections;
+using Mirror;
 using RelicsOfTheFallen.ConnectionManagement;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using VContainer;
@@ -16,7 +16,8 @@ namespace RelicsOfTheFallen.ApplicationLifecycle
         [SerializeField]
         NetworkManager m_NetworkManager;
 
-        protected override void Configure(IContainerBuilder builder)
+        protected override void Configure(
+            IContainerBuilder builder)
         {
             builder.RegisterComponent(m_ConnectionManager);
             builder.RegisterComponent(m_NetworkManager);
@@ -40,11 +41,13 @@ namespace RelicsOfTheFallen.ApplicationLifecycle
                     LoadSceneMode.Additive);
             }
 
-            var mainMenuScene = SceneManager.GetSceneByName("MainMenu");
+            var mainMenuScene = SceneManager.GetSceneByName(
+                "MainMenu");
 
             SceneManager.SetActiveScene(mainMenuScene);
 
-            yield return SceneManager.UnloadSceneAsync("Startup");
+            yield return SceneManager.UnloadSceneAsync(
+                "Startup");
         }
     }
 }

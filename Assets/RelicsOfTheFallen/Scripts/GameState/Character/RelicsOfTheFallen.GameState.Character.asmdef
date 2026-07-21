@@ -4,7 +4,7 @@
     "references": [
         "RelicsOfTheFallen.GameState",
         "RelicsOfTheFallen.Character",
-        "Unity.Netcode.Runtime"
+        "Mirror"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

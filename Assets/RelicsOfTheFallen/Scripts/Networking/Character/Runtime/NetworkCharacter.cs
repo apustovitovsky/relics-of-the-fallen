@@ -4,8 +4,7 @@ using UnityEngine;
 namespace RelicsOfTheFallen.Networking
 {
     [DisallowMultipleComponent]
-    public sealed class NetworkCharacter :
-        NetworkBehaviour
+    public sealed class NetworkCharacter : NetworkBehaviour
     {
         [Header("Authority Player")]
         [SerializeField]

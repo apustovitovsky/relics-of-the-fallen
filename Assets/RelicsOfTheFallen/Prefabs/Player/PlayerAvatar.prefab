@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6987677484611792888}
   m_Layer: 0
-  m_Name: VisualRoot
+  m_Name: AvatarVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 6535032475383854367}
   - component: {fileID: 3239911097881650596}
   - component: {fileID: 7113979559344975581}
+  - component: {fileID: 7063721524464621741}
   m_Layer: 0
   m_Name: PlayerAvatar
   m_TagString: Untagged
@@ -70,6 +71,7 @@ Transform:
   - {fileID: 4740002297967126889}
   - {fileID: 7422442874923932785}
   - {fileID: 9138750521872565874}
+  - {fileID: 4878354982249804906}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &4039841185800679539
@@ -168,6 +170,23 @@ MonoBehaviour:
   m_Movement: {fileID: 7908114937313309600}
   m_Look: {fileID: 5648753021602748324}
   m_Camera: {fileID: 6919562117276872329}
+--- !u!114 &7063721524464621741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905641886187181538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28fd794a264d36c4e94f4dcea1076f3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Networking.Character::RelicsOfTheFallen.Networking.NetworkAbilitySystemController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_LogAttributeSynchronization: 1
 --- !u!1 &1574558217860554032
 GameObject:
   m_ObjectHideFlags: 0
@@ -302,6 +321,65 @@ Transform:
   m_Children: []
   m_Father: {fileID: 9138750521872565874}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5661350738243022778
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4878354982249804906}
+  - component: {fileID: 5720873888179496438}
+  m_Layer: 0
+  m_Name: AbilitySystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4878354982249804906
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5661350738243022778}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1567290126784018872}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5720873888179496438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5661350738243022778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f2d066833d971344aa3d8e806fa6294, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GAS::GAS.AbilitySystemComponent
+  initialData: {fileID: 11400000, guid: 640a4be2651d9b742b07ef85c7c178a0, type: 2}
+  attributes: []
+  attributesProcessors: []
+  grantedGameplayAbilities: []
+  appliedGameplayEffects: []
+  tags: []
+  level: 1
+  instancedCues: []
+  logging: 0
+  invokeEventsGA: 1
+  invokeEventsGE: 1
+  inputBuffering: 1
+  references:
+    version: 2
+    RefIds: []
 --- !u!1 &6381687019198764681
 GameObject:
   m_ObjectHideFlags: 0

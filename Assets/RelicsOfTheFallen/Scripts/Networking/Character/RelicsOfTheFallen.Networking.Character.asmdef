@@ -1,7 +1,12 @@
 {
-    "name": "RelicsOfTheFallen.Player",
-    "rootNamespace": "RelicsOfTheFallen.Player",
-    "references": [],
+    "name": "RelicsOfTheFallen.Networking.Character",
+    "rootNamespace": "RelicsOfTheFallen.Networking.Character",
+    "references": [
+        "Mirror",
+        "GAS",
+        "RelicsOfTheFallen.Networking",
+        "RelicsOfTheFallen.Character"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

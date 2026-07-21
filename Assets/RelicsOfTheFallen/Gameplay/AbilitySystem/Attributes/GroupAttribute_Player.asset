@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 047fb036e724b844691da8df2995c25b, type: 3}
+  m_Name: GroupAttribute_Player
+  m_EditorClassIdentifier: GAS::GAS.GroupAttribute
+  group:
+  - name: 'Attribute.Health: 100'
+    attributeName: {fileID: 11400000, guid: 6bf7c58b9b397ae4988f5c0f36fd6bb1, type: 2}
+    baseValue: 100
+  - name: 'Attribute.HealthMax: 100'
+    attributeName: {fileID: 11400000, guid: 61ebaddd3e4a15640be46831695ecfb3, type: 2}
+    baseValue: 100
+  - name: 'Attribute.Speed: 5'
+    attributeName: {fileID: 11400000, guid: 67bca21e884e5ba43be5f84fdbb20a32, type: 2}
+    baseValue: 5

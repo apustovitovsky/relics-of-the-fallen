@@ -6,7 +6,9 @@
   <Project Path="Mirror.Editor.csproj" />
   <Project Path="Mirror.Examples.csproj" />
   <Project Path="kcp2k.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="GAS.csproj" />
+  <Project Path="RelicsOfTheFallen.Networking.csproj" />
   <Project Path="Mirror.csproj" />
   <Project Path="SimpleWebTransport.csproj" />
   <Project Path="Mirror.Authenticators.csproj" />

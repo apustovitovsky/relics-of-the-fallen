@@ -2,8 +2,7 @@
     "name": "RelicsOfTheFallen.Character.Movement",
     "rootNamespace": "RelicsOfTheFallen.Character.Movement",
     "references": [
-        "RelicsOfTheFallen.Character",
-        "Mirror"
+        "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

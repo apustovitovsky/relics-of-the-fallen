@@ -2,7 +2,6 @@
     "name": "RelicsOfTheFallen.Character.Look",
     "rootNamespace": "RelicsOfTheFallen.Character.Look",
     "references": [
-        "Mirror",
         "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],

@@ -1,9 +1,9 @@
 {
-    "name": "RelicsOfTheFallen.Character.Cinemachine",
-    "rootNamespace": "RelicsOfTheFallen.Character.Cinemachine",
+    "name": "RelicsOfTheFallen.Character.Input",
+    "rootNamespace": "RelicsOfTheFallen.Character.Input",
     "references": [
-        "RelicsOfTheFallen.Character",
-        "Unity.Cinemachine"
+        "Unity.InputSystem",
+        "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

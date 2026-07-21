@@ -1,26 +1,29 @@
-using Mirror;
 using Unity.Cinemachine;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Character.Cinemachine
 {
+    [DisallowMultipleComponent]
     public sealed class LocalPlayerCameraController :
-        NetworkBehaviour
+        MonoBehaviour
     {
         const string k_CinemachineCameraTag = "CMCamera";
 
         [SerializeField]
         Transform m_CameraPivot;
 
-        public override void OnStartAuthority()
+        CinemachineCamera m_CinemachineCamera;
+
+        void Start()
         {
             if (m_CameraPivot == null)
             {
                 Debug.LogError(
-                    $"{nameof(LocalPlayerCameraController)} requires " +
-                    "a camera pivot.",
+                    $"{nameof(LocalPlayerCameraController)} on '{name}' " +
+                    "requires a camera pivot.",
                     this);
 
+                enabled = false;
                 return;
             }
 
@@ -28,23 +31,16 @@ namespace RelicsOfTheFallen.Character.Cinemachine
                 GameObject.FindGameObjectWithTag(
                     k_CinemachineCameraTag);
 
-            if (cameraGameObject == null)
+            if (cameraGameObject == null ||
+                !cameraGameObject.TryGetComponent(
+                    out m_CinemachineCamera))
             {
                 Debug.LogError(
-                    "The Raid scene requires a Cinemachine Camera tagged " +
+                    "The scene requires a Cinemachine Camera tagged " +
                     $"'{k_CinemachineCameraTag}'.",
                     this);
 
-                return;
-            }
-
-            if (!cameraGameObject.TryGetComponent(
-                    out CinemachineCamera cinemachineCamera))
-            {
-                Debug.LogError(
-                    "The tagged camera object requires a Cinemachine Camera.",
-                    cameraGameObject);
-
+                enabled = false;
                 return;
             }
 
@@ -53,14 +49,25 @@ namespace RelicsOfTheFallen.Character.Cinemachine
                     out _))
             {
                 Debug.LogError(
-                    "The Cinemachine Camera requires Third Person Follow.",
+                    "The Cinemachine Camera requires " +
+                    $"{nameof(CinemachineThirdPersonFollow)}.",
                     cameraGameObject);
 
+                enabled = false;
                 return;
             }
 
-            cinemachineCamera.Follow = m_CameraPivot;
-            cinemachineCamera.LookAt = null;
+            m_CinemachineCamera.Follow = m_CameraPivot;
+            m_CinemachineCamera.LookAt = null;
+        }
+
+        void OnDisable()
+        {
+            if (m_CinemachineCamera != null &&
+                m_CinemachineCamera.Follow == m_CameraPivot)
+            {
+                m_CinemachineCamera.Follow = null;
+            }
         }
     }
 }

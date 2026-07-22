@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: GAS::GAS.GroupASC
   attributes: {fileID: 11400000, guid: 4b223b942c601ef46aa74588a8349d10, type: 2}
   attributeProcessors: {fileID: 0}
-  abilities: {fileID: 0}
+  abilities: {fileID: 11400000, guid: a03c249e87867154297dc5a71ebacf51, type: 2}

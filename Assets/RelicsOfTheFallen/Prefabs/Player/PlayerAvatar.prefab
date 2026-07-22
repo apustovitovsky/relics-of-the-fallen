@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 397951867511718794}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.8, z: 0}
+  m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -185,8 +185,14 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  m_AbilitySystem: {fileID: 5720873888179496438}
-  m_LogAttributeSynchronization: 1
+  predictGameplayAbilityActivations: 1
+  asc: {fileID: 5720873888179496438}
+  ascmDictionaryRef:
+    list: []
+    keyCollision: 0
+  localAttributesBuffer:
+    list: []
+    keyCollision: 0
 --- !u!1 &1574558217860554032
 GameObject:
   m_ObjectHideFlags: 0
@@ -234,8 +240,8 @@ MonoBehaviour:
   m_InputSourceComponent: {fileID: 6058243792797642424}
   m_LookSourceComponent: {fileID: 5648753021602748324}
   m_CharacterController: {fileID: 4039841185800679539}
-  m_RunSpeed: 2.5
-  m_SprintSpeed: 5
+  m_RunSpeed: 5
+  m_SprintSpeed: 10
   m_Acceleration: 15
   m_RotationSpeed: 720
   m_Gravity: -25
@@ -331,6 +337,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4878354982249804906}
   - component: {fileID: 5720873888179496438}
+  - component: {fileID: 6192964600843311394}
   m_Layer: 0
   m_Name: AbilitySystem
   m_TagString: Untagged
@@ -380,6 +387,20 @@ MonoBehaviour:
   references:
     version: 2
     RefIds: []
+--- !u!114 &6192964600843311394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5661350738243022778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b22ce11277164b4caec2446c56adb51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.AbilitySystem::RelicsOfTheFallen.AbilitySystem.AbilityAnimationPresenter
+  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_Animator: {fileID: 1414234138643742697}
 --- !u!1 &6381687019198764681
 GameObject:
   m_ObjectHideFlags: 0
@@ -436,6 +457,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8923663413595500935}
   - component: {fileID: 6058243792797642424}
+  - component: {fileID: 8671460832249107127}
   m_Layer: 0
   m_Name: Input
   m_TagString: Untagged
@@ -475,6 +497,23 @@ MonoBehaviour:
   m_SprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_AimAction: {fileID: -8822460519771437598, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_JumpAction: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_AttackAction: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+--- !u!114 &8671460832249107127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9084941172884424109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5223fa763af736f4b86b58ee95caadfb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Player::RelicsOfTheFallen.Player.LocalAbilityInput
+  m_CharacterInput: {fileID: 6058243792797642424}
+  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_AttackAbility: {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
+  m_LogDebugEvents: 1
 --- !u!1001 &2440872948756546113
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -487,6 +526,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerVisual
       objectReference: {fileID: 0}
+    - target: {fileID: 5486424813889430557, guid: 9286223cca005554a938e950863aac13, type: 3}
+      propertyPath: m_AbilitySystem
+      value: 
+      objectReference: {fileID: 5720873888179496438}
+    - target: {fileID: 5486424813889430557, guid: 9286223cca005554a938e950863aac13, type: 3}
+      propertyPath: m_AnimationPresenter
+      value: 
+      objectReference: {fileID: 6192964600843311394}
     - target: {fileID: 5812575584469228466, guid: 9286223cca005554a938e950863aac13, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -532,6 +579,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9286223cca005554a938e950863aac13, type: 3}
+--- !u!95 &1414234138643742697 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 3638881524296301992, guid: 9286223cca005554a938e950863aac13, type: 3}
+  m_PrefabInstance: {fileID: 2440872948756546113}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8175673456295877107 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5812575584469228466, guid: 9286223cca005554a938e950863aac13, type: 3}

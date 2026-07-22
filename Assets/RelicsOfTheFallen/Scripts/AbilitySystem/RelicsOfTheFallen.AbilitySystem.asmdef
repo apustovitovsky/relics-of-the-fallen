@@ -1,9 +1,8 @@
 {
-    "name": "RelicsOfTheFallen.Player",
-    "rootNamespace": "RelicsOfTheFallen.Player",
+    "name": "RelicsOfTheFallen.AbilitySystem",
+    "rootNamespace": "RelicsOfTheFallen.AbilitySystem",
     "references": [
-        "GAS",
-        "RelicsOfTheFallen.Character.Input"
+        "GAS"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

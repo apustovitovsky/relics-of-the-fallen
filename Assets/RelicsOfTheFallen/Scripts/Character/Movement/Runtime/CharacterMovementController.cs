@@ -18,10 +18,10 @@ namespace RelicsOfTheFallen.Character.Movement
 
         [Header("Movement")]
         [SerializeField, Min(0f)]
-        float m_RunSpeed = 2.5f;
+        float m_RunSpeed = 5f;
 
         [SerializeField, Min(0f)]
-        float m_SprintSpeed = 5f;
+        float m_SprintSpeed = 10f;
 
         [SerializeField, Min(0f)]
         float m_Acceleration = 15f;

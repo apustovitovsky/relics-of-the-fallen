@@ -99,6 +99,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5812575584469228466}
+  - component: {fileID: 3638881524296301992}
+  - component: {fileID: 5486424813889430557}
   m_Layer: 0
   m_Name: PlayerVisual
   m_TagString: Untagged
@@ -122,3 +124,39 @@ Transform:
   - {fileID: 3913004320282085662}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &3638881524296301992
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5091300048166180487}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8a9eb8e20c0283d4a933b940fba5d007, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5486424813889430557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5091300048166180487}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04eafff51c00f7444abf28e78606c541, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.AbilitySystem::RelicsOfTheFallen.AbilitySystem.AbilityAnimationEventRelay
+  m_AbilitySystem: {fileID: 0}
+  m_AnimationPresenter: {fileID: 0}

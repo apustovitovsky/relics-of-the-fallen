@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af6efaf7ac0cdd3478d2a2cf9a7378f3, type: 3}
+  m_Name: GA_AttackSelf
+  m_EditorClassIdentifier: RelicsOfTheFallen.AbilitySystem::RelicsOfTheFallen.AbilitySystem.GameplayAbilitySO_NotifyAbility
+  ga:
+    rid: 1610866384591650904
+  references:
+    version: 2
+    RefIds:
+    - rid: 1610866384591650904
+      type: {class: NotifyGameplayAbility, ns: RelicsOfTheFallen.AbilitySystem, asm: RelicsOfTheFallen.AbilitySystem}
+      data:
+        name: NotifyAbility
+        cooldown:
+          name: 
+          description: 
+          durationType: 0
+          durationValue: 0
+          period: 0
+          periodicExpired: 0
+          modifiers: []
+          source: {fileID: 0}
+          target: {fileID: 0}
+          gameplayEffectTags:
+            GrantedTags: []
+            DescriptionTags: []
+            OngoingTagRequirementsRequired: []
+            OngoingTagRequirementsForbidden: []
+            ApplicationTagRequirementsRequired: []
+            ApplicationTagRequirementsForbidden: []
+            RemoveGameplayEffectsWithTag: []
+            initialized: 0
+            string_GrantedTags: []
+            string_DescriptionTags: []
+            string_OngoingTagRequirementsRequired: []
+            string_OngoingTagRequirementsForbidden: []
+            string_ApplicationTagRequirementsRequired: []
+            string_ApplicationTagRequirementsForbidden: []
+            string_RemovalTagRequirementsRequired: []
+            string_RemovalTagRequirementsForbidden: []
+            string_RemoveGameplayEffectsWithTag: []
+            string_CueTags: []
+          cuesTags: []
+          level: 1
+          chanceToApply: 1
+          guid: 
+          applicationGUID: 
+        cost:
+          name: 
+          description: 
+          durationType: 0
+          durationValue: 0
+          period: 0
+          periodicExpired: 0
+          modifiers: []
+          source: {fileID: 0}
+          target: {fileID: 0}
+          gameplayEffectTags:
+            GrantedTags: []
+            DescriptionTags: []
+            OngoingTagRequirementsRequired: []
+            OngoingTagRequirementsForbidden: []
+            ApplicationTagRequirementsRequired: []
+            ApplicationTagRequirementsForbidden: []
+            RemoveGameplayEffectsWithTag: []
+            initialized: 0
+            string_GrantedTags: []
+            string_DescriptionTags: []
+            string_OngoingTagRequirementsRequired: []
+            string_OngoingTagRequirementsForbidden: []
+            string_ApplicationTagRequirementsRequired: []
+            string_ApplicationTagRequirementsForbidden: []
+            string_RemovalTagRequirementsRequired: []
+            string_RemovalTagRequirementsForbidden: []
+            string_RemoveGameplayEffectsWithTag: []
+            string_CueTags: []
+          cuesTags: []
+          level: 1
+          chanceToApply: 1
+          guid: 
+          applicationGUID: 
+        effects: []
+        effectsSO:
+        - {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
+        abilityTags:
+          rid: 1610866384591650905
+        source: {fileID: 0}
+        target: {fileID: 0}
+        owner: {fileID: 0}
+        cuesTags: []
+        guid: 
+        className: 
+        level: 1
+        isActive: 0
+        activationGUID: 
+        m_AnimationTrigger: Attack
+        m_ImpactEventTag: {fileID: 11400000, guid: 6edbe15574bc5a34fb573bda245bdbdc, type: 2}
+        m_EndEventTag: {fileID: 11400000, guid: 67f06a42d096e80449bd6f884cbae1f0, type: 2}
+        m_ImpactEventTagName: 
+        m_EndEventTagName: 
+    - rid: 1610866384591650905
+      type: {class: AbilityTags, ns: GAS, asm: GAS}
+      data:
+        ActivationOwnedTags: []
+        DescriptionTags: []
+        CancelAbilitiesWithTags: []
+        BlockAbilitiesWithTags: []
+        SourceTagsRequired: []
+        SourceTagsForbidden: []
+        TargetTagsRequired: []
+        TargetTagsForbidden: []
+        initialized: 0
+        stringActivationOwnedTags: []
+        stringDescriptionTags: []
+        stringCancelAbilitiesWithTags: []
+        stringBlockAbilitiesWithTags: []
+        stringSourceTagsRequired: []
+        stringSourceTagsForbidden: []
+        stringTargetTagsRequired: []
+        stringTargetTagsForbidden: []
+        string_CueTags: []

@@ -5,243 +5,42 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace GAS
-{
+namespace GAS {
+    public static class GameplayCueManager {
+        public static void Register(AbilitySystemComponent asc) {
+            asc.OnGameplayEffectApplied += (ge) => { if (ge.cuesTags?.Count > 0) OnApplyCue(ge.cuesTags, asc, ge.durationType == GameplayEffectDurationType.Instant, null, ge); };
+            asc.OnGameplayEffectRemoved += (ge) => { if (ge.cuesTags?.Count > 0) OnRemoveCue(ge.cuesTags, asc, null, ge); };
 
-    public static class GameplayCueManager
-    {
-        public static void RegisterAbilityEventBridge(
-            AbilitySystemComponent target)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
-            target.OnGameplayAbilityActivated +=
-                (ability, activationId) =>
-                    ApplyAbilityCue(
-                        target,
-                        ability);
-
-            target.OnGameplayAbilityDeactivated +=
-                (ability, activationId) =>
-                    RemoveAbilityCue(
-                        target,
-                        ability);
+            asc.OnGameplayAbilityActivated += (ga, activationGUID) => { if (ga.cuesTags?.Count > 0) OnApplyCue(ga.cuesTags, asc, !ga.isActive, ga, null); };
+            asc.OnGameplayAbilityDeactivated += (ga, activationGUID) => { if (ga.cuesTags?.Count > 0) OnRemoveCue(ga.cuesTags, asc, ga, null); };
         }
 
-        public static void ApplyEffectCue(
-            AbilitySystemComponent target,
-            GameplayEffect runtimeEffect)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
-            if (runtimeEffect == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(runtimeEffect));
-            }
-
-            if (!HasCueTags(runtimeEffect.cuesTags))
-                return;
-
-            ApplyCues(
-                runtimeEffect.cuesTags,
-                target,
-                instantDestroy:
-                    runtimeEffect.durationType ==
-                    GameplayEffectDurationType.Instant,
-                gameplayAbility: null,
-                gameplayEffect: runtimeEffect);
-        }
-
-        public static void RemoveEffectCue(
-            AbilitySystemComponent target,
-            GameplayEffect runtimeEffect)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
-            if (runtimeEffect == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(runtimeEffect));
-            }
-
-            if (!HasCueTags(runtimeEffect.cuesTags))
-                return;
-
-            RemoveCues(
-                runtimeEffect.cuesTags,
-                target,
-                gameplayAbility: null,
-                gameplayEffect: runtimeEffect);
-        }
-
-        public static void ApplyAbilityCue(
-            AbilitySystemComponent target,
-            GameplayAbility gameplayAbility)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
-            if (gameplayAbility == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(gameplayAbility));
-            }
-
-            if (!HasCueTags(gameplayAbility.cuesTags))
-                return;
-
-            ApplyCues(
-                gameplayAbility.cuesTags,
-                target,
-                instantDestroy:
-                    !gameplayAbility.isActive,
-                gameplayAbility,
-                gameplayEffect: null);
-        }
-
-        public static void RemoveAbilityCue(
-            AbilitySystemComponent target,
-            GameplayAbility gameplayAbility)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
-            if (gameplayAbility == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(gameplayAbility));
-            }
-
-            if (!HasCueTags(gameplayAbility.cuesTags))
-                return;
-
-            RemoveCues(
-                gameplayAbility.cuesTags,
-                target,
-                gameplayAbility,
-                gameplayEffect: null);
-        }
-
-        private static void ApplyCues(
-            IReadOnlyList<GameplayTag> cueTags,
-            AbilitySystemComponent target,
-            bool instantDestroy,
-            GameplayAbility gameplayAbility,
-            GameplayEffect gameplayEffect)
-        {
-            foreach (GameplayTag cueTag in cueTags)
-            {
-                List<GameplayCue> cues =
-                    CuesLibrary.Instance.CreateCues(
-                        cueTag);
-
-                foreach (GameplayCue cue in cues)
-                {
-                    if (cue == null)
-                        continue;
-
-                    cue.AddCue(
-                        target,
-                        instantDestroy,
-                        new GameplayCueApplicationData(
-                            gameplayAbility,
-                            gameplayEffect,
-                            target,
-                            null));
+        static void OnApplyCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, bool instantDestroy, GameplayAbility ga, GameplayEffect ge) {
+            foreach (GameplayTag cueTag in cueTags) {
+                List<GameplayCue> instancedCues = CuesLibrary.Instance.CreateCues(cueTag);
+                foreach (var instancedCue in instancedCues) {
+                    if (instancedCue == null) return;
+                    instancedCue.AddCue(asc, instantDestroy, new GameplayCueApplicationData(ga, ge, asc, null));
                 }
             }
         }
 
-        private static void RemoveCues(
-            IReadOnlyList<GameplayTag> cueTags,
-            AbilitySystemComponent target,
-            GameplayAbility gameplayAbility,
-            GameplayEffect gameplayEffect)
-        {
-            for (int index =
-                     target.instancedCues.Count - 1;
-                 index >= 0;
-                 index--)
-            {
-                GameplayCue cue =
-                    target.instancedCues[index];
-
-                if (cue == null ||
-                    cue.applicationData == null)
-                {
-                    continue;
+        static void OnRemoveCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, GameplayAbility ga, GameplayEffect ge) {
+            for (int i = 0; i < asc.instancedCues.Count; i++) {
+                if (cueTags.Contains(asc.instancedCues[i].tag) && asc.instancedCues[i].applicationData.IsOrigin(ga, ge)) {
+                    asc.instancedCues[i].RemoveCue(asc);
                 }
-
-                if (!ContainsTag(
-                        cueTags,
-                        cue.tag))
-                {
-                    continue;
-                }
-
-                if (!cue.applicationData.IsOrigin(
-                        gameplayAbility,
-                        gameplayEffect))
-                {
-                    continue;
-                }
-
-                cue.RemoveCue(target);
             }
-        }
-
-        private static bool HasCueTags(
-            IReadOnlyCollection<GameplayTag> cueTags)
-        {
-            return cueTags != null &&
-                   cueTags.Count > 0;
-        }
-
-        private static bool ContainsTag(
-            IReadOnlyList<GameplayTag> cueTags,
-            GameplayTag tag)
-        {
-            for (int index = 0;
-                 index < cueTags.Count;
-                 index++)
-            {
-                if (cueTags[index] == tag)
-                    return true;
-            }
-
-            return false;
         }
     }
 
-
-    public class GameplayCueApplicationData
-    {
+    public class GameplayCueApplicationData {
         public GameplayAbility ga;
         public GameplayEffect ge;
         public AbilitySystemComponent src, tgt;
         public string originName;
 
-        public GameplayCueApplicationData(GameplayAbility ga, GameplayEffect ge, AbilitySystemComponent src, AbilitySystemComponent tgt)
-        {
+        public GameplayCueApplicationData(GameplayAbility ga, GameplayEffect ge, AbilitySystemComponent src, AbilitySystemComponent tgt) {
             this.ga = ga;
             this.ge = ge;
             this.src = src;
@@ -249,8 +48,7 @@ namespace GAS
             originName = ga == null ? ge.name : ga.name;
         }
 
-        public bool IsOrigin(GameplayAbility gaToCheck, GameplayEffect geToCheck)
-        {
+        public bool IsOrigin(GameplayAbility gaToCheck, GameplayEffect geToCheck) {
             if (gaToCheck == ga) return true;
             if (geToCheck == ge) return true;
             return false;
@@ -258,8 +56,7 @@ namespace GAS
     }
 
     [System.Serializable]
-    public class GameplayCue
-    {
+    public class GameplayCue {
         public GameObject prefab; //Can be a looping SFX or VFX
         public GameObject instance; //instantiated cue go
         public GameplayTag tag;
@@ -267,19 +64,16 @@ namespace GAS
 
         public GameplayCueApplicationData applicationData;
 
-        public virtual void AddCue(AbilitySystemComponent asc, bool instantDestroy, GameplayCueApplicationData appData)
-        {
+        public virtual void AddCue(AbilitySystemComponent asc, bool instantDestroy, GameplayCueApplicationData appData) {
             if (prefab == null) { Debug.Log($"AddCue with NULL prefab"); return; }
             applicationData = appData;
             PlaceCue(asc);
-            if (instantDestroy)
-            {
+            if (instantDestroy) {
                 RemoveCue(asc);
             }
         }
 
-        public virtual async void RemoveCue(AbilitySystemComponent asc)
-        {
+        public virtual async void RemoveCue(AbilitySystemComponent asc) {
             // Debug.Log($"RemoveCue - cue tag: {tag.name}");
             if (instance != null) instance.SendMessage("OnDestroySoon", SendMessageOptions.DontRequireReceiver);
             await Task.Delay(3_000);
@@ -290,8 +84,7 @@ namespace GAS
             GameObject.Destroy(instance);
         }
 
-        public void PlaceCue(AbilitySystemComponent asc)
-        {
+        public void PlaceCue(AbilitySystemComponent asc) {
             instance = GameObject.Instantiate(prefab);
             instance.name = "cueInstance_" + prefab.name;
             // Debug.Log($"PlaceCue: place {spawnPlace} src {src} target {target} ");

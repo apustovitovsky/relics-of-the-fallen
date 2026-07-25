@@ -24,79 +24,34 @@ namespace GAS {
         public float partialValue;
 
         //Only for stats attributes e.g. MaxHealth, MaxMana, MaxSpeed
-        public void ApplyModifiers(
-            GameplayEffect gameplayEffect,
-            bool notifyEvents)
-        {
-            oldValue =
-                currentValue;
+        public void ApplyModifiers(GameplayEffect ge) {
+            oldValue = currentValue;
 
-            partialValue =
-                baseValue +
-                modification.value;
+            partialValue = baseValue + modification.value;
 
-            if (notifyEvents &&
-                oldValue != partialValue)
-            {
-                OnPreAttributeChange?.Invoke(
-                    this,
-                    gameplayEffect);
-            }
 
-            currentValue =
-                partialValue;
+            if (oldValue != partialValue) OnPreAttributeChange?.Invoke(this, ge);
+            currentValue = partialValue;
 
-            if (notifyEvents &&
-                oldValue != currentValue &&
-                attributeName.attributeType ==
-                AttributeType.STAT)
-            {
-                OnPostAttributeChange?.Invoke(
-                    attributeName,
-                    oldValue,
-                    currentValue,
-                    gameplayEffect);
+            if (oldValue != currentValue && attributeName.attributeType == AttributeType.STAT) {
+                OnPostAttributeChange?.Invoke(attributeName, oldValue, currentValue, ge);
             }
         }
 
         //Only for resource attributes e.g. HealthPoints, ManaPoints, Ammo, Coins
-        /// <summary>
-        /// Applies an instant modifier to a resource attribute and optionally notifies its listeners.
-        /// </summary>
-        public void ApplyModifierAsResource(
-            Modifier modifier,
-            GameplayEffect gameplayEffect,
-            bool notifyEvents = true)
-        {
-            oldValue =
-                baseValue;
+        public void ApplyModifierAsResource(Modifier modifier, GameplayEffect ge) {
+            oldValue = baseValue;
 
-            partialValue =
-                baseValue +
-                modifier.GetValue(
-                    gameplayEffect);
+            partialValue = baseValue;
 
-            if (notifyEvents &&
-                oldValue != partialValue)
-            {
-                OnPreAttributeChange?.Invoke(
-                    this,
-                    gameplayEffect);
-            }
+            partialValue += modifier.GetValue(ge);
 
-            baseValue =
-                partialValue;
 
-            if (notifyEvents &&
-                oldValue != baseValue &&
-                attributeName.attributeType ==
-                AttributeType.RESOURCE)
-            {
-                OnPostAttributeChange?.Invoke(
-                    attributeName,
-                    oldValue,
-                    baseValue,
-                    gameplayEffect);
+            if (oldValue != partialValue) OnPreAttributeChange?.Invoke(this, ge);
+            baseValue = partialValue;
+
+            if (oldValue != baseValue && attributeName.attributeType == AttributeType.RESOURCE) {
+                OnPostAttributeChange?.Invoke(attributeName, oldValue, baseValue, ge);
             }
         }
 

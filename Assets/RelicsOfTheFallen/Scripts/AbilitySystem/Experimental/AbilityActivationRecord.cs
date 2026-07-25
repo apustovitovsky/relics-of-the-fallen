@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using GAS;
 
@@ -13,6 +14,23 @@ namespace RelicsOfTheFallen.AbilitySystem
         Completed
     }
 
+    public sealed class PredictedEffectRecord
+    {
+        public string Key { get; }
+        public GameplayEffect LocalEffect { get; }
+        public AbilitySystemComponent Target { get; }
+
+        public PredictedEffectRecord(
+            string key,
+            GameplayEffect localEffect,
+            AbilitySystemComponent target)
+        {
+            Key = key;
+            LocalEffect = localEffect;
+            Target = target;
+        }
+    }
+
     public sealed class AbilityActivationRecord
     {
         public string Id { get; }
@@ -21,6 +39,7 @@ namespace RelicsOfTheFallen.AbilitySystem
         public AbilitySystemComponent Target { get; }
 
         public AbilityActivationState State { get; internal set; }
+        public DateTime CreatedAtUtc { get; } = DateTime.UtcNow;
 
         public List<PredictedEffectRecord> Effects { get; } = new();
 

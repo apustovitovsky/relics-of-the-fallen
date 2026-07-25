@@ -5,22 +5,19 @@ using System;
 using System.Linq;
 using EasyButtons;
 
-namespace GAS
-{
+namespace GAS {
     [Serializable]
-    public enum GameplayEffectDurationType
-    {
+    public enum GameplayEffectDurationType {
         Instant,
         Infinite,
         Duration,
     }
 
     /// <summary> <para>
-    /// Effects define how attributes are modified, and the duration of these modifications.
-    /// </para> </summary>
+    /// Effects define how attributes are modified, and the duration of these modifications. 
+    /// </para> </summary> 
     [Serializable]
-    public class GameplayEffect
-    {
+    public class GameplayEffect {
         public string name;
         public string description;
         // public Modifier durationModifier; //what is this for on unreal gas??? modifier magnitude???
@@ -40,15 +37,8 @@ namespace GAS
         public string guid;
         public string applicationGUID;
 
-        [NonSerialized]
-        internal int suspensionCount;
-
-        public bool IsEnabled =>
-            suspensionCount == 0;
-
         [EasyButtons.Button]
-        public GameplayEffect Instantiate()
-        { //break references to original
+        public GameplayEffect Instantiate() { //break references to original
             // double initTime = Time.realtimeSinceStartupAsDouble;
             // !!! IMPORTANT !!! Apparently, unity's json utility serializes our class WRONGLY. It turns all calculations, which are derived classes, into their base class.
 
@@ -74,8 +64,7 @@ namespace GAS
 
             //Copy tags to new instance
             geCopy.gameplayEffectTags = gameplayEffectTags;
-            if (!gameplayEffectTags.initialized)
-            {
+            if (!gameplayEffectTags.initialized) {
                 geCopy.gameplayEffectTags.FillTags(geCopy); //Once instantiated, fill the SOs
                 geCopy.gameplayEffectTags.ClearStrings(); //design issue with initialized. Causes CD GEs with strings to have tags added duplicately (because initialized is false, and it has string.) ALSO LOOK INTO APPLICATION GUID
             }
@@ -85,11 +74,10 @@ namespace GAS
     }
 
     [Serializable]
-    public class GameplayEffectTags
-    {
+    public class GameplayEffectTags {
         /// <summary>
-        /// Tags that live on the GameplayEffect but are also given to the ASC that the GameplayEffect is applied to.
-        /// They are removed from the ASC when the GameplayEffect is removed.
+        /// Tags that live on the GameplayEffect but are also given to the ASC that the GameplayEffect is applied to. 
+        /// They are removed from the ASC when the GameplayEffect is removed. 
         /// This only works for Duration and Infinite GameplayEffects. </summary>
         [Tooltip("Tags that live on the GameplayEffect but are also given to the ASC that the GameplayEffect is applied to. They are removed from the ASC when the GameplayEffect is removed.")]
         [SerializeField] public List<GameplayTag> GrantedTags = new List<GameplayTag>();
@@ -99,9 +87,9 @@ namespace GAS
         [SerializeField] public List<GameplayTag> DescriptionTags = new List<GameplayTag>();
 
         /// <summary>
-        /// Once applied, these tags determine whether the GameplayEffect is on or off. A GameplayEffect can be off and still be applied.
-        /// If a GameplayEffect is off due to failing the Ongoing Tag Requirements, but the requirements are then met, the GameplayEffect will turn on again and reapply its modifiers.
-        /// This only works for Duration and Infinite GameplayEffects. </summary>
+        /// Once applied, these tags determine whether the GameplayEffect is on or off. A GameplayEffect can be off and still be applied. 
+        /// If a GameplayEffect is off due to failing the Ongoing Tag Requirements, but the requirements are then met, the GameplayEffect will turn on again and reapply its modifiers. 
+        /// This only works for Duration and Infinite GameplayEffects. </summary> 
         [Tooltip("Once applied, these tags determine whether the GameplayEffect is on or off.")]
         [SerializeField] public List<GameplayTag> OngoingTagRequirementsRequired = new List<GameplayTag>();
         [Tooltip("Once applied, these tags determine whether the GameplayEffect is on or off.")]
@@ -115,7 +103,7 @@ namespace GAS
         [SerializeField] public List<GameplayTag> ApplicationTagRequirementsForbidden = new List<GameplayTag>();
 
         // /// <summary> If any of these tags IS NOT present, this GE will be removed.</summary>
-        // [SerializeField] public List<GameplayTagSO> RemovalTagRequirementsRequired = new List<GameplayTagSO>(); //Tag requirements that will remove this GE
+        // [SerializeField] public List<GameplayTagSO> RemovalTagRequirementsRequired = new List<GameplayTagSO>(); //Tag requirements that will remove this GE 
         // /// <summary>  If any of these tags IS present, this GE will be removed.  </summary>
         // [SerializeField] public List<GameplayTagSO> RemovalTagRequirementsForbidden = new List<GameplayTagSO>();
 
@@ -141,8 +129,7 @@ namespace GAS
 
         [HideInInspector] public List<string> string_CueTags = new List<string>();
 
-        public void FillTags(GameplayEffect ge)
-        {
+        public void FillTags(GameplayEffect ge) {
             initialized = true;
             // Debug.Log($"GE {ge.name} - GetAllTags GrantedTags: [{string.Join(", ", GrantedTags.Select(x => x.name))}]  string_GrantedTags: [{string.Join(", ", string_GrantedTags.Select(x => x))}]");
             GrantedTags = GrantedTags.Union(GameplayTagLibrary.Instance.GetByNames(string_GrantedTags)).ToList();
@@ -159,8 +146,7 @@ namespace GAS
 
         }
 
-        public void FillStrings(GameplayEffect ge)
-        {
+        public void FillStrings(GameplayEffect ge) {
             string_GrantedTags = GrantedTags.Select(tag => tag.name).ToList();
             string_DescriptionTags = DescriptionTags.Select(tag => tag.name).ToList();
             string_OngoingTagRequirementsRequired = OngoingTagRequirementsRequired.Select(tag => tag.name).ToList();
@@ -174,8 +160,7 @@ namespace GAS
             string_CueTags = ge.cuesTags.Select(tag => tag.name).ToList();
         }
 
-        public void ClearTags(GameplayEffect ge)
-        {
+        public void ClearTags(GameplayEffect ge) {
             GrantedTags.Clear();
             DescriptionTags.Clear();
             OngoingTagRequirementsRequired.Clear();
@@ -189,8 +174,7 @@ namespace GAS
             ge.cuesTags.Clear();
         }
 
-        public void ClearStrings()
-        {
+        public void ClearStrings() {
             string_DescriptionTags.Clear();
             string_GrantedTags.Clear();
             string_OngoingTagRequirementsRequired.Clear();

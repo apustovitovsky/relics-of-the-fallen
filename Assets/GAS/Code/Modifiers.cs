@@ -1,10 +1,8 @@
-using System.Collections;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace GAS {
-    [System.Serializable]
+    [Serializable]
     public class Modifier {
         [SerializeField][ReadOnly] public string name;
         [SerializeReference] public AttributeName attributeName;
@@ -26,7 +24,7 @@ namespace GAS {
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public class BasicModifier : Modifier {
         public float value;
 

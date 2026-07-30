@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 6535032475383854367}
   - component: {fileID: 3239911097881650596}
   - component: {fileID: 7113979559344975581}
+  - component: {fileID: 1776454446559901144}
   - component: {fileID: 7063721524464621741}
   m_Layer: 0
   m_Name: PlayerAvatar
@@ -170,6 +171,23 @@ MonoBehaviour:
   m_Movement: {fileID: 7908114937313309600}
   m_Look: {fileID: 5648753021602748324}
   m_Camera: {fileID: 6919562117276872329}
+--- !u!114 &1776454446559901144
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905641886187181538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9b28bb01a1e7ac47b477f51c4ae3bef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Networking.AbilitySystem::RelicsOfTheFallen.Networking.AbilitySystem.NetworkAbilitySystemOwnerComponent
+  syncDirection: 0
+  syncMode: 1
+  syncInterval: 0
+  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_AssetRegistry: {fileID: 11400000, guid: 5335b334a17c51f4db303c559b5f5702, type: 2}
 --- !u!114 &7063721524464621741
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -185,11 +203,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  predictGameplayAbilityActivations: 1
+  m_AssetRegistry: {fileID: 11400000, guid: 5335b334a17c51f4db303c559b5f5702, type: 2}
   asc: {fileID: 5720873888179496438}
-  ascmDictionaryRef:
-    list: []
-    keyCollision: 0
   localAttributesBuffer:
     list: []
     keyCollision: 0
@@ -372,7 +387,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f2d066833d971344aa3d8e806fa6294, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GAS::GAS.AbilitySystemComponent
-  initialData: {fileID: 11400000, guid: 640a4be2651d9b742b07ef85c7c178a0, type: 2}
+  InitialData: {fileID: 11400000, guid: 640a4be2651d9b742b07ef85c7c178a0, type: 2}
   attributes: []
   attributesProcessors: []
   grantedGameplayAbilities: []
@@ -510,6 +525,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5223fa763af736f4b86b58ee95caadfb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.Player::RelicsOfTheFallen.Player.LocalAbilityInput
+  m_NetworkAbilitySystem: {fileID: 0}
   m_CharacterInput: {fileID: 6058243792797642424}
   m_AbilitySystem: {fileID: 5720873888179496438}
   m_AttackAbility: {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
@@ -577,13 +593,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5091300048166180487, guid: 9286223cca005554a938e950863aac13, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6746382416890462491}
   m_SourcePrefab: {fileID: 100100000, guid: 9286223cca005554a938e950863aac13, type: 3}
 --- !u!95 &1414234138643742697 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 3638881524296301992, guid: 9286223cca005554a938e950863aac13, type: 3}
   m_PrefabInstance: {fileID: 2440872948756546113}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7455805289508459718 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5091300048166180487, guid: 9286223cca005554a938e950863aac13, type: 3}
+  m_PrefabInstance: {fileID: 2440872948756546113}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6746382416890462491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7455805289508459718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88b8109a99c4c3a4c8d76db969468e8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GAS::GAS.AnimInstance
+  <Animator>k__BackingField: {fileID: 1414234138643742697}
 --- !u!4 &8175673456295877107 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5812575584469228466, guid: 9286223cca005554a938e950863aac13, type: 3}

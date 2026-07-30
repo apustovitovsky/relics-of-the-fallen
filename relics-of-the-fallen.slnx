@@ -18,6 +18,7 @@
   <Project Path="RelicsOfTheFallen.Networking.csproj" />
   <Project Path="RelicsOfTheFallen.Character.csproj" />
   <Project Path="Telepathy.csproj" />
+  <Project Path="GAS.Mirror.csproj" />
   <Project Path="RelicsOfTheFallen.Application.Composition.csproj" />
   <Project Path="Mirror.CompilerSymbols.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
@@ -27,5 +28,4 @@
   <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
   <Project Path="RelicsOfTheFallen.Networking.Character.csproj" />
   <Project Path="RelicsOfTheFallen.Player.csproj" />
-  <Project Path="RelicsOfTheFallen.Networking.AbilitySystem.csproj" />
 </Solution>

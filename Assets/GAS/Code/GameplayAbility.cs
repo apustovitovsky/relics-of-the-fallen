@@ -7,75 +7,222 @@ using UnityEngine.Events;
 using EasyButtons;
 
 
-namespace GAS {
+namespace GAS
+{
     /// <summary>
     ///  A Gameplay Ability is any action the ASC (Ability System Component) can use. <br />
     /// These can be spells, skills, passives, interactions or any other action.
     /// The most common uses (e.g. Instant, Projectile, etc..) examples are implemented. <br />
     /// You can also extend that class to create even more interesting abilities.
-    /// </summary> 
+    /// </summary>
     // Instant, Passive, Toggeable, Channelled(todo), Cast(todo), triggered(todo?)
     // Some channelled abilities still have a duration time e.g. MindControl
     [Serializable]
-    public class GameplayAbility {
+    public class GameplayAbility
+    {
         [ReadOnly] public string name;
         public GameplayEffect cooldown = null; // GE with duration of Xs
         public GameplayEffect cost = null;
-        [ReadOnly] public List<GameplayEffect> effects = new List<GameplayEffect>();
-        public List<GameplayEffectSO> effectsSO = new List<GameplayEffectSO>();
-        [SerializeReference] public AbilityTags abilityTags = new AbilityTags();
+
+        [SerializeField]
+        private GameplayEffectSO m_CooldownGameplayEffect;
+
+        [SerializeField]
+        private GameplayEffectSO m_CostGameplayEffect;
+
+        public GameplayEffectSO CooldownGameplayEffect =>
+            m_CooldownGameplayEffect;
+
+        [NonSerialized]
+        private readonly List<AbilityTask> m_ActiveTasks = new();
+
+        public GameplayEffectSO CostGameplayEffect =>
+            m_CostGameplayEffect;
+
+        public GameplayAbilitySpecHandle CurrentSpecHandle
+        {
+            get; internal set;
+        }
+
+        public GameplayAbilityActivationInfo CurrentActivationInfo
+        {
+            get; internal set;
+        }
+
+        /// <summary>
+        /// Returns whether this ability is executing on a predicting client.
+        /// </summary>
+        public bool IsPredictingClient()
+        {
+            return
+                CurrentActivationInfo.ActivationMode ==
+                GameplayAbilityActivationMode.Predicting;
+        }
+
+        /// <summary>
+        /// Creates an extensible gameplay effect context for this ability execution.
+        /// </summary>
+        public virtual GameplayEffectContextHandle MakeEffectContext(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo)
+        {
+            if (!handle.IsValid)
+            {
+                throw new ArgumentException(
+                    "Gameplay effect context requires a valid ability specification handle.",
+                    nameof(handle));
+            }
+
+            GameplayEffectContextHandle effectContext =
+                new(
+                    new GameplayEffectContext(
+                        actorInfo));
+
+            effectContext.SetAbility(
+                this);
+
+            effectContext.AddSourceObject(
+                GetSourceObject(
+                    handle,
+                    actorInfo));
+
+            return effectContext;
+        }
+
+        /// <summary>
+        /// Returns the source object associated with the requested ability specification.
+        /// </summary>
+        public UnityEngine.Object GetSourceObject(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo)
+        {
+            GameplayAbilitySpec abilitySpec =
+                actorInfo
+                    .AbilitySystemComponent
+                    .FindAbilitySpecFromHandle(
+                        handle);
+
+            if (abilitySpec == null)
+            {
+                return null;
+            }
+
+            return abilitySpec.SourceObject;
+        }
+
+        public GameplayAbilitySO DefinitionAsset
+        {
+            get; private set;
+        }
+
+        public List<GameplayEffectSO> effectsSO = new();
+
+        [ReadOnly]
+        public List<GameplayEffect> effects = new();
+
+
+        [SerializeReference] public AbilityTags abilityTags = new();
 
         public AbilitySystemComponent source, target, owner; //Only filled on activation/instantiation. Owner adds the ASC that has it instantiated on. Mostly used by PassiveAbility
-        [SerializeReference] public List<GameplayTag> cuesTags = new List<GameplayTag>();
+        [SerializeReference] public List<GameplayTag> cuesTags = new();
 
-        [ReadOnly] public string guid;
-        // [ReadOnly] public string activationGUID;
-        [ReadOnly] public string className;
-        public float level = 1;
-        public bool isActive;
-        private float timeActivated;
-        public string activationGUID;
+        [ReadOnly] public string Guid;
+        [ReadOnly] public string ClassName;
+
+        public int Level = 1;
+        public bool IsActive;
+        private float m_TimeActivated;
+        public string ActivationGUID;
 
 
         /// <summary>
-        /// Creates a new instance for the GA, also re-instantiate its GEs.
-        /// Used on GrantAbility.
-        /// </summary> 
-        public virtual GameplayAbility Instantiate(AbilitySystemComponent owner) {
-            this.owner = owner;
-            Type classType = this.GetType();
-            GameplayAbility gaCopy = (GameplayAbility)Activator.CreateInstance(classType);
-            gaCopy.guid = Guid.NewGuid().ToString();
-            gaCopy.className = this.GetType().FullName;
+        /// Creates a runtime ability instance with independent gameplay effect state.
+        /// </summary>
+        public virtual GameplayAbility Instantiate(
+            AbilitySystemComponent owner)
+        {
+            this.owner =
+                owner;
 
-            gaCopy.effects = this.effects.Select(fx => fx.Instantiate()).ToList(); //this creates a new list
+            Type classType =
+                GetType();
 
-            foreach (var effectSO in effectsSO) { //Do this after object has been copied. Otherwise we'll add the SO's to the original instance and accumulate a bunch of them over time.
-                gaCopy.effects.Add(effectSO.ge.Instantiate()); //Instantiate all effects out of their SO
+            GameplayAbility gaCopy =
+                (GameplayAbility)Activator.CreateInstance(
+                    classType);
+
+            gaCopy.Guid =
+                System.Guid.NewGuid().ToString();
+
+            gaCopy.ClassName =
+                GetType().FullName;
+
+            gaCopy.effectsSO =
+                new List<GameplayEffectSO>(
+                    effectsSO);
+
+            gaCopy.effects =
+                effectsSO.Count > 0
+                    ? effectsSO
+                        .Select(
+                            effectAsset =>
+                                effectAsset.ge.Instantiate())
+                        .ToList()
+                    : effects
+                        .Select(
+                            effect =>
+                                effect.Instantiate())
+                        .ToList();
+
+            gaCopy.m_CooldownGameplayEffect =
+                m_CooldownGameplayEffect;
+
+            gaCopy.m_CostGameplayEffect =
+                m_CostGameplayEffect;
+
+            gaCopy.name =
+                name;
+
+            gaCopy.abilityTags =
+                abilityTags;
+
+            gaCopy.Level =
+                Level;
+
+            gaCopy.IsActive =
+                false;
+
+            gaCopy.cuesTags =
+                cuesTags;
+
+            if (cooldown != null)
+            {
+                gaCopy.CreateCoolDownGE(
+                    cooldown.durationValue);
+
+                gaCopy.cooldown.gameplayEffectTags =
+                    cooldown.gameplayEffectTags;
             }
-            gaCopy.effectsSO.Clear(); //absolutely needed. remove SOs from new instance. So if it gets instantiated again, it wont add more copies of SO ges.
 
-            //When jsonUtility serializes GA, it doesnt serialize the types of our derived classes. e.g. child classes will be deserialized as base classes. Also serialization is VERY VERY SLOW.
-            //Manual copying
-            gaCopy.name = this.name;
-            gaCopy.abilityTags = this.abilityTags;
-            gaCopy.level = this.level;
-            gaCopy.isActive = false;
-            gaCopy.cuesTags = this.cuesTags;
+            if (cost != null)
+            {
+                gaCopy.CreateCostGE(
+                    cost.modifiers,
+                    cost.durationType,
+                    cost.durationValue);
 
-            if (cooldown != null) {
-                gaCopy.CreateCoolDownGE(this.cooldown.durationValue);
-                gaCopy.cooldown.gameplayEffectTags = cooldown.gameplayEffectTags;
-            }
-            if (cost != null) {
-                gaCopy.CreateCostGE(cost.modifiers, cost.durationType, cost.durationValue);
-                gaCopy.cost.gameplayEffectTags = cost.gameplayEffectTags;
+                gaCopy.cost.gameplayEffectTags =
+                    cost.gameplayEffectTags;
             }
 
-            //Copy tags to new instance
-            gaCopy.abilityTags = abilityTags; //ability tags are not being instantiated, this is passing them by reference.
-            if (!abilityTags.initialized) {
-                gaCopy.abilityTags.FillTags(gaCopy); //Once instantiated, fill the SOs
+            gaCopy.abilityTags =
+                abilityTags;
+
+            if (!abilityTags.initialized)
+            {
+                gaCopy.abilityTags.FillTags(
+                    gaCopy);
+
                 gaCopy.abilityTags.ClearStrings();
             }
 
@@ -83,73 +230,507 @@ namespace GAS {
         }
 
         /// <summary>
-        /// Additional network serialization for inherited classes
+        /// Creates a runtime ability instance associated with its persistent definition asset.
         /// </summary>
-        public virtual void SerializeAdditionalData() { }
+        internal GameplayAbility Instantiate(
+            AbilitySystemComponent owner,
+            GameplayAbilitySO definitionAsset)
+        {
+            if (definitionAsset == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(definitionAsset));
+            }
+
+            GameplayAbility ability =
+                Instantiate(
+                    owner);
+
+            ability.DefinitionAsset =
+                definitionAsset;
+
+            return ability;
+        }
+
         /// <summary>
         /// Additional network serialization for inherited classes
         /// </summary>
-        public virtual void DeserializeAdditionalData() { }
+        public virtual void SerializeAdditionalData()
+        {
+        }
+        /// <summary>
+        /// Additional network serialization for inherited classes
+        /// </summary>
+        public virtual void DeserializeAdditionalData()
+        {
+        }
 
-        public virtual void PreActivate(AbilitySystemComponent source, AbilitySystemComponent target, string activationGUID) {
-            // Debug.Log($"GA PreActivate: {name} src {source} tgt {target}");
-            isActive = true;
-            timeActivated = Time.time;
+        /// <summary>
+        /// Initializes runtime state and applies activation-owned and blocking tags.
+        /// </summary>
+        public virtual void PreActivate(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+            IsActive = true;
 
             this.source = source;
             this.target = target;
-            source.OnGameplayAbilityPreActivate?.Invoke(this, activationGUID);
+
+            this.ActivationGUID =
+                activationGUID;
+
+            source.ApplyAbilityBlockAndCancelTags(
+                abilityTags.DescriptionTags,
+                this,
+                true,
+                abilityTags.BlockAbilitiesWithTags,
+                true,
+                abilityTags.CancelAbilitiesWithTags);
+
+            source.UpdateGameplayTagCounts(
+                abilityTags.ActivationOwnedTags,
+                1,
+                source,
+                target,
+                activationGUID);
+
+            source.OnGameplayAbilityPreActivate?.Invoke(
+                this,
+                activationGUID);
         }
-        public virtual void Activate(AbilitySystemComponent source, AbilitySystemComponent target, string activationGUID) {
-            //Apply Cooldown
-            if (cooldown != null && cooldown.durationValue > 0f) {
-                source.ApplyGameplayEffect(source, source, cooldown, activationGUID);
+
+        /// <summary>
+        /// Executes the ability-specific behavior after pre-activation completes.
+        /// </summary>
+        public virtual void ActivateAbility(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+        }
+
+        /// <summary>
+        /// Applies a prepared gameplay effect specification to the owner of this ability.
+        /// </summary>
+        protected ActiveGameplayEffectHandle ApplyGameplayEffectSpecToOwner(
+            AbilitySystemComponent ownerAbilitySystem,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEffectSpec spec)
+        {
+            return ownerAbilitySystem.ApplyGameplayEffectSpecToSelf(
+                spec,
+                activationInfo);
+        }
+
+        /// <summary>
+        /// Applies a prepared gameplay effect specification to an ability target.
+        /// </summary>
+        protected ActiveGameplayEffectHandle ApplyGameplayEffectSpecToTarget(
+            AbilitySystemComponent targetAbilitySystem,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEffectSpec spec)
+        {
+            return targetAbilitySystem.ApplyGameplayEffectSpecToSelf(
+                spec,
+                activationInfo);
+        }
+
+        /// <summary>
+        /// Creates and applies a gameplay effect specification to the owner of this ability.
+        /// </summary>
+        protected ActiveGameplayEffectHandle ApplyGameplayEffectToOwner(
+            AbilitySystemComponent ownerAbilitySystem,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEffectSO gameplayEffect,
+            float gameplayEffectLevel,
+            string applicationGuid = null)
+        {
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                CurrentSpecHandle,
+                ownerAbilitySystem.AbilityActorInfo);
+
+            GameplayEffectSpec spec = ownerAbilitySystem.MakeOutgoingSpec(
+                gameplayEffect,
+                gameplayEffectLevel,
+                effectContext,
+                applicationGuid);
+
+            return ApplyGameplayEffectSpecToOwner(
+                ownerAbilitySystem,
+                activationInfo,
+                spec);
+        }
+
+        /// <summary>
+        /// Creates and applies a gameplay effect specification to an ability target.
+        /// </summary>
+        protected ActiveGameplayEffectHandle ApplyGameplayEffectToTarget(
+            AbilitySystemComponent sourceAbilitySystem,
+            AbilitySystemComponent targetAbilitySystem,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEffectSO gameplayEffect,
+            float gameplayEffectLevel,
+            string applicationGuid = null)
+        {
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                CurrentSpecHandle,
+                sourceAbilitySystem.AbilityActorInfo);
+
+            GameplayEffectSpec spec = sourceAbilitySystem.MakeOutgoingSpec(
+                gameplayEffect,
+                gameplayEffectLevel,
+                effectContext,
+                applicationGuid);
+
+            return ApplyGameplayEffectSpecToTarget(
+                targetAbilitySystem,
+                activationInfo,
+                spec);
+        }
+
+        /// <summary>
+        /// Applies every gameplay effect configured for this ability.
+        /// </summary>
+        protected void ApplyGameplayEffects(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+            if (effectsSO.Count > 0)
+            {
+                for (
+                    int index = 0;
+                    index < effectsSO.Count;
+                    index++)
+                {
+                    ApplyGameplayEffectToTarget(
+                        source,
+                        target,
+                        CurrentActivationInfo,
+                        effectsSO[index],
+                        Level,
+                        activationGUID);
+                }
+
+                return;
             }
-            //Apply cost
-            if (cost != null && cost.modifiers.Count > 0) {
-                source.ApplyGameplayEffect(source, source, cost, activationGUID);
+
+            for (
+                int index = 0;
+                index < effects.Count;
+                index++)
+            {
+                target.ApplyGameplayEffect(
+                    source,
+                    target,
+                    effects[index],
+                    activationGUID);
             }
-            //Apply tags from this GA
-            // this.activationGUID = activationGUID;
-            foreach (GameplayTag tag in abilityTags.CancelAbilitiesWithTags) { //Other GameplayAbilities that grant these GameplayTags (ActivationOwned) will be cancelled when this GameplayAbility is activated.
-                foreach (GameplayAbility ga in source.grantedGameplayAbilities) {
-                    if (ga.isActive && ga.abilityTags.ActivationOwnedTags.Contains(tag)) {
-                        ga.DeactivateAbility(activationGUID);
-                    }
+        }
+
+        /// <summary>
+        /// Performs the final commit check and applies the ability cost and cooldown.
+        /// </summary>
+        public virtual bool CommitAbility(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+            if (
+                !CommitCheck(
+                    source,
+                    target,
+                    activationGUID))
+            {
+                return false;
+            }
+
+            CommitExecute(
+                source,
+                target,
+                activationGUID);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Performs the final cost and cooldown checks before committing the ability.
+        /// </summary>
+        public virtual bool CommitCheck(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+            return
+                CheckCooldown() &&
+                CheckCost(source);
+        }
+
+        /// <summary>
+        /// Applies the ability cooldown and cost after a successful commit check.
+        /// </summary>
+        public virtual void CommitExecute(
+            AbilitySystemComponent source,
+            AbilitySystemComponent target,
+            string activationGUID)
+        {
+            ApplyCooldown(
+                source,
+                activationGUID);
+
+            ApplyCost(
+                source,
+                activationGUID);
+        }
+
+        /// <summary>
+        /// Checks whether the ability is currently outside its cooldown period.
+        /// </summary>
+        public virtual bool CheckCooldown()
+        {
+            return
+                cooldown == null ||
+                GetCooldownRemaining() <= 0f;
+        }
+
+        /// <summary>
+        /// Applies the configured cooldown gameplay effect to the ability owner.
+        /// </summary>
+        public virtual void ApplyCooldown(
+            AbilitySystemComponent source,
+            string activationGUID)
+        {
+            if (
+                cooldown == null ||
+                cooldown.durationValue <= 0f)
+            {
+                return;
+            }
+
+            m_TimeActivated =
+                Time.time;
+
+            source.ApplyGameplayEffect(
+                source,
+                source,
+                cooldown,
+                activationGUID);
+        }
+
+        /// <summary>
+        /// Applies the configured cost gameplay effect to the ability owner.
+        /// </summary>
+        public virtual void ApplyCost(
+            AbilitySystemComponent source,
+            string activationGUID)
+        {
+            if (
+                cost == null ||
+                !cost.HasModifiers)
+            {
+                return;
+            }
+
+            source.ApplyGameplayEffect(
+                source,
+                source,
+                cost,
+                activationGUID);
+        }
+
+        /// <summary>
+        /// Checks and applies only the configured ability cost.
+        /// </summary>
+        public virtual bool CommitAbilityCost(
+            AbilitySystemComponent source,
+            string activationGUID)
+        {
+            if (!CheckCost(source))
+            {
+                return false;
+            }
+
+            ApplyCost(
+                source,
+                activationGUID);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks and applies only the configured ability cooldown.
+        /// </summary>
+        public virtual bool CommitAbilityCooldown(
+            AbilitySystemComponent source,
+            string activationGUID,
+            bool forceCooldown = false)
+        {
+            if (
+                !forceCooldown &&
+                !CheckCooldown())
+            {
+                return false;
+            }
+
+            ApplyCooldown(
+                source,
+                activationGUID);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Registers a gameplay task that has entered its active state.
+        /// </summary>
+        internal void OnGameplayTaskActivated(
+            AbilityTask task)
+        {
+            if (task == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(task));
+            }
+
+            if (!m_ActiveTasks.Contains(
+                    task))
+            {
+                m_ActiveTasks.Add(
+                    task);
+            }
+        }
+
+        /// <summary>
+        /// Unregisters a gameplay task that has left its active state.
+        /// </summary>
+        internal void OnGameplayTaskDeactivated(
+            AbilityTask task)
+        {
+            if (task == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(task));
+            }
+
+            m_ActiveTasks.Remove(
+                task);
+        }
+
+        /// <summary>
+        /// Ends every active gameplay task owned by this ability.
+        /// </summary>
+        private void EndAbilityTasks()
+        {
+            while (m_ActiveTasks.Count > 0)
+            {
+                AbilityTask task =
+                    m_ActiveTasks[m_ActiveTasks.Count - 1];
+
+                task.TaskOwnerEnded();
+            }
+        }
+
+        /// <summary>
+        /// Cancels every active task before ending this gameplay ability.
+        /// </summary>
+        public virtual void CancelAbility(
+            string activationGUID = null)
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            AbilityTask[] activeTasks =
+                m_ActiveTasks.ToArray();
+
+            for (
+                int index = 0;
+                index < activeTasks.Length;
+                index++)
+            {
+                if (!IsActive)
+                {
+                    return;
+                }
+
+                AbilityTask task =
+                    activeTasks[index];
+
+                if (!task.IsEnded)
+                {
+                    task.ExternalCancel();
                 }
             }
-        }
-        public virtual void PostActivate(AbilitySystemComponent source, AbilitySystemComponent target, string activationGUID) {
-            if (source.invokeEventsGA) source.OnGameplayAbilityActivated?.Invoke(this, activationGUID);
+
+            string resolvedActivationGUID =
+                string.IsNullOrEmpty(
+                    activationGUID)
+                    ? this.ActivationGUID
+                    : activationGUID;
+
+            DeactivateAbility(
+                resolvedActivationGUID);
         }
 
-        public virtual void CommitAbility(AbilitySystemComponent source, AbilitySystemComponent target, string activationGUID) {
-            PreActivate(source, target, activationGUID);
-            Activate(source, target, activationGUID);
-            PostActivate(source, target, activationGUID);
+        /// <summary>
+        /// Ends the active ability, its tasks, and its owned and blocking tags.
+        /// </summary>
+        public virtual void DeactivateAbility(
+            string activationGUID = null)
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            EndAbilityTasks();
+
+            source.ApplyAbilityBlockAndCancelTags(
+                abilityTags.DescriptionTags,
+                this,
+                false,
+                abilityTags.BlockAbilitiesWithTags,
+                false,
+                abilityTags.CancelAbilitiesWithTags);
+
+            source.UpdateGameplayTagCounts(
+                abilityTags.ActivationOwnedTags,
+                -1,
+                source,
+                target,
+                activationGUID);
+
+            IsActive = false;
+
+            if (source.invokeEventsGA)
+            {
+                source.OnGameplayAbilityDeactivated?.Invoke(
+                    this,
+                    activationGUID);
+            }
         }
 
-        public virtual void DeactivateAbility(string activationGUID = null) {
-            if (!isActive) return;
-            // Debug.Log($"DeactivateAbility: {name} activationGUID: {activationGUID}");
-            isActive = false;
-            //Remove the tags applied by this GA 
-            if (source.invokeEventsGA) source.OnGameplayAbilityDeactivated?.Invoke(this, activationGUID);
+        public float GetCooldownRemaining()
+        {
+            if (cooldown == null)
+                return 0;
+            return Math.Clamp((m_TimeActivated + cooldown.durationValue) - Time.time, 0, 100000f);
         }
 
-        public float GetCooldownRemaining() {
-            if (cooldown == null) return 0;
-            return Math.Clamp((timeActivated + cooldown.durationValue) - Time.time, 0, 100000f);
-        }
-
-        public GameplayEffect CreateCoolDownGE(float durationValue, GameplayTag cooldownTag = null, string cooldownName = "Cooldown") {
-            cooldown = new GameplayEffect() {
+        public GameplayEffect CreateCoolDownGE(float durationValue, GameplayTag cooldownTag = null, string cooldownName = "Cooldown")
+        {
+            cooldown = new GameplayEffect()
+            {
                 durationType = GameplayEffectDurationType.Duration,
                 name = cooldownName + " " + name,
                 durationValue = durationValue,
             };
-            if (cooldownTag != null) {
-                cooldown.gameplayEffectTags = new GameplayEffectTags() {
+            if (cooldownTag != null)
+            {
+                cooldown.gameplayEffectTags = new GameplayEffectTags()
+                {
                     GrantedTags = new List<GameplayTag>() { cooldownTag }
                 };
             }
@@ -157,19 +738,25 @@ namespace GAS {
             return cooldown;
         }
 
-        public GameplayEffect CreateCostGE(List<Modifier> modifiers, GameplayEffectDurationType durationType = GameplayEffectDurationType.Instant, float duration = 0, GameplayTag costTag = null, string costName = "Cost") {
-            if (costTag == null) costTag = GameplayTagLibrary.Instance.GetByName("Ability.Cost"); // GameplayTags.library.GetByName("Ability.Cost");
+        public GameplayEffect CreateCostGE(List<Modifier> modifiers, GameplayEffectDurationType durationType = GameplayEffectDurationType.Instant, float duration = 0, GameplayTag costTag = null, string costName = "Cost")
+        {
+            if (costTag == null)
+                costTag = GameplayTagLibrary.Instance.GetByName("Ability.Cost"); // GameplayTags.library.GetByName("Ability.Cost");
 
-            var createdCost = new GameplayEffect() {
+            var createdCost = new GameplayEffect()
+            {
                 durationType = durationType,
                 name = costName + " " + name,
                 durationValue = duration,
-                gameplayEffectTags = new GameplayEffectTags() {
+                gameplayEffectTags = new GameplayEffectTags()
+                {
                     GrantedTags = new List<GameplayTag>() { costTag }
                 }
             };
-            if (costTag != null) {
-                createdCost.gameplayEffectTags = new GameplayEffectTags() {
+            if (costTag != null)
+            {
+                createdCost.gameplayEffectTags = new GameplayEffectTags()
+                {
                     GrantedTags = new List<GameplayTag>() { costTag }
                 };
             }
@@ -180,88 +767,170 @@ namespace GAS {
         }
 
         /// <summary>
-        /// You can override this and make additional checks if needed. 
+        /// You can override this and make additional checks if needed.
         /// e.g. SERVER CHECKS FOR TARGET ASC's CONNECTION.
         /// e.g. CHECK DISTANCE, CHECK LOS...
         /// </summary>
-        public virtual bool CanActivateAbility(AbilitySystemComponent src, AbilitySystemComponent target, string activationGUID, bool sendFailedEvent) {
+        public virtual bool CanActivateAbility(AbilitySystemComponent src, AbilitySystemComponent target, string activationGUID, bool sendFailedEvent)
+        {
             //Cannot activate if already active
-            if (this.isActive) {
-                if (src.logging || target.logging) Debug.Log($"{this.name} is already active.");
-                if (sendFailedEvent) src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.ALREADY_ACTIVE);
+            if (this.IsActive)
+            {
+                if (src.logging || target.logging)
+                    Debug.Log($"{this.name} is already active.");
+                if (sendFailedEvent)
+                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.ALREADY_ACTIVE);
+                return false;
+            }
+
+            if (
+                src.AreAbilityTagsBlocked(
+                    abilityTags.DescriptionTags))
+            {
+                if (
+                    src.logging ||
+                    target.logging)
+                {
+                    Debug.Log(
+                        $"{name} is blocked by ability tags.");
+                }
+
+                if (sendFailedEvent)
+                {
+                    src.OnGameplayAbilityFailedActivation?.Invoke(
+                        this,
+                        activationGUID,
+                        ActivationFailure.TAGS_BLOCKED);
+                }
+
                 return false;
             }
 
             //Check cooldown
-            if (GetCooldownRemaining() > 0) { // Cooldown without tags...is it ok? Maybe. How can we track it for things that need to know if this ability is happening? e.g. isRolling is needed for Jumping 
-                if (src.logging || target.logging) Debug.Log($"{this.name} is on Cooldown. Time Remaining: {GetCooldownRemaining()}");
-                if (sendFailedEvent) src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COOLDOWN);
+            if (GetCooldownRemaining() > 0)
+            { // Cooldown without tags...is it ok? Maybe. How can we track it for things that need to know if this ability is happening? e.g. isRolling is needed for Jumping
+                if (src.logging || target.logging)
+                    Debug.Log($"{this.name} is on Cooldown. Time Remaining: {GetCooldownRemaining()}");
+                if (sendFailedEvent)
+                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COOLDOWN);
                 return false;
             }
 
             //Check Cost
-            if (!CheckCost(src)) {
-                if (sendFailedEvent) src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COST);
+            if (!CheckCost(src))
+            {
+                if (sendFailedEvent)
+                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COST);
                 return false;
             }
             //If no constraint prevents activation, we activate
             return true;
         }
 
-        public virtual bool CheckCost(AbilitySystemComponent src) {
-            //Override this if your cost is not a character attribute resource. (e.g. ammo in the inventory system, instead of mana.)
-            //Check Cost
-            if (this.cost == null) return true;
-            //Attribute must be a resource... not a stat?
-
-            //Check if has all attributes
-            List<AttributeName> costAttributes = new List<AttributeName>();
-            this.cost.modifiers.ForEach(modifier => costAttributes.Add(modifier.attributeName));
-
-            List<AttributeName> presentAttributes = new List<AttributeName>();
-            src.attributes.ForEach(attribute => presentAttributes.Add(attribute.attributeName));
-
-            foreach (AttributeName costAttributeName in costAttributes) {
-                // Debug.Log($"[{string.Join(", ", presentAttributes)}].Contains({costAttributeName}) {presentAttributes.Contains(costAttributeName)}");
-                if (presentAttributes.Contains(costAttributeName) == false) {
-                    if (src.logging || target.logging) Debug.Log($"ASC presentAttributes DOES NOT contain costAttributeName: {costAttributeName}");
-                    return false;
-                }
+        /// <summary>
+        /// Checks whether the source can afford the evaluated gameplay effect cost.
+        /// </summary>
+        public virtual bool CheckCost(
+            AbilitySystemComponent source)
+        {
+            if (
+                cost == null ||
+                !cost.HasModifiers)
+            {
+                return true;
             }
 
-            //Check if attributes can pay cost
-            foreach (AttributeName costAttributeName in costAttributes) {
-                // Debug.Log($"[{string.Join(", ", presentAttributes)}].Contains({costAttributeName}) {presentAttributes.Contains(costAttributeName)}");
-                Attribute presentAttribute = src.attributes.Find((presentAttribute) => presentAttribute.attributeName == costAttributeName);
-                Modifier costModifier = this.cost.modifiers.Find((costAttribute) => costAttribute.attributeName == costAttributeName);
-                // Debug.Log($"presentAttribute.attributeName: {presentAttribute.attributeName}  costModifier.modifierOperator {costModifier.modifierOperator} costModifier.value {costModifier.value}");
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                CurrentSpecHandle,
+                source.AbilityActorInfo);
 
+            GameplayEffectSpec costSpec = source.MakeOutgoingSpec(
+                cost,
+                cost.level,
+                effectContext);
 
-                if (presentAttribute.baseValue < -costModifier.GetValue()) { //RESOURCE ONLY
-                    if (src.logging || target.logging) Debug.Log($"CANT PAY GA COST - ASC {presentAttribute.attributeName} {presentAttribute.baseValue} cannot pay {costAttributeName} {costModifier.GetValue()}");
+            costSpec.CaptureAttributeDataFromTarget(
+                source);
+
+            costSpec.CalculateModifierMagnitudes();
+
+            foreach (
+                AttributeModifierSpec modifierSpec
+                in costSpec.ModifierSpecs)
+            {
+                if (!modifierSpec.HasEvaluatedMagnitude)
+                {
+                    throw new InvalidOperationException(
+                        "Ability cost requires evaluated modifier magnitudes.");
+                }
+
+                if (
+                    modifierSpec.Definition.Operation !=
+                    AttributeModifierOperation.Additive)
+                {
+                    throw new InvalidOperationException(
+                        "Default ability costs require additive attribute modifiers.");
+                }
+
+                float magnitude =
+                    modifierSpec.EvaluatedMagnitude;
+
+                if (magnitude >= 0f)
+                {
+                    continue;
+                }
+
+                AttributeName attributeName =
+                    modifierSpec.Definition.Attribute;
+
+                if (
+                    !source.AttributesDictionary.TryGetValue(
+                        attributeName.name,
+                        out Attribute attribute))
+                {
+                    if (
+                        source.logging ||
+                        target.logging)
+                    {
+                        Debug.Log(
+                            $"ASC does not contain cost attribute " +
+                            $"'{attributeName}'.");
+                    }
+
                     return false;
                 }
+
+                float resultingValue =
+                    attribute.CurrentValue +
+                    magnitude;
+
+                if (resultingValue >= 0f)
+                {
+                    continue;
+                }
+
+                if (
+                    source.logging ||
+                    target.logging)
+                {
+                    Debug.Log(
+                        $"Cannot pay ability cost: " +
+                        $"{attributeName} has {attribute.CurrentValue}, " +
+                        $"cost magnitude is {magnitude}.");
+                }
+
+                return false;
             }
+
             return true;
-        }
-
-        /// <summary> Returns a list of gameplay tags, any ability that grants them will have its activation blocked </summary>
-        public List<GameplayTag> GetBlockedAbilitiesTags(AbilitySystemComponent src) {
-            var blockedAbilityTags = new List<GameplayTag>();
-            foreach (GameplayAbility ga in src.grantedGameplayAbilities) {
-                if (ga.isActive) {
-                    blockedAbilityTags.AddRange(ga.abilityTags.BlockAbilitiesWithTags);
-                }
-            }
-            // Debug.Log($"GetBlockedAbilitiesTags: [{string.Join(", ", blockedAbilityTags)}]");
-            return blockedAbilityTags;
         }
     }
 
     /// <summary>
     /// Reason for an activation failure. You can add new reasons when implementing your own abilities.
     /// </summary>
-    public enum ActivationFailure {
+    public enum ActivationFailure
+    {
         ALREADY_ACTIVE,
         COST,
         COOLDOWN,
@@ -275,52 +944,54 @@ namespace GAS {
     /// Tags for Gameplay Abilities
     /// </summary>
     [Serializable]
-    public class AbilityTags {//Block and Cancel and similar to ActivationIgnored, but instead of being from this GA it is related to other GAs
+    public class AbilityTags
+    {//Block and Cancel and similar to ActivationIgnored, but instead of being from this GA it is related to other GAs
         /// <summary> While this Ability is active/executing, the owner of the Ability will be granted this set of Tags. ( ActivationOwnedTags) </summary>
         [Tooltip("While this Ability is active/executing, the owner of the Ability will be granted this set of Tags.")]
-        [SerializeField] public List<GameplayTag> ActivationOwnedTags = new List<GameplayTag>();
+        [SerializeField] public List<GameplayTag> ActivationOwnedTags = new();
 
         /// <summary> Tags that describe the GameplayAbility. They do not do any function on their own and serve only the purpose of describing the GameplayEffect. </summary>
         [Tooltip("GameplayTags that the GameplayAbility owns. These are just GameplayTags to describe the GameplayAbility")]
-        [SerializeField] public List<GameplayTag> DescriptionTags = new List<GameplayTag>();
+        [SerializeField] public List<GameplayTag> DescriptionTags = new();
 
         /// <summary> Active Gameplay Abilities (on the same character) that have these tags will be cancelled.
         /// Cancels any already-executing Ability with Tags matching the list provided while this Ability is executing. </summary>
         [Tooltip("Active Gameplay Abilities (on the same character) that have these tags will be cancelled. Cancels any already-executing Ability with Tags matching the list provided while this Ability is executing")]
-        [SerializeField] public List<GameplayTag> CancelAbilitiesWithTags = new List<GameplayTag>();
+        [SerializeField] public List<GameplayTag> CancelAbilitiesWithTags = new();
         /// <summary> Gameplay Abilities that have these tags will be blocked from activating on the same character</summary>
         [Tooltip("Gameplay Abilities that have these tags will be blocked from activating on the same character. (blocking others)")]
-        [SerializeField] public List<GameplayTag> BlockAbilitiesWithTags = new List<GameplayTag>(); //Gameplay Abilities that have these tags will be blocked from activating on the same character
+        [SerializeField] public List<GameplayTag> BlockAbilitiesWithTags = new(); //Gameplay Abilities that have these tags will be blocked from activating on the same character
 
         /// <summary>If any of these tags IS NOT present on source ASC, this ability won't be activated.</summary>
         [Tooltip("If any of these tags IS NOT present on source ASC, this ability won't be activated.")]
-        [SerializeField] public List<GameplayTag> SourceTagsRequired = new List<GameplayTag>(); //The Ability can only be activated if the activating Component has all Required Tags and none of Ingnored Tags.
+        [SerializeField] public List<GameplayTag> SourceTagsRequired = new(); //The Ability can only be activated if the activating Component has all Required Tags and none of Ingnored Tags.
         /// <summary> If any of these tags IS present on source ASC, this ability won't be activated.</summary>
         [Tooltip("If any of these tags IS present on source ASC, this ability won't be activated. (self ignoring)")]
-        [SerializeField] public List<GameplayTag> SourceTagsForbidden = new List<GameplayTag>();
+        [SerializeField] public List<GameplayTag> SourceTagsForbidden = new();
 
         /// <summary> If any of these tags IS NOT present on target, this ability won't be activated. </summary>
         [Tooltip("If any of these tags IS NOT present on target, this ability won't be activated. ")]
-        [SerializeField] public List<GameplayTag> TargetTagsRequired = new List<GameplayTag>(); //The Ability can only be activated if the activating Component has all Required Tags and none of Ingnored Tags. </summary>
+        [SerializeField] public List<GameplayTag> TargetTagsRequired = new(); //The Ability can only be activated if the activating Component has all Required Tags and none of Ingnored Tags. </summary>
         /// <summary> If any of these tags IS present on target, this ability won't be activated. </summary>
         [Tooltip("If any of these tags IS present on target, this ability won't be activated.")]
-        [SerializeField] public List<GameplayTag> TargetTagsForbidden = new List<GameplayTag>();
+        [SerializeField] public List<GameplayTag> TargetTagsForbidden = new();
 
 
         [HideInInspector] public bool initialized = false;
-        [ReadOnly][HideInInspector] public List<string> stringActivationOwnedTags = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringDescriptionTags = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringCancelAbilitiesWithTags = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringBlockAbilitiesWithTags = new List<string>();
+        [ReadOnly][HideInInspector] public List<string> stringActivationOwnedTags = new();
+        [ReadOnly][HideInInspector] public List<string> stringDescriptionTags = new();
+        [ReadOnly][HideInInspector] public List<string> stringCancelAbilitiesWithTags = new();
+        [ReadOnly][HideInInspector] public List<string> stringBlockAbilitiesWithTags = new();
 
-        [ReadOnly][HideInInspector] public List<string> stringSourceTagsRequired = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringSourceTagsForbidden = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringTargetTagsRequired = new List<string>();
-        [ReadOnly][HideInInspector] public List<string> stringTargetTagsForbidden = new List<string>();
+        [ReadOnly][HideInInspector] public List<string> stringSourceTagsRequired = new();
+        [ReadOnly][HideInInspector] public List<string> stringSourceTagsForbidden = new();
+        [ReadOnly][HideInInspector] public List<string> stringTargetTagsRequired = new();
+        [ReadOnly][HideInInspector] public List<string> stringTargetTagsForbidden = new();
 
-        [ReadOnly][HideInInspector] public List<string> string_CueTags = new List<string>();
+        [ReadOnly][HideInInspector] public List<string> string_CueTags = new();
 
-        public void FillTags(GameplayAbility ga) {
+        public void FillTags(GameplayAbility ga)
+        {
             initialized = true;
             // Debug.Log($"GA {ga.name} - GetAllTags GrantedTags: [{string.Join(", ", ActivationOwnedTags.Select(x => x.name))}]  string_GrantedTags: [{string.Join(", ", stringActivationOwnedTags.Select(x => x))}]");
             ActivationOwnedTags = ActivationOwnedTags.Union(GameplayTagLibrary.Instance.GetByNames(stringActivationOwnedTags)).ToList();
@@ -337,7 +1008,8 @@ namespace GAS {
 
         }
 
-        public void FillStrings(GameplayAbility ga) {
+        public void FillStrings(GameplayAbility ga)
+        {
             stringActivationOwnedTags = ActivationOwnedTags.Select(tag => tag.name).ToList();
             stringDescriptionTags = DescriptionTags.Select(tag => tag.name).ToList();
             stringCancelAbilitiesWithTags = CancelAbilitiesWithTags.Select(tag => tag.name).ToList();
@@ -351,7 +1023,8 @@ namespace GAS {
         }
 
 
-        public void ClearTags(GameplayAbility ga) {
+        public void ClearTags(GameplayAbility ga)
+        {
             ActivationOwnedTags.Clear();
             DescriptionTags.Clear();
             CancelAbilitiesWithTags.Clear();
@@ -364,7 +1037,8 @@ namespace GAS {
             ga.cuesTags.Clear();
         }
 
-        public void ClearStrings() {
+        public void ClearStrings()
+        {
             stringActivationOwnedTags.Clear();
             stringDescriptionTags.Clear();
             stringCancelAbilitiesWithTags.Clear();

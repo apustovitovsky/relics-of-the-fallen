@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a5e2aac6432cd64286eb3948292d42c, type: 3}
+  m_Name: AssetRegistry
+  m_EditorClassIdentifier: GAS::GAS.AssetRegistry
+  m_Entries:
+  - m_AssetName: GA_Potion
+    m_Asset: {fileID: 11400000, guid: 224bcf7eee79a50468710d9c47a2d5a0, type: 2}
+    m_Id: 224bcf7eee79a50468710d9c47a2d5a0
+  - m_AssetName: GA_AntiPoison
+    m_Asset: {fileID: 11400000, guid: 225f996f058216c45b5133e03f504674, type: 2}
+    m_Id: 225f996f058216c45b5133e03f504674
+  - m_AssetName: GE_ToggleableEffectPeriodic
+    m_Asset: {fileID: 11400000, guid: 23907709290e9af4296ce7d7ce7d6820, type: 2}
+    m_Id: 23907709290e9af4296ce7d7ce7d6820
+  - m_AssetName: GA_Ice
+    m_Asset: {fileID: 11400000, guid: 275c387f6039c2e46af3a7201e193288, type: 2}
+    m_Id: 275c387f6039c2e46af3a7201e193288
+  - m_AssetName: GA_Damage
+    m_Asset: {fileID: 11400000, guid: 3fa17f1cf04cf5246a7c2788aa73f50c, type: 2}
+    m_Id: 3fa17f1cf04cf5246a7c2788aa73f50c
+  - m_AssetName: GE_ToggleableEffect
+    m_Asset: {fileID: 11400000, guid: 3fadc8e880590da4da8ad49872e7b236, type: 2}
+    m_Id: 3fadc8e880590da4da8ad49872e7b236
+  - m_AssetName: GE_FireDamageInstant
+    m_Asset: {fileID: 11400000, guid: 4035cb6fcf62cf64a946c2601ac7f971, type: 2}
+    m_Id: 4035cb6fcf62cf64a946c2601ac7f971
+  - m_AssetName: GE_Damage
+    m_Asset: {fileID: 11400000, guid: 45ff02dac42c8fb4bb77dd9ade0c5638, type: 2}
+    m_Id: 45ff02dac42c8fb4bb77dd9ade0c5638
+  - m_AssetName: GA_Poison
+    m_Asset: {fileID: 11400000, guid: 48ea22abebd7582429a60f0f6161dc14, type: 2}
+    m_Id: 48ea22abebd7582429a60f0f6161dc14
+  - m_AssetName: GE_Dash
+    m_Asset: {fileID: 11400000, guid: 4ebd3f3b21c04f347aa372e27a58eeea, type: 2}
+    m_Id: 4ebd3f3b21c04f347aa372e27a58eeea
+  - m_AssetName: GE_HealthRegenOverTime
+    m_Asset: {fileID: 11400000, guid: 5ba8b7277b1505548b2ef437e586815b, type: 2}
+    m_Id: 5ba8b7277b1505548b2ef437e586815b
+  - m_AssetName: GE_AntiPoison
+    m_Asset: {fileID: 11400000, guid: 5e42a5bb83a606b44a4515d22f30c34c, type: 2}
+    m_Id: 5e42a5bb83a606b44a4515d22f30c34c
+  - m_AssetName: GE_AttackSpeed
+    m_Asset: {fileID: 11400000, guid: 61fbc3a80a018a44bba765e246c3b2ea, type: 2}
+    m_Id: 61fbc3a80a018a44bba765e246c3b2ea
+  - m_AssetName: GE_PoisonOverTime
+    m_Asset: {fileID: 11400000, guid: 8c4661ccd6d094a4da55d5eb374944ca, type: 2}
+    m_Id: 8c4661ccd6d094a4da55d5eb374944ca
+  - m_AssetName: GA_AttackSelf
+    m_Asset: {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
+    m_Id: 909278e5f18748445abf8a8f7150045b
+  - m_AssetName: GA_TargetedProjectileAbility
+    m_Asset: {fileID: 11400000, guid: 9784f794a413b4a4483520b599405108, type: 2}
+    m_Id: 9784f794a413b4a4483520b599405108
+  - m_AssetName: GE_HealthRegenInstant
+    m_Asset: {fileID: 11400000, guid: a1094ad3158dd7f46a1ed7eef5aed84c, type: 2}
+    m_Id: a1094ad3158dd7f46a1ed7eef5aed84c
+  - m_AssetName: GA_Dash
+    m_Asset: {fileID: 11400000, guid: a1269fd6d6d4fe348be3daaf8201c1b8, type: 2}
+    m_Id: a1269fd6d6d4fe348be3daaf8201c1b8
+  - m_AssetName: GE_ManaRegenConstant
+    m_Asset: {fileID: 11400000, guid: aaeabaaccd0d69046a58ad1299837aef, type: 2}
+    m_Id: aaeabaaccd0d69046a58ad1299837aef
+  - m_AssetName: GA_Fire
+    m_Asset: {fileID: 11400000, guid: bc1351ec5faf4a54e9df89e9aeba2931, type: 2}
+    m_Id: bc1351ec5faf4a54e9df89e9aeba2931
+  - m_AssetName: GA_Jump
+    m_Asset: {fileID: 11400000, guid: c8d1b88417980d148b7a95c45b59d373, type: 2}
+    m_Id: c8d1b88417980d148b7a95c45b59d373
+  - m_AssetName: GE_Jump
+    m_Asset: {fileID: 11400000, guid: dcd0fe51202642c4c994661ceb446307, type: 2}
+    m_Id: dcd0fe51202642c4c994661ceb446307
+  - m_AssetName: GE_IceDamageInstant
+    m_Asset: {fileID: 11400000, guid: e01eba94e20bec34ab2008ff57b72cc0, type: 2}
+    m_Id: e01eba94e20bec34ab2008ff57b72cc0
+  - m_AssetName: GE_IceMovementSlow
+    m_Asset: {fileID: 11400000, guid: ef01d1a3b98f59e4daf9d2517efe7902, type: 2}
+    m_Id: ef01d1a3b98f59e4daf9d2517efe7902
+  - m_AssetName: GA_MyAbility1
+    m_Asset: {fileID: 11400000, guid: f080c8c4fb8b0ac46b37a5a2c46662de, type: 2}
+    m_Id: f080c8c4fb8b0ac46b37a5a2c46662de
+  - m_AssetName: GE_DebugDamage10
+    m_Asset: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
+    m_Id: f15d001c76931ee4cb39b6bb47eb244f
+  - m_AssetName: GE_FireDamageOvertime
+    m_Asset: {fileID: 11400000, guid: f5d7bdb68c75a1348bb1c9ee9da242bb, type: 2}
+    m_Id: f5d7bdb68c75a1348bb1c9ee9da242bb
+  - m_AssetName: GA_ProjectileAbility
+    m_Asset: {fileID: 11400000, guid: f96362b5bad2afa4eadbca9fcc79c2c4, type: 2}
+    m_Id: f96362b5bad2afa4eadbca9fcc79c2c4

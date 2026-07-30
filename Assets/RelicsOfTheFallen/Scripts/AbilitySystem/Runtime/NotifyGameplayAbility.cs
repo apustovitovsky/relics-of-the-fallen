@@ -117,17 +117,33 @@ namespace RelicsOfTheFallen.AbilitySystem
                 sendFailedEvent);
         }
 
-        public override void Activate(
+        /// <summary>
+        /// Begins listening for the gameplay event that resolves this ability.
+        /// </summary>
+        public override void ActivateAbility(
             AbilitySystemComponent source,
             AbilitySystemComponent target,
             string activationGUID)
         {
-            base.Activate(
+            base.ActivateAbility(
                 source,
                 target,
                 activationGUID);
 
-            m_ImpactConsumed = false;
+            if (
+                !CommitAbility(
+                    source,
+                    target,
+                    activationGUID))
+            {
+                DeactivateAbility(
+                    activationGUID);
+
+                return;
+            }
+
+            m_ImpactConsumed =
+                false;
 
             source.OnGameplayEvent -=
                 HandleGameplayEvent;
@@ -149,7 +165,7 @@ namespace RelicsOfTheFallen.AbilitySystem
 
             string resolvedActivationGUID =
                 string.IsNullOrEmpty(activationGUID)
-                    ? this.activationGUID
+                    ? this.ActivationGUID
                     : activationGUID;
 
             base.DeactivateAbility(
@@ -159,11 +175,11 @@ namespace RelicsOfTheFallen.AbilitySystem
         void HandleGameplayEvent(
             GameplayEventData gameplayEvent)
         {
-            if (!isActive ||
+            if (!IsActive ||
                 gameplayEvent.Tag == null ||
                 !string.Equals(
                     gameplayEvent.ActivationGUID,
-                    activationGUID,
+                    ActivationGUID,
                     StringComparison.Ordinal))
             {
                 return;
@@ -198,7 +214,7 @@ namespace RelicsOfTheFallen.AbilitySystem
                     source,
                     target,
                     effect,
-                    activationGUID);
+                    ActivationGUID);
             }
         }
 

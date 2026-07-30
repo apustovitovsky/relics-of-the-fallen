@@ -1,64 +1,131 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
-
-namespace GAS {
-    /// <summary> <para>
-    /// Attribute processors are called everytime an attribute is about to change. They add a layer of logic to constraint the values attributes can have. <br/>
-    /// e.g. Clampers (clamp Health at MaxHealth), (Clam MovementSpeed at min 0), (Clamp bullets at max ClipSize).
-    ///  </para> </summary>
+namespace GAS
+{
     [Serializable]
-    public class AttributeProcessor {
-        [ReadOnly] public string name;
-        public virtual void PreProcess(Attribute attribute, GameplayEffect ge, AbilitySystemComponent asc) {
-            // Debug.Log($"PreProcess: {attribute.attributeName}, partialValue {attribute.partialValue} ge.name {ge.name}");
-        }
-        public virtual void PostProcessed(AttributeName name, float oldValue, float newValue, GameplayEffect ge) {
-            // Debug.Log($"PostProcess: {name}, oldValue {oldValue} newValue {newValue} ge.name {ge.name}");
+    public class AttributeProcessor
+    {
+        [ReadOnly]
+        public string name;
+
+        /// <summary>
+        /// Constrains a proposed attribute base value before it is committed.
+        /// </summary>
+        public virtual void PreAttributeBaseChange(
+            Attribute attribute,
+            ref float newValue,
+            AbilitySystemComponent abilitySystem)
+        {
         }
 
+        /// <summary>
+        /// Handles a gameplay effect after it modifies an attribute base value.
+        /// </summary>
+        public virtual void PostGameplayEffectExecute(
+            GameplayEffectModCallbackData data)
+        {
+        }
     }
 
     [Serializable]
-    public class Clamper : AttributeProcessor {
-        public float min, max;
+    public sealed class Clamper :
+        AttributeProcessor
+    {
+        public float min;
+
+        public float max;
+
         public AttributeName clampedAttributeName;
-        public override void PreProcess(Attribute attribute, GameplayEffect ge, AbilitySystemComponent asc) {
-            // Debug.Log($"Clamper PreProcess: {attribute.attributeName}");
-            if (attribute.attributeName == clampedAttributeName) {
-                if (attribute.partialValue < min) attribute.partialValue = min;
-                if (attribute.partialValue > max) attribute.partialValue = max;
+
+        /// <summary>
+        /// Clamps a configured attribute between constant bounds.
+        /// </summary>
+        public override void PreAttributeBaseChange(
+            Attribute attribute,
+            ref float newValue,
+            AbilitySystemComponent abilitySystem)
+        {
+            if (
+                attribute.attributeName !=
+                clampedAttributeName)
+            {
+                return;
             }
+
+            newValue =
+                Mathf.Clamp(
+                    newValue,
+                    min,
+                    max);
         }
     }
 
     [Serializable]
-    public class ClamperMaxAttributeValue : AttributeProcessor {
+    public sealed class ClamperMaxAttributeValue :
+        AttributeProcessor
+    {
         public AttributeName max;
+
         public AttributeName clampedAttributeName;
 
-        [HideInInspector] public Attribute clamper = null;
-
-        public override void PreProcess(Attribute attribute, GameplayEffect ge, AbilitySystemComponent asc) {
-            if (attribute.attributeName == clampedAttributeName) {
-                if (clamper == null || clamper.attributeName == null) asc.attributesDictionary.TryGetValue(max.name, out clamper);
-                if (attribute.partialValue > clamper.GetValue()) attribute.partialValue = clamper.GetValue();
+        /// <summary>
+        /// Clamps a configured attribute to another attribute maximum.
+        /// </summary>
+        public override void PreAttributeBaseChange(
+            Attribute attribute,
+            ref float newValue,
+            AbilitySystemComponent abilitySystem)
+        {
+            if (
+                attribute.attributeName !=
+                clampedAttributeName)
+            {
+                return;
             }
+
+            Attribute maximumAttribute =
+                abilitySystem.GetAttribute(
+                    max);
+
+            newValue =
+                Mathf.Min(
+                    newValue,
+                    maximumAttribute.CurrentValue);
         }
     }
 
     [Serializable]
-    public class ClamperMinAttributeValue : AttributeProcessor {
+    public sealed class ClamperMinAttributeValue :
+        AttributeProcessor
+    {
         public AttributeName min;
+
         public AttributeName clampedAttributeName;
 
-        [HideInInspector] public Attribute clamper = null;
-
-        public override void PreProcess(Attribute attribute, GameplayEffect ge, AbilitySystemComponent asc) {
-            if (attribute.attributeName == clampedAttributeName) {
-                if (clamper == null || clamper.attributeName == null) asc.attributesDictionary.TryGetValue(min.name, out clamper);
-                if (attribute.partialValue < clamper.GetValue()) attribute.partialValue = clamper.GetValue();
+        /// <summary>
+        /// Clamps a configured attribute to another attribute minimum.
+        /// </summary>
+        public override void PreAttributeBaseChange(
+            Attribute attribute,
+            ref float newValue,
+            AbilitySystemComponent abilitySystem)
+        {
+            if (
+                attribute.attributeName !=
+                clampedAttributeName)
+            {
+                return;
             }
+
+            Attribute minimumAttribute =
+                abilitySystem.GetAttribute(
+                    min);
+
+            newValue =
+                Mathf.Max(
+                    newValue,
+                    minimumAttribute.CurrentValue);
         }
     }
 }

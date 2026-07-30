@@ -9,27 +9,36 @@ using EasyButtons;
 using UnityEditor;
 #endif
 
-namespace GAS {
-    public class AbilitySystemComponentTestCalls : MonoBehaviour {
+namespace GAS
+{
+    public class AbilitySystemComponentTestCalls : MonoBehaviour
+    {
         public AbilitySystemComponent asc;
 
-        private void Awake() {
+        private void Awake()
+        {
             AssignAbilitySystemComponent();
         }
 
         [Button]
-        private void AssignAbilitySystemComponent() {
-            if (asc == null) {
-                if (GetComponent<AbilitySystemComponent>() == null) {
+        private void AssignAbilitySystemComponent()
+        {
+            if (asc == null)
+            {
+                if (GetComponent<AbilitySystemComponent>() == null)
+                {
                     asc = gameObject.AddComponent<AbilitySystemComponent>();
-                } else {
+                }
+                else
+                {
                     asc = GetComponent<AbilitySystemComponent>();
                 }
             }
         }
 
         [Button]
-        public void Test_AddAttributes() {
+        public void Test_AddAttributes()
+        {
             AddAttributeName(asc, AttributeNameLibrary.Instance.GetByName("Health"), 70);
             AddAttributeName(asc, AttributeNameLibrary.Instance.GetByName("HealthMax"), 100);
             AddAttributeName(asc, AttributeNameLibrary.Instance.GetByName("Mana"), 20);
@@ -39,13 +48,24 @@ namespace GAS {
             AddAttributeName(asc, AttributeNameLibrary.Instance.GetByName("DamageMin"), 5);
             AddAttributeName(asc, AttributeNameLibrary.Instance.GetByName("DamageMax"), 15);
         }
-        // ATTRIBUTES
-        // [EasyButtons.Button] // Unity doesn't save newly added attributes to prefabs using this button. Why?  
-        [Tooltip("Simplest way to have the editor display names while in edit mode. Adding attributes is only supported in edit mode.")]
-        public void AddAttributeName(AbilitySystemComponent asc, AttributeName attributeName, float baseValue) { //Only add attributes in edit mode. If they are added after start/awake they wont work. There is a bunch of attribute event wiring that happens on Awake/Start
-            AddAttribute(asc, new Attribute() { attributeName = attributeName, name = attributeName.name, baseValue = baseValue });
+
+        /// <summary>
+        /// Adds an editor-configured attribute with an initial base value.
+        /// </summary>
+        public void AddAttributeName(
+            AbilitySystemComponent abilitySystem,
+            AttributeName attributeName,
+            float baseValue)
+        {
+            AddAttribute(
+                abilitySystem,
+                new Attribute(
+                    attributeName,
+                    baseValue));
         }
-        public void AddAttribute(AbilitySystemComponent asc, Attribute attribute) {
+
+        public void AddAttribute(AbilitySystemComponent asc, Attribute attribute)
+        {
             asc.attributes.Add(attribute);
         }
 
@@ -57,7 +77,8 @@ namespace GAS {
 
 
         [Button]
-        public void Test_ApplySomeGEs_Instant() {
+        public void Test_ApplySomeGEs_Instant()
+        {
             var ge7 = new GameplayEffect() { durationType = GameplayEffectDurationType.Instant, name = "ge7" };
             var mod7 = new BasicModifier() { attributeName = AttributeNameLibrary.Instance.GetByName("Health"), value = 2 };
 
@@ -66,7 +87,8 @@ namespace GAS {
         }
 
         [Button]
-        public void Test_ApplySomeGEs_Infinite() {
+        public void Test_ApplySomeGEs_Infinite()
+        {
             var ge1 = new GameplayEffect() { durationType = GameplayEffectDurationType.Infinite, name = "ge1" };
             var mod1 = new BasicModifier() { attributeName = AttributeNameLibrary.Instance.GetByName("MaxHealth"), value = 10 };
 
@@ -88,7 +110,8 @@ namespace GAS {
 
 
         [Button]
-        public void Test_ApplySomeGEs_Duration() {
+        public void Test_ApplySomeGEs_Duration()
+        {
             var ge4 = new GameplayEffect() { durationType = GameplayEffectDurationType.Duration, name = "ge4", durationValue = 3 };
             var mod4 = new BasicModifier() { attributeName = AttributeNameLibrary.Instance.GetByName("MaxHealth"), value = 100 };
 
@@ -111,7 +134,8 @@ namespace GAS {
 
 
         [Button]
-        public void Test_ApplySomeGEs_Periodic() {
+        public void Test_ApplySomeGEs_Periodic()
+        {
             var ge7 = new GameplayEffect() { durationType = GameplayEffectDurationType.Duration, name = "ge7 Periodic", durationValue = 10, period = 1 };
             var mod7 = new BasicModifier() { attributeName = AttributeNameLibrary.Instance.GetByName("Health"), value = 1 };
 
@@ -122,7 +146,8 @@ namespace GAS {
 
 
         [Button]
-        public void Test_Grant_GAs() {
+        public void Test_Grant_GAs()
+        {
 #if UNITY_EDITOR
 
 
@@ -160,7 +185,8 @@ namespace GAS {
 
 
         [Button]
-        public void Test_Clear_Granted_GAs() {
+        public void Test_Clear_Granted_GAs()
+        {
             asc.grantedGameplayAbilities.Clear();
         }
 
@@ -171,43 +197,50 @@ namespace GAS {
 
 
         [Button]
-        public void Test_GA_TryActivateBlock_Ignored_Required() {
+        public void Test_GA_TryActivateBlock_Ignored_Required()
+        {
             asc.TryActivateAbility("BlockingAbility", asc);
             asc.TryActivateAbility("BlockedAbility", asc);
             asc.TryActivateAbility("IgnoredAbility", asc);
         }
 
         [Button]
-        public void Test_GA_TryActivateToggle() {
+        public void Test_GA_TryActivateToggle()
+        {
             asc.TryActivateAbility(6, asc);
         }
 
         [Button]
-        public void Test_GA_TryActivate_CalcExec_DamageGA() { // GE CALCULATION
+        public void Test_GA_TryActivate_CalcExec_DamageGA()
+        { // GE CALCULATION
             asc.TryActivateAbility(7, asc);
         }
 
         [Button]
-        public void Test_GA_TryActivateMMC() {// GE MMC
+        public void Test_GA_TryActivateMMC()
+        {// GE MMC
             asc.TryActivateAbility(8, asc);
         }
 
 
 
         [Button]
-        public void Test_AddAttributeProcessors() {
+        public void Test_AddAttributeProcessors()
+        {
             asc.attributesProcessors.Add(new Clamper() { min = 0, max = 1000, clampedAttributeName = AttributeNameLibrary.Instance.GetByName("HealthMax") });
             asc.attributesProcessors.Add(new Clamper() { min = 0, max = 1000, clampedAttributeName = AttributeNameLibrary.Instance.GetByName("Health") });
             asc.attributesProcessors.Add(new ClamperMaxAttributeValue() { max = AttributeNameLibrary.Instance.GetByName("HealthMax"), clampedAttributeName = AttributeNameLibrary.Instance.GetByName("Health") });
         }
 
         [Button]
-        public void Test_ClearProcessors() {
+        public void Test_ClearProcessors()
+        {
             asc.attributesProcessors.Clear();
         }
 
         [Button]
-        public void Test_PopulateGAS() {
+        public void Test_PopulateGAS()
+        {
             asc = GetComponent<AbilitySystemComponent>();
             // Debug.Log($"Resources.FindObjectsOfTypeAll<CuesLibrary>(): {(CuesLibrary)FindObjectsOfTypeAll(typeof(CuesLibrary))[0]}");
 
@@ -218,22 +251,26 @@ namespace GAS {
         }
 
         [Button]
-        public void Test_ClearGAS() {
+        public void Test_ClearGAS()
+        {
             asc.grantedGameplayAbilities.Clear();
             asc.attributesProcessors.Clear();
             asc.attributes.Clear();
         }
 
         [Button]
-        public void Up() {
+        public void Up()
+        {
             // GetComponent<AbilitySystemComponentMirror>().Up();
         }
         [Button]
-        public void Test_AbilityCreateInstance(int i) {
+        public void Test_AbilityCreateInstance(int i)
+        {
             var ga = asc.grantedGameplayAbilities[i].Instantiate(asc);
             ga.name += " i";
 
-            foreach (var fx in ga.effects) {
+            foreach (var fx in ga.effects)
+            {
                 Debug.Log($"GA_Instance: fx.gameplayEffectTags {JsonUtility.ToJson(fx.gameplayEffectTags, true)}");
             }
             asc.GrantAbility(ga);

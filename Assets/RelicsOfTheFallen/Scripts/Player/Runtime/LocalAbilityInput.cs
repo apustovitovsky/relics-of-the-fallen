@@ -1,6 +1,7 @@
 using GAS;
 using RelicsOfTheFallen.Character;
 using UnityEngine;
+using GAS.Mirror;
 
 namespace RelicsOfTheFallen.Player
 {
@@ -9,19 +10,22 @@ namespace RelicsOfTheFallen.Player
         MonoBehaviour
     {
         [SerializeField]
-        LocalCharacterInput m_CharacterInput;
+        private NetworkAbilitySystemComponent m_NetworkAbilitySystem;
 
         [SerializeField]
-        AbilitySystemComponent m_AbilitySystem;
+        private LocalCharacterInput m_CharacterInput;
 
         [SerializeField]
-        GameplayAbilitySO m_AttackAbility;
+        private AbilitySystemComponent m_AbilitySystem;
+
+        [SerializeField]
+        private GameplayAbilitySO m_AttackAbility;
 
         [Header("Debug")]
         [SerializeField]
-        bool m_LogDebugEvents = true;
+        private bool m_LogDebugEvents = true;
 
-        void OnEnable()
+        private void OnEnable()
         {
             if (!ValidateReferences())
             {
@@ -36,7 +40,7 @@ namespace RelicsOfTheFallen.Player
                 HandleGameplayEvent;
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             if (m_CharacterInput != null)
             {
@@ -51,7 +55,7 @@ namespace RelicsOfTheFallen.Player
             }
         }
 
-        void HandleAttackPerformed()
+        private void HandleAttackPerformed()
         {
             string abilityName =
                 m_AttackAbility.ga.name;
@@ -64,12 +68,12 @@ namespace RelicsOfTheFallen.Player
                     this);
             }
 
-            m_AbilitySystem.TryActivateAbility(
-                abilityName,
-                m_AbilitySystem);
+            m_NetworkAbilitySystem.TryActivateAbility(
+                m_AttackAbility,
+                m_NetworkAbilitySystem);
         }
 
-        void HandleGameplayEvent(
+        private void HandleGameplayEvent(
             GameplayEventData gameplayEvent)
         {
             if (!m_LogDebugEvents)
@@ -90,7 +94,7 @@ namespace RelicsOfTheFallen.Player
                 this);
         }
 
-        bool ValidateReferences()
+        private bool ValidateReferences()
         {
             if (m_CharacterInput == null)
             {
@@ -109,6 +113,17 @@ namespace RelicsOfTheFallen.Player
                     $"{nameof(LocalAbilityInput)} on " +
                     $"'{name}' requires " +
                     $"{nameof(AbilitySystemComponent)}.",
+                    this);
+
+                return false;
+            }
+
+            if (m_NetworkAbilitySystem == null)
+            {
+                Debug.LogError(
+                    $"{nameof(LocalAbilityInput)} on " +
+                    $"'{name}' requires " +
+                    $"{nameof(NetworkAbilitySystemComponent)}.",
                     this);
 
                 return false;

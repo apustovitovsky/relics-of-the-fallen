@@ -18,12 +18,31 @@ namespace GAS {
         public GroupAttributeProcessor attributeProcessors;
         public GroupGA abilities;
 
-        public void AddAttributes(AbilitySystemComponent asc) {
-            asc.attributes.Clear();
-            if (attributes == null) { Debug.LogWarning(asc.name + " has no attributes."); return; }
+        /// <summary>
+        /// Recreates the component attributes from its initialization data.
+        /// </summary>
+        public void AddAttributes(
+            AbilitySystemComponent abilitySystem)
+        {
+            abilitySystem.attributes.Clear();
 
-            foreach (AttributeInitialData init in attributes.group) {
-                asc.attributes.Add(new Attribute() { attributeName = init.attributeName, name = init.attributeName.name, baseValue = init.baseValue });
+            if (attributes == null)
+            {
+                Debug.LogWarning(
+                    abilitySystem.name +
+                    " has no attributes.");
+
+                return;
+            }
+
+            foreach (
+                AttributeInitialData initialData
+                in attributes.group)
+            {
+                abilitySystem.attributes.Add(
+                    new Attribute(
+                        initialData.attributeName,
+                        initialData.baseValue));
             }
         }
 
@@ -39,28 +58,44 @@ namespace GAS {
         }
 
         public void OnEnable() {
-            if (attributes == null) Debug.LogError("NULL attributes in " + name);
+            if (attributes == null)
+            {
+                Debug.LogError("NULL attributes in " + name);
+            }
         }
 
         public override void OnValidate() {
             base.OnValidate();
         }
 
-        public void GrantAbilities(AbilitySystemComponent asc) {
-            asc.grantedGameplayAbilities.Clear();
-            if (abilities == null) return;
-            foreach (var gaSO in abilities.group) {
-                if (gaSO == null) {
-                    Debug.LogError($"GrantAbilitiesFromSO - NULL GameplayAbilitySO");
+        /// <summary>
+        /// Grants every configured ability definition to the target ability system.
+        /// </summary>
+        public void GrantAbilities(
+            AbilitySystemComponent abilitySystem)
+        {
+            abilitySystem.ClearAllAbilities();
+
+            if (abilities == null)
+            {
+                return;
+            }
+
+            foreach (
+                GameplayAbilitySO definitionAsset
+                in abilities.group)
+            {
+                if (definitionAsset == null)
+                {
+                    Debug.LogError(
+                        "Ability group contains a missing definition asset.",
+                        abilities);
+
                     continue;
                 }
 
-                if (gaSO is GameplayAbilitySO abilitySO) {
-                    GameplayAbility ga = abilitySO.ga; // Access the 'ga' property directly
-                    asc.GrantAbility(ga);
-                } else {
-                    Debug.LogError($"Invalid type in the initialGameplayAbilitiesSO list.");
-                }
+                abilitySystem.GrantAbility(
+                    definitionAsset);
             }
         }
     }

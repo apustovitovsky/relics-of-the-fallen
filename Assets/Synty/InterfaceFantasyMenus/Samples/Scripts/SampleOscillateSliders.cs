@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Synty Studios Limited. All rights reserved.
 //
-// Use of this software is subject to the terms and conditions of the End User Licence Agreement (EULA) 
-// of the store at which you purchased this asset. 
+// Use of this software is subject to the terms and conditions of the End User Licence Agreement (EULA)
+// of the store at which you purchased this asset.
 //
 // Synty assets are available at:
 // https://www.syntystore.com
@@ -30,6 +30,7 @@ namespace Synty.Interface.FantasyMenus.Samples
         public float speed = 1f;
         public float offset = 0.5f;
 
+        [System.Obsolete]
         private void GetSliders()
         {
 #if UNITY_2022_1_OR_NEWER
@@ -39,11 +40,13 @@ namespace Synty.Interface.FantasyMenus.Samples
 #endif
         }
 
+        [System.Obsolete]
         private void Reset()
         {
             GetSliders();
         }
 
+        [System.Obsolete]
         private void Start()
         {
             if (autoGetSliders)

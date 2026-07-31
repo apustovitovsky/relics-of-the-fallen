@@ -1,6 +1,6 @@
 namespace GAS
 {
-    public static class GameplayEffectConstants
+    public static class GameplayEffectGlobals
     {
         public const float InstantApplication =
             0f;

@@ -600,7 +600,7 @@ namespace GAS
 
             if (
                 activeEffect.Spec.Duration ==
-                GameplayEffectConstants.InfiniteDuration)
+                GameplayEffectGlobals.InfiniteDuration)
             {
                 activeEffect.DisposeDurationHandle();
 

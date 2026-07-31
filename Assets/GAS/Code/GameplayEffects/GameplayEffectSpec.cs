@@ -285,10 +285,10 @@ namespace GAS
                 definition.durationType switch
                 {
                     GameplayEffectDurationType.Instant =>
-                        GameplayEffectConstants.InstantApplication,
+                        GameplayEffectGlobals.InstantApplication,
 
                     GameplayEffectDurationType.Infinite =>
-                        GameplayEffectConstants.InfiniteDuration,
+                        GameplayEffectGlobals.InfiniteDuration,
 
                     GameplayEffectDurationType.Duration =>
                         definition.durationValue,

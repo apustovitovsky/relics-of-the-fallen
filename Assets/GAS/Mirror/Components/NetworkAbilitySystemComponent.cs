@@ -395,13 +395,21 @@ namespace GAS.Mirror
             ActiveGameplayEffectReplicationState currentState =
                 m_ActiveGameplayEffects[replicationId];
 
+            GameplayEffectContextReplicationState oldContext =
+                oldState.Context;
+
+            GameplayEffectContextReplicationState currentContext =
+                currentState.Context;
+
             if (
-                oldState.SourceNetworkId !=
-                currentState.SourceNetworkId)
+                oldContext.InstigatorNetworkId !=
+                currentContext.InstigatorNetworkId ||
+                oldContext.EffectCauserNetworkId !=
+                currentContext.EffectCauserNetworkId)
             {
                 throw new InvalidOperationException(
                     $"Active gameplay effect '{replicationId}' cannot change " +
-                    "its source identity.");
+                    "its context actor identities.");
             }
 
             ActiveGameplayEffect replicatedEffect =
@@ -469,30 +477,9 @@ namespace GAS.Mirror
                     nameof(state));
             }
 
-            GameplayEffectContextHandle effectContext;
-
-            if (
-                NetworkClient.spawned.TryGetValue(
-                    state.SourceNetworkId,
-                    out NetworkIdentity sourceIdentity))
-            {
-                if (
-                    !sourceIdentity.TryGetComponent(
-                        out NetworkAbilitySystemComponent sourceNetwork))
-                {
-                    throw new InvalidOperationException(
-                        "Gameplay effect source has no network ability-system component.");
-                }
-
-                effectContext =
-                    sourceNetwork.m_AbilitySystem.MakeEffectContext();
-            }
-            else
-            {
-                effectContext =
-                    new GameplayEffectContextHandle(
-                        new GameplayEffectContext());
-            }
+            GameplayEffectContextHandle effectContext =
+                CreateReplicatedGameplayEffectContext(
+                    state.Context);
 
             GameplayEffectSO definitionAsset =
                 m_AssetRegistry.GetAsset<GameplayEffectSO>(
@@ -506,11 +493,8 @@ namespace GAS.Mirror
                     state.Duration,
                     state.EvaluatedModifierMagnitudes);
 
-            double currentWorldTime =
-                Time.timeAsDouble;
-
-            double currentServerWorldTime =
-                NetworkTime.time;
+            double currentWorldTime = Time.timeAsDouble;
+            double currentServerWorldTime = NetworkTime.time;
 
             double startWorldTime =
                 currentWorldTime -
@@ -526,55 +510,54 @@ namespace GAS.Mirror
         }
 
         /// <summary>
+        /// Creates a gameplay effect context backed by replicated object references.
+        /// </summary>
+        private static GameplayEffectContextHandle
+            CreateReplicatedGameplayEffectContext(
+                GameplayEffectContextReplicationState state)
+        {
+            return new GameplayEffectContextHandle(
+                new GameplayEffectContext(
+                    state));
+        }
+
+        /// <summary>
         /// Creates network state from one authoritative active gameplay effect.
         /// </summary>
         private bool TryCreateActiveGameplayEffectReplicationState(
             ActiveGameplayEffect activeEffect,
             out ActiveGameplayEffectReplicationState state)
         {
-            GameplayEffectSpec spec =
-                activeEffect.Spec;
-
-            GameplayEffectSO definitionAsset =
-                spec.DefinitionAsset;
+            GameplayEffectSpec spec = activeEffect.Spec;
+            GameplayEffectSO definitionAsset = spec.DefinitionAsset;
+            GameplayEffectContextHandle effectContext = spec.EffectContext;
 
             if (definitionAsset == null)
             {
-                state =
-                    default;
-
-                return false;
-            }
-
-            GameplayAbilityActorInfo sourceActorInfo =
-                spec.Source.AbilityActorInfo;
-
-            if (
-                sourceActorInfo == null ||
-                sourceActorInfo.OwnerActor == null)
-            {
-                state =
-                    default;
-
+                state = default;
                 return false;
             }
 
             if (
-                !sourceActorInfo.OwnerActor.TryGetComponent(
-                    out NetworkIdentity sourceIdentity) ||
-                sourceIdentity.netId == 0)
+                !TryGetReplicatedActorNetworkId(
+                    effectContext.GetInstigator(),
+                    out uint instigatorNetworkId) ||
+                instigatorNetworkId == 0 ||
+                !TryGetReplicatedActorNetworkId(
+                    effectContext.GetEffectCauser(),
+                    out uint effectCauserNetworkId))
             {
-                state =
-                    default;
-
+                state = default;
                 return false;
             }
 
-            int modifierCount =
-                spec.ModifierSpecs.Count;
+            GameplayEffectContextReplicationState contextState =
+                new(
+                    instigatorNetworkId,
+                    effectCauserNetworkId);
 
-            float[] evaluatedModifierMagnitudes =
-                new float[modifierCount];
+            int modifierCount = spec.ModifierSpecs.Count;
+            float[] evaluatedModifierMagnitudes = new float[modifierCount];
 
             for (
                 int index = 0;
@@ -585,20 +568,45 @@ namespace GAS.Mirror
                     spec.ModifierSpecs[index].EvaluatedMagnitude;
             }
 
-            AssetId definitionId =
-                m_AssetRegistry.GetAssetId(
-                    definitionAsset);
+            AssetId definitionId = m_AssetRegistry.GetAssetId(
+                definitionAsset);
 
             state =
                 new ActiveGameplayEffectReplicationState(
                     definitionId,
-                    sourceIdentity.netId,
+                    contextState,
                     spec.Level,
                     spec.Duration,
                     activeEffect.StartServerWorldTime,
                     activeEffect.PredictionKey,
                     evaluatedModifierMagnitudes);
 
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the spawned network identity represented by one optional gameplay actor.
+        /// </summary>
+        private static bool TryGetReplicatedActorNetworkId(
+            GameObject actor,
+            out uint networkId)
+        {
+            networkId = 0;
+
+            if (actor == null)
+            {
+                return true;
+            }
+
+            if (
+                !actor.TryGetComponent(
+                    out NetworkIdentity identity) ||
+                identity.netId == 0)
+            {
+                return false;
+            }
+
+            networkId = identity.netId;
             return true;
         }
 

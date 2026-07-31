@@ -2,7 +2,7 @@ using Mirror;
 
 namespace GAS.Mirror
 {
-    internal static class AbilitySystemNetworkSerialization
+    internal static class AbilitySystemNetworkSerializationExtensions
     {
         public static void WriteAssetId(
             this NetworkWriter writer,
@@ -96,6 +96,28 @@ namespace GAS.Mirror
                 this NetworkReader reader)
         {
             return new GameplayAbilityRepAnimMontageReplicationState(
+                reader);
+        }
+
+        /// <summary>
+        /// Writes the replicated actor-reference state of one gameplay effect context.
+        /// </summary>
+        public static void WriteGameplayEffectContextReplicationState(
+            this NetworkWriter writer,
+            GameplayEffectContextReplicationState value)
+        {
+            value.Serialize(
+                writer);
+        }
+
+        /// <summary>
+        /// Reads the replicated actor-reference state of one gameplay effect context.
+        /// </summary>
+        public static GameplayEffectContextReplicationState
+            ReadGameplayEffectContextReplicationState(
+                this NetworkReader reader)
+        {
+            return new GameplayEffectContextReplicationState(
                 reader);
         }
 

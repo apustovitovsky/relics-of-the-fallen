@@ -5,33 +5,12 @@ namespace GAS
 {
     public class GameplayEffectContext
     {
-        public GameObject Instigator
-        {
-            get;
-            private set;
-        }
+        private IGameplayEffectContextObjectProvider m_ObjectProvider;
 
-        public GameObject EffectCauser
-        {
-            get;
-            private set;
-        }
-
-        private GameObject OriginalInstigator
+        private AbilitySystemComponent InstigatorAbilitySystemComponent
         {
             get;
             set;
-        }
-
-        private UnityEngine.Object SourceObject
-        {
-            get;
-            set;
-        }
-
-        private AbilitySystemComponent OriginalInstigatorAbilitySystemComponent
-        {
-            get;
         }
 
         private GameplayAbilitySO Ability
@@ -56,7 +35,23 @@ namespace GAS
         /// Creates an empty gameplay effect context for later initialization.
         /// </summary>
         public GameplayEffectContext()
+            : this(
+                new GameplayEffectContextObjectContainer(
+                    null,
+                    null,
+                    null))
         {
+        }
+
+        /// <summary>
+        /// Creates a gameplay effect context backed by the requested object provider.
+        /// </summary>
+        public GameplayEffectContext(
+            IGameplayEffectContextObjectProvider objectProvider)
+        {
+            m_ObjectProvider =
+                objectProvider ?? throw new ArgumentNullException(
+                    nameof(objectProvider));
         }
 
         /// <summary>
@@ -71,12 +66,9 @@ namespace GAS
                     nameof(source));
             }
 
-            Instigator = source.Instigator;
-            EffectCauser = source.EffectCauser;
-            OriginalInstigator = source.OriginalInstigator;
-            SourceObject = source.SourceObject;
-            OriginalInstigatorAbilitySystemComponent =
-                source.OriginalInstigatorAbilitySystemComponent;
+            m_ObjectProvider = source.m_ObjectProvider;
+            InstigatorAbilitySystemComponent =
+                source.InstigatorAbilitySystemComponent;
             Ability = source.Ability;
             AbilityInstanceNotReplicated =
                 source.AbilityInstanceNotReplicated;
@@ -104,11 +96,12 @@ namespace GAS
                     nameof(actorInfo));
             }
 
-            AddInstigator(
+            m_ObjectProvider = new GameplayEffectContextObjectContainer(
                 actorInfo.OwnerActor,
-                actorInfo.AvatarActor);
+                actorInfo.AvatarActor,
+                null);
 
-            OriginalInstigatorAbilitySystemComponent =
+            InstigatorAbilitySystemComponent =
                 actorInfo.AbilitySystemComponent;
         }
 
@@ -119,17 +112,17 @@ namespace GAS
             GameObject instigator,
             GameObject effectCauser)
         {
-            Instigator =
-                instigator;
+            m_ObjectProvider =
+                new GameplayEffectContextObjectContainer(
+                    instigator,
+                    effectCauser,
+                    m_ObjectProvider.SourceObject);
 
-            EffectCauser =
-                effectCauser;
+            AbilitySystemGlobals.TryGetAbilitySystemComponentFromActor(
+                instigator,
+                out AbilitySystemComponent abilitySystem);
 
-            if (OriginalInstigator == null)
-            {
-                OriginalInstigator =
-                    instigator;
-            }
+            InstigatorAbilitySystemComponent = abilitySystem;
         }
 
         /// <summary>
@@ -137,7 +130,20 @@ namespace GAS
         /// </summary>
         public virtual GameObject GetInstigator()
         {
-            return Instigator;
+            return m_ObjectProvider.Instigator;
+        }
+
+        /// <summary>
+        /// Replaces the physical actor responsible for causing this gameplay effect.
+        /// </summary>
+        public void SetEffectCauser(
+            GameObject effectCauser)
+        {
+            m_ObjectProvider =
+                new GameplayEffectContextObjectContainer(
+                    m_ObjectProvider.Instigator,
+                    effectCauser,
+                    m_ObjectProvider.SourceObject);
         }
 
         /// <summary>
@@ -145,7 +151,7 @@ namespace GAS
         /// </summary>
         public virtual GameObject GetOriginalInstigator()
         {
-            return OriginalInstigator;
+            return GetInstigator();
         }
 
         /// <summary>
@@ -153,7 +159,7 @@ namespace GAS
         /// </summary>
         public virtual GameObject GetEffectCauser()
         {
-            return EffectCauser;
+            return m_ObjectProvider.EffectCauser;
         }
 
         /// <summary>
@@ -222,8 +228,10 @@ namespace GAS
         public virtual void AddSourceObject(
             UnityEngine.Object sourceObject)
         {
-            SourceObject =
-                sourceObject;
+            m_ObjectProvider = new GameplayEffectContextObjectContainer(
+                m_ObjectProvider.Instigator,
+                m_ObjectProvider.EffectCauser,
+                sourceObject);
         }
 
         /// <summary>
@@ -231,7 +239,26 @@ namespace GAS
         /// </summary>
         public virtual UnityEngine.Object GetSourceObject()
         {
-            return SourceObject;
+            return m_ObjectProvider.SourceObject;
+        }
+
+        /// <summary>
+        /// Returns the ability system component associated with the effect instigator.
+        /// </summary>
+        public virtual AbilitySystemComponent
+            GetInstigatorAbilitySystemComponent()
+        {
+            if (InstigatorAbilitySystemComponent != null)
+            {
+                return InstigatorAbilitySystemComponent;
+            }
+
+            AbilitySystemGlobals.TryGetAbilitySystemComponentFromActor(
+                GetInstigator(),
+                out AbilitySystemComponent abilitySystem);
+
+            InstigatorAbilitySystemComponent = abilitySystem;
+            return InstigatorAbilitySystemComponent;
         }
 
         /// <summary>
@@ -240,7 +267,7 @@ namespace GAS
         public virtual AbilitySystemComponent
             GetOriginalInstigatorAbilitySystemComponent()
         {
-            return OriginalInstigatorAbilitySystemComponent;
+            return GetInstigatorAbilitySystemComponent();
         }
     }
 }

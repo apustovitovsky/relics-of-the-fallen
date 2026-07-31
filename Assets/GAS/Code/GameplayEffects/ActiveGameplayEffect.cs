@@ -229,8 +229,8 @@ namespace GAS
 
             return
                 duration ==
-                GameplayEffectConstants.InfiniteDuration
-                    ? GameplayEffectConstants.InfiniteDuration
+                GameplayEffectGlobals.InfiniteDuration
+                    ? GameplayEffectGlobals.InfiniteDuration
                     : duration -
                     (currentWorldTime -
                     StartWorldTime);

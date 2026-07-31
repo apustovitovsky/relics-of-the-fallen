@@ -18,7 +18,7 @@ namespace GAS.Mirror
             get;
         }
 
-        public uint SourceNetworkId
+        public GameplayEffectContextReplicationState Context
         {
             get;
         }
@@ -55,7 +55,7 @@ namespace GAS.Mirror
         /// </summary>
         public ActiveGameplayEffectReplicationState(
             AssetId definitionId,
-            uint sourceNetworkId,
+            GameplayEffectContextReplicationState context,
             float level,
             float duration,
             double startServerWorldTime,
@@ -69,19 +69,18 @@ namespace GAS.Mirror
                     nameof(definitionId));
             }
 
-            if (sourceNetworkId == 0)
+            if (context.InstigatorNetworkId == 0)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sourceNetworkId),
-                    sourceNetworkId,
-                    "Gameplay effect source network ID must be nonzero.");
+                throw new ArgumentException(
+                    "Gameplay effect context must contain an instigator identity.",
+                    nameof(context));
             }
 
             if (
                 float.IsNaN(duration) ||
                 float.IsInfinity(duration) ||
                 duration <
-                GameplayEffectConstants.InfiniteDuration)
+                GameplayEffectGlobals.InfiniteDuration)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(duration),
@@ -96,7 +95,7 @@ namespace GAS.Mirror
             }
 
             DefinitionId = definitionId;
-            SourceNetworkId = sourceNetworkId;
+            Context = context;
             Level = level;
             Duration = duration;
             StartServerWorldTime = startServerWorldTime;
@@ -115,7 +114,7 @@ namespace GAS.Mirror
             NetworkReader reader)
             : this(
                 reader.ReadAssetId(),
-                reader.ReadUInt(),
+                reader.ReadGameplayEffectContextReplicationState(),
                 reader.ReadFloat(),
                 reader.ReadFloat(),
                 reader.ReadDouble(),
@@ -148,8 +147,8 @@ namespace GAS.Mirror
             writer.WriteAssetId(
                 DefinitionId);
 
-            writer.WriteUInt(
-                SourceNetworkId);
+            writer.WriteGameplayEffectContextReplicationState(
+                Context);
 
             writer.WriteFloat(
                 Level);

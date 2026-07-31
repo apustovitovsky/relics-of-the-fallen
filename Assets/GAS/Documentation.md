@@ -78,27 +78,32 @@ Spec создаётся методом `AbilitySystemComponent.MakeOutgoingSpec(
 `SetSetByCallerMagnitude()` сохраняет runtime-величину по `GameplayTag`.
 
 
-### GameplayEffectContext
+#### 4.5.10 Gameplay Effect Context
 
-`GameplayEffectContext` хранит происхождение конкретного применения эффекта. Он не содержит правила `GameplayEffect` или вычисленные значения `GameplayEffectSpec`.
+`GameplayEffectContext` хранит происхождение конкретного применения
+`GameplayEffect`: инициатора, физический источник, предоставивший ability объект и
+связанную ability. Он передаётся внутри `GameplayEffectSpec` и доступен расчётам
+magnitude, execution calculations, attribute callbacks и Gameplay Cues.
 
-`AbilitySystemComponent.MakeEffectContext()` создаёт базовый контекст, где `Instigator` соответствует `OwnerActor`, а `EffectCauser` — текущему `AvatarActor`.
+`AbilitySystemComponent.MakeEffectContext()` создаёт базовый context, где
+`Instigator` соответствует `OwnerActor`, а `EffectCauser` — текущему
+`AvatarActor`.
 
 `GameplayAbility.MakeEffectContext()` дополнительно сохраняет:
 
-- persistent definition создавшей контекст ability;
+- persistent definition создавшей context ability;
 - локальный runtime instance ability;
 - ability level на момент создания;
 - `SourceObject` из соответствующего `GameplayAbilitySpec`.
 
-Участники применения имеют разное назначение:
+Объектные ссылки имеют разное назначение:
 
 ```text
 Instigator
 → непосредственный инициатор текущего эффекта
 
 OriginalInstigator
-→ первый инициатор всей цепочки эффектов
+→ в базовом context совпадает с Instigator; производный context может изменить семантику
 
 EffectCauser
 → физический источник, например avatar, weapon или projectile
@@ -107,17 +112,24 @@ SourceObject
 → объект, предоставивший ability, например weapon или item
 ```
 
-`GameplayEffectContextHandle` хранит полиморфную ссылку на context и предоставляет основной API без раскрытия внутреннего объекта.
+`GameplayEffectContextHandle` хранит полиморфную ссылку на context и
+предоставляет GAS-совместимые методы `GetInstigator()`,
+`GetOriginalInstigator()`, `GetEffectCauser()` и `GetSourceObject()`. Обычное
+копирование handle разделяет один context, `Duplicate()` создаёт независимую
+копию, а `Clear()` инвалидирует только очищаемую копию handle.
 
-Копия `GameplayEffectSpec` по умолчанию разделяет context с исходным spec. Перед независимой модификацией context необходимо вызвать:
+Копия `GameplayEffectSpec` по умолчанию разделяет context с исходным spec. Перед
+независимой модификацией context необходимо вызвать:
 
 ```csharp
 copiedSpec.DuplicateEffectContext();
 ```
 
-`DuplicateEffectContext()` создаёт отдельный context через виртуальный `GameplayEffectContext.Duplicate()`. Производные context-типы должны переопределять `Duplicate()`, если содержат собственные mutable-данные.
+`DuplicateEffectContext()` создаёт отдельный context через виртуальный
+`GameplayEffectContext.Duplicate()`. Производный context должен переопределить
+`Duplicate()`, если содержит собственные mutable-данные.
 
-Полный локальный pipeline:
+Локальный pipeline:
 
 ```text
 GameplayAbilitySpec
@@ -129,9 +141,54 @@ GameplayAbilitySpec
 → применение эффекта
 ```
 
-`GetAbilityInstance_NotReplicated()` возвращает только локальный runtime instance. Он не является частью сетевого состояния.
+`GetAbilityInstance_NotReplicated()` возвращает только локальный runtime instance
+ability и не входит в сетевое состояние.
 
-Текущий Mirror transport восстанавливает для реплицированного active effect только исходный ASC через `SourceNetworkId`. Остальные поля context пока не сериализуются, поэтому удалённая копия context является частичной.
+Доступ к объектным ссылкам адаптирован под Unity через
+`IGameplayEffectContextObjectProvider`:
+
+```text
+GameplayEffectContext
+└─ IGameplayEffectContextObjectProvider
+   ├─ GameplayEffectContextObjectContainer
+   └─ GameplayEffectContextReplicationState
+```
+
+`GameplayEffectContextObjectContainer` хранит непосредственные Unity-ссылки.
+`GameplayEffectContextReplicationState` хранит `netId` для `Instigator` и
+`EffectCauser` и разрешает объекты через `NetworkClient.spawned` при каждом
+обращении к context. Если объект ещё не spawned на клиенте, getter временно
+возвращает `null`; следующее обращение может разрешить его без повторного создания
+context. Базовый `GetOriginalInstigator()` возвращает тот же объект, что и
+`GetInstigator()`.
+
+```text
+ActiveGameplayEffectReplicationState.Context
+→ GameplayEffectContextReplicationState
+→ GameplayEffectContext(provider)
+→ GetInstigator / GetEffectCauser
+→ NetworkClient.spawned
+```
+
+`SourceObject` может быть `GameObject`, `Component` или `ScriptableObject`, поэтому
+для него нет единого Mirror `netId`. Текущий active-effect transport его не
+сериализует, и удалённый context возвращает `null`. Authority и локальная
+prediction продолжают использовать непосредственный `SourceObject`.
+
+Транспорт active effects также пока не восстанавливает ability definition,
+runtime ability instance и ability level внутри удалённого context. Рассчитанные
+modifier magnitudes передаются отдельно внутри состояния active effect, поэтому
+эти данные не требуются для корректного observer-применения текущего MVP.
+
+Для создания производного context в Unreal переопределяется
+`AbilitySystemGlobals.AllocGameplayEffectContext()`. Настраиваемый allocator в
+текущей Unity-реализации ещё не добавлен; статическая прокладка над
+`new GameplayEffectContext()` намеренно не используется.
+
+Текущий MVP не реализует расширенные данные Unreal context: actor array,
+`HitResult`, world origin и `TargetData`. Они добавляются при появлении gameplay,
+которому эти данные действительно нужны; базовый lifecycle context и возможность
+создать производный `GameplayEffectContext` уже сохранены.
 
 
 ### GameplayAbility commit

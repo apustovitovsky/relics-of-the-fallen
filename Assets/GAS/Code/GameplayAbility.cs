@@ -73,10 +73,14 @@ namespace GAS
                     nameof(handle));
             }
 
+            if (actorInfo == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(actorInfo));
+            }
+
             GameplayEffectContextHandle effectContext =
-                new(
-                    new GameplayEffectContext(
-                        actorInfo));
+                actorInfo.AbilitySystemComponent.MakeEffectContext();
 
             effectContext.SetAbility(
                 this);

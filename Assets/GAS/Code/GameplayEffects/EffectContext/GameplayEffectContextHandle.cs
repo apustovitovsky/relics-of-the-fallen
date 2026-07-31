@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace GAS
 {
-    public readonly struct GameplayEffectContextHandle
+    public struct GameplayEffectContextHandle
     {
-        private readonly GameplayEffectContext m_Data;
+        private GameplayEffectContext m_Data;
 
-        public bool IsValid =>
+        public readonly bool IsValid =>
             m_Data != null;
 
         /// <summary>
@@ -24,9 +24,17 @@ namespace GAS
         /// <summary>
         /// Returns the gameplay effect context referenced by this handle.
         /// </summary>
-        public GameplayEffectContext Get()
+        public readonly GameplayEffectContext Get()
         {
             return m_Data;
+        }
+
+        /// <summary>
+        /// Releases the gameplay effect context referenced by this handle.
+        /// </summary>
+        public void Clear()
+        {
+            m_Data = null;
         }
 
         /// <summary>
@@ -42,7 +50,7 @@ namespace GAS
             return new GameplayEffectContextHandle(
                 m_Data.Duplicate());
         }
-        
+
         /// <summary>
         /// Sets the gameplay ability that created the referenced effect context.
         /// </summary>
@@ -157,6 +165,17 @@ namespace GAS
         {
             return IsValid
                 ? m_Data.GetSourceObject()
+                : null;
+        }
+
+        /// <summary>
+        /// Returns the ability system component of the effect instigator.
+        /// </summary>
+        public AbilitySystemComponent
+            GetInstigatorAbilitySystemComponent()
+        {
+            return IsValid
+                ? m_Data.GetInstigatorAbilitySystemComponent()
                 : null;
         }
 

@@ -22,10 +22,10 @@ namespace GAS
             ulong value,
             bool wasSuccessfullyApplied)
         {
-            this.m_Value =
+            m_Value =
                 value;
 
-            this.m_WasSuccessfullyApplied =
+            m_WasSuccessfullyApplied =
                 wasSuccessfullyApplied;
         }
 

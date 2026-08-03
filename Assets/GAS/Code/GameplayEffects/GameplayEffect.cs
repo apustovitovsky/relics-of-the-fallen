@@ -29,7 +29,15 @@ namespace GAS
         public float durationValue;
         [Tooltip("Modifiers will be applied every (period) seconds, while GE is active (Duration or Infinite). Ignored if 0.")]
         public float period = 0f;
-        public bool periodicExpired = false;
+
+        [field: SerializeField]
+        [field: Tooltip("Executes the periodic effect immediately on application.")]
+        public bool ExecutePeriodicEffectOnApplication
+        {
+            get;
+            set;
+        }
+
         [SerializeReference] public List<Modifier> modifiers = new List<Modifier>();
 
         [SerializeField]
@@ -58,7 +66,7 @@ namespace GAS
         public GameplayEffect Instantiate()
         {
             GameplayEffect geCopy =
-                new GameplayEffect();
+                new();
 
             geCopy.guid =
                 Guid.NewGuid().ToString();
@@ -104,6 +112,9 @@ namespace GAS
 
             geCopy.gameplayEffectTags =
                 gameplayEffectTags;
+
+            geCopy.ExecutePeriodicEffectOnApplication =
+                ExecutePeriodicEffectOnApplication;
 
             if (!gameplayEffectTags.initialized)
             {

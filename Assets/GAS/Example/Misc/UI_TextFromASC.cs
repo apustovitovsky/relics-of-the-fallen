@@ -87,7 +87,7 @@ namespace GAS
             //GEs, time remaining
             text.text += $"\n Gameplay Effects: \n";
             text.text += "<color=#008EFF>";
-            text.text += $"[{string.Join(", ", asc.appliedGameplayEffects.Select(x => x.name))}] \n";
+            text.text += $"[{string.Join(", ", asc.AppliedGameplayEffects.Select(x => x.name))}] \n";
             text.text += "</color>";
 
             // //GAs, cooldownRemaining, canActivate?

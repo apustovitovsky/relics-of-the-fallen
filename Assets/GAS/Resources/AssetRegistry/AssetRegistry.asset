@@ -13,6 +13,15 @@ MonoBehaviour:
   m_Name: AssetRegistry
   m_EditorClassIdentifier: GAS::GAS.AssetRegistry
   m_Entries:
+  - m_AssetName: HealthPotion
+    m_Asset: {fileID: 11400000, guid: 011145e8c47e8f7428de0d344f3994af, type: 2}
+    m_Id: 011145e8c47e8f7428de0d344f3994af
+  - m_AssetName: DamageMax
+    m_Asset: {fileID: 11400000, guid: 0c747f4b75f96d541a95f88c0491846b, type: 2}
+    m_Id: 0c747f4b75f96d541a95f88c0491846b
+  - m_AssetName: Health
+    m_Asset: {fileID: 11400000, guid: 219553465e23cbb4cb54f849f6a78721, type: 2}
+    m_Id: 219553465e23cbb4cb54f849f6a78721
   - m_AssetName: GA_Potion
     m_Asset: {fileID: 11400000, guid: 224bcf7eee79a50468710d9c47a2d5a0, type: 2}
     m_Id: 224bcf7eee79a50468710d9c47a2d5a0
@@ -43,21 +52,45 @@ MonoBehaviour:
   - m_AssetName: GE_Dash
     m_Asset: {fileID: 11400000, guid: 4ebd3f3b21c04f347aa372e27a58eeea, type: 2}
     m_Id: 4ebd3f3b21c04f347aa372e27a58eeea
+  - m_AssetName: AttackSpeed
+    m_Asset: {fileID: 11400000, guid: 57e96ed5b9f9a274f8d538315ed47d4d, type: 2}
+    m_Id: 57e96ed5b9f9a274f8d538315ed47d4d
   - m_AssetName: GE_HealthRegenOverTime
     m_Asset: {fileID: 11400000, guid: 5ba8b7277b1505548b2ef437e586815b, type: 2}
     m_Id: 5ba8b7277b1505548b2ef437e586815b
   - m_AssetName: GE_AntiPoison
     m_Asset: {fileID: 11400000, guid: 5e42a5bb83a606b44a4515d22f30c34c, type: 2}
     m_Id: 5e42a5bb83a606b44a4515d22f30c34c
+  - m_AssetName: Attribute_HealthMax
+    m_Asset: {fileID: 11400000, guid: 61ebaddd3e4a15640be46831695ecfb3, type: 2}
+    m_Id: 61ebaddd3e4a15640be46831695ecfb3
   - m_AssetName: GE_AttackSpeed
     m_Asset: {fileID: 11400000, guid: 61fbc3a80a018a44bba765e246c3b2ea, type: 2}
     m_Id: 61fbc3a80a018a44bba765e246c3b2ea
+  - m_AssetName: Attribute_Speed
+    m_Asset: {fileID: 11400000, guid: 67bca21e884e5ba43be5f84fdbb20a32, type: 2}
+    m_Id: 67bca21e884e5ba43be5f84fdbb20a32
+  - m_AssetName: Attribute_Health
+    m_Asset: {fileID: 11400000, guid: 6bf7c58b9b397ae4988f5c0f36fd6bb1, type: 2}
+    m_Id: 6bf7c58b9b397ae4988f5c0f36fd6bb1
+  - m_AssetName: Armor
+    m_Asset: {fileID: 11400000, guid: 737280e4bb6d45b4ebc4ce8fea66fc4d, type: 2}
+    m_Id: 737280e4bb6d45b4ebc4ce8fea66fc4d
+  - m_AssetName: CriticalChance
+    m_Asset: {fileID: 11400000, guid: 7a6848c218694424ca46f59ba4f3c4b2, type: 2}
+    m_Id: 7a6848c218694424ca46f59ba4f3c4b2
   - m_AssetName: GE_PoisonOverTime
     m_Asset: {fileID: 11400000, guid: 8c4661ccd6d094a4da55d5eb374944ca, type: 2}
     m_Id: 8c4661ccd6d094a4da55d5eb374944ca
   - m_AssetName: GA_AttackSelf
     m_Asset: {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
     m_Id: 909278e5f18748445abf8a8f7150045b
+  - m_AssetName: ManaMax
+    m_Asset: {fileID: 11400000, guid: 96060d461d34e5f4b9a20e1fb4800ab7, type: 2}
+    m_Id: 96060d461d34e5f4b9a20e1fb4800ab7
+  - m_AssetName: Mana
+    m_Asset: {fileID: 11400000, guid: 96b68b16e05724e458a1c105f31002b1, type: 2}
+    m_Id: 96b68b16e05724e458a1c105f31002b1
   - m_AssetName: GA_TargetedProjectileAbility
     m_Asset: {fileID: 11400000, guid: 9784f794a413b4a4483520b599405108, type: 2}
     m_Id: 9784f794a413b4a4483520b599405108
@@ -70,6 +103,12 @@ MonoBehaviour:
   - m_AssetName: GE_ManaRegenConstant
     m_Asset: {fileID: 11400000, guid: aaeabaaccd0d69046a58ad1299837aef, type: 2}
     m_Id: aaeabaaccd0d69046a58ad1299837aef
+  - m_AssetName: MovementSpeed
+    m_Asset: {fileID: 11400000, guid: ba6d348032e5a69429761b72a5ccd6d9, type: 2}
+    m_Id: ba6d348032e5a69429761b72a5ccd6d9
+  - m_AssetName: CriticalBonus
+    m_Asset: {fileID: 11400000, guid: bb0ffdaa2233d9447931e73574e56bb8, type: 2}
+    m_Id: bb0ffdaa2233d9447931e73574e56bb8
   - m_AssetName: GA_Fire
     m_Asset: {fileID: 11400000, guid: bc1351ec5faf4a54e9df89e9aeba2931, type: 2}
     m_Id: bc1351ec5faf4a54e9df89e9aeba2931
@@ -82,9 +121,15 @@ MonoBehaviour:
   - m_AssetName: GE_IceDamageInstant
     m_Asset: {fileID: 11400000, guid: e01eba94e20bec34ab2008ff57b72cc0, type: 2}
     m_Id: e01eba94e20bec34ab2008ff57b72cc0
+  - m_AssetName: DamageMin
+    m_Asset: {fileID: 11400000, guid: e320e2c7967b85545aa841a8115052d4, type: 2}
+    m_Id: e320e2c7967b85545aa841a8115052d4
   - m_AssetName: GE_IceMovementSlow
     m_Asset: {fileID: 11400000, guid: ef01d1a3b98f59e4daf9d2517efe7902, type: 2}
     m_Id: ef01d1a3b98f59e4daf9d2517efe7902
+  - m_AssetName: HealthMax
+    m_Asset: {fileID: 11400000, guid: efcc22832d947f64385413f8b7981968, type: 2}
+    m_Id: efcc22832d947f64385413f8b7981968
   - m_AssetName: GA_MyAbility1
     m_Asset: {fileID: 11400000, guid: f080c8c4fb8b0ac46b37a5a2c46662de, type: 2}
     m_Id: f080c8c4fb8b0ac46b37a5a2c46662de

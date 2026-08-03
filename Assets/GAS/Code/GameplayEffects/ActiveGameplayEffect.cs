@@ -39,6 +39,8 @@ namespace GAS
 
         private IDisposable m_DurationHandle;
 
+        private IDisposable m_PeriodHandle;
+
         private readonly List<AppliedAttributeModifier>
             m_AppliedModifiers = new();
 
@@ -340,6 +342,35 @@ namespace GAS
                 null;
 
             durationHandle?.Dispose();
+        }
+
+        /// <summary>
+        /// Replaces the scheduled periodic callback owned by this active effect.
+        /// </summary>
+        internal void SetPeriodHandle(
+            IDisposable periodHandle)
+        {
+            IDisposable previousPeriodHandle =
+                m_PeriodHandle;
+
+            m_PeriodHandle =
+                periodHandle ?? throw new ArgumentNullException(
+                    nameof(periodHandle));
+
+            previousPeriodHandle?.Dispose();
+        }
+
+        /// <summary>
+        /// Cancels the scheduled periodic callback owned by this active effect.
+        /// </summary>
+        internal void DisposePeriodHandle()
+        {
+            IDisposable periodHandle =
+                m_PeriodHandle;
+
+            m_PeriodHandle = null;
+
+            periodHandle?.Dispose();
         }
 
         /// <summary>

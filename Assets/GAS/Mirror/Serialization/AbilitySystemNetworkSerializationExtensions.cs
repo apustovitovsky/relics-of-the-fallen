@@ -19,6 +19,28 @@ namespace GAS.Mirror
                 reader.ReadGuid());
         }
 
+        /// <summary>
+        /// Writes the replicated base and current values of one gameplay attribute.
+        /// </summary>
+        public static void WriteGameplayAttributeReplicationState(
+            this NetworkWriter writer,
+            GameplayAttributeReplicationState value)
+        {
+            value.Serialize(
+                writer);
+        }
+
+        /// <summary>
+        /// Reads the replicated base and current values of one gameplay attribute.
+        /// </summary>
+        public static GameplayAttributeReplicationState
+            ReadGameplayAttributeReplicationState(
+                this NetworkReader reader)
+        {
+            return new GameplayAttributeReplicationState(
+                reader);
+        }
+
         public static void WriteGameplayAbilitySpecHandle(
             this NetworkWriter writer,
             GameplayAbilitySpecHandle value)

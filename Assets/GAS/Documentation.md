@@ -242,6 +242,17 @@ Compatibility bridge предназначен только для миграци
 
 `AbilitySystemComponent.ApplyGameplayEffectSpecToSelf()` является основной точкой применения подготовленного spec и возвращает `ActiveGameplayEffectHandle`.
 
+При применении эффекта из ability полный `GameplayAbilityActivationInfo` остаётся на уровне `GameplayAbility`. Ability извлекает из него `PredictionKey` и передаёт целевым данным только этот ключ:
+
+```text
+GameplayAbility.ApplyGameplayEffectSpecToTarget
+→ GameplayAbilityActivationInfo.GetActivationPredictionKey
+→ GameplayAbilityTargetData.ApplyGameplayEffectSpec
+→ AbilitySystemComponent.ApplyGameplayEffectSpecToSelf
+```
+
+Целевой `AbilitySystemComponent` самостоятельно определяет authoritative или predicted применение через `IsOwnerActorAuthoritative()`. Несетевой ASC по умолчанию считается authoritative. В сетевой конфигурации Mirror-адаптер сообщает `GameplayAbilityActorInfo` роль локальной копии, не передавая Mirror-типы в core GAS. На неавторитетной копии эффект применяется только при наличии действительного `PredictionKey`; без него применение отклоняется.
+
 После проверки application requirements и chance создаётся отдельная application-копия spec, захватываются данные Target и вычисляются modifier magnitudes.
 
 Дальнейший жизненный цикл зависит от duration policy:
@@ -264,6 +275,23 @@ Duration
 → создаёт ActiveGameplayEffect
 → удаляется по истечении duration
 ```
+
+### Periodic GameplayEffect
+
+`Duration` и `Infinite` GameplayEffect с `Period` больше `NoPeriod` остаётся активным, но его modifiers не устанавливаются в агрегатор. Каждое periodic-исполнение работает как `Instant`: изменяет authoritative `BaseValue` атрибута через обычный execution pipeline.
+
+```text
+применение periodic GameplayEffect
+→ создаётся ActiveGameplayEffect
+→ запускается authority-only period scheduler
+→ каждый Period вызывает ExecutePeriodicEffect
+→ modifiers изменяют BaseValue
+→ removal останавливает scheduler
+```
+
+`ExecutePeriodicEffectOnApplication` выполняет первый periodic-тик сразу при применении. Если свойство выключено, первое исполнение происходит через один `Period`. Отдельного «последнего тика» нет: поведение при естественном или преждевременном завершении эффекта оформляется отдельной expiration-механикой.
+
+Periodic GameplayEffect не создаёт predicted-копию: ability activation может быть predicted, но сам periodic effect и все его тики выполняет authority. `Period` не передаётся в replication state и восстанавливается из локальной GameplayEffect definition, что соответствует `NotReplicated`-семантике `FGameplayEffectSpec.Period` в Unreal GAS.
 
 ## ActiveGameplayEffect
 

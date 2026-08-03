@@ -323,33 +323,68 @@ namespace GAS
             GameplayAbilityActivationInfo activationInfo,
             GameplayEffectSpec spec)
         {
+            PredictionKey predictionKey =
+                activationInfo.GetActivationPredictionKey();
+
             return ownerAbilitySystem.ApplyGameplayEffectSpecToSelf(
                 spec,
-                activationInfo);
+                predictionKey);
         }
 
         /// <summary>
-        /// Applies a prepared gameplay effect specification to an ability target.
+        /// Applies a prepared gameplay effect specification through polymorphic target data.
         /// </summary>
-        protected ActiveGameplayEffectHandle ApplyGameplayEffectSpecToTarget(
-            AbilitySystemComponent targetAbilitySystem,
-            GameplayAbilityActivationInfo activationInfo,
-            GameplayEffectSpec spec)
+        protected IReadOnlyList<ActiveGameplayEffectHandle>
+            ApplyGameplayEffectSpecToTarget(
+                GameplayAbilityActivationInfo activationInfo,
+                GameplayEffectSpec spec,
+                GameplayAbilityTargetDataHandle targetData)
         {
-            return targetAbilitySystem.ApplyGameplayEffectSpecToSelf(
-                spec,
-                activationInfo);
+            if (targetData == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(targetData));
+            }
+
+            PredictionKey predictionKey =
+                activationInfo.GetActivationPredictionKey();
+
+            List<ActiveGameplayEffectHandle> appliedEffectHandles =
+                new();
+
+            for (
+                int index = 0;
+                index < targetData.Num();
+                index++)
+            {
+                GameplayAbilityTargetData targetingPayload =
+                    targetData.Get(
+                        index);
+
+                if (targetingPayload == null)
+                {
+                    continue;
+                }
+
+                appliedEffectHandles.AddRange(
+                    targetingPayload.ApplyGameplayEffectSpec(
+                        spec,
+                        predictionKey));
+            }
+
+            return appliedEffectHandles;
         }
 
         /// <summary>
         /// Creates and applies a gameplay effect specification to the owner of this ability.
         /// </summary>
-        protected ActiveGameplayEffectHandle ApplyGameplayEffectToOwner(
-            AbilitySystemComponent ownerAbilitySystem,
-            GameplayAbilityActivationInfo activationInfo,
-            GameplayEffectSO gameplayEffect,
-            float gameplayEffectLevel,
-            string applicationGuid = null)
+        protected ActiveGameplayEffectHandle
+            ApplyGameplayEffectToOwner(
+                AbilitySystemComponent ownerAbilitySystem,
+                GameplayAbilityActivationInfo activationInfo,
+                GameplayEffectSO gameplayEffect,
+                float gameplayEffectLevel,
+                string applicationGuid = null)
         {
             GameplayEffectContextHandle effectContext = MakeEffectContext(
                 CurrentSpecHandle,
@@ -368,15 +403,16 @@ namespace GAS
         }
 
         /// <summary>
-        /// Creates and applies a gameplay effect specification to an ability target.
+        /// Creates and applies a gameplay effect specification through polymorphic target data.
         /// </summary>
-        protected ActiveGameplayEffectHandle ApplyGameplayEffectToTarget(
-            AbilitySystemComponent sourceAbilitySystem,
-            AbilitySystemComponent targetAbilitySystem,
-            GameplayAbilityActivationInfo activationInfo,
-            GameplayEffectSO gameplayEffect,
-            float gameplayEffectLevel,
-            string applicationGuid = null)
+        protected IReadOnlyList<ActiveGameplayEffectHandle>
+            ApplyGameplayEffectToTarget(
+                AbilitySystemComponent sourceAbilitySystem,
+                GameplayAbilityActivationInfo activationInfo,
+                GameplayAbilityTargetDataHandle targetData,
+                GameplayEffectSO gameplayEffect,
+                float gameplayEffectLevel,
+                string applicationGuid = null)
         {
             GameplayEffectContextHandle effectContext = MakeEffectContext(
                 CurrentSpecHandle,
@@ -389,47 +425,30 @@ namespace GAS
                 applicationGuid);
 
             return ApplyGameplayEffectSpecToTarget(
-                targetAbilitySystem,
                 activationInfo,
-                spec);
+                spec,
+                targetData);
         }
 
         /// <summary>
-        /// Applies every gameplay effect configured for this ability.
+        /// Applies every configured gameplay effect through prepared target data.
         /// </summary>
         protected void ApplyGameplayEffects(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
+            GameplayAbilityTargetDataHandle targetData,
             string activationGUID)
         {
-            if (effectsSO.Count > 0)
-            {
-                for (
-                    int index = 0;
-                    index < effectsSO.Count;
-                    index++)
-                {
-                    ApplyGameplayEffectToTarget(
-                        source,
-                        target,
-                        CurrentActivationInfo,
-                        effectsSO[index],
-                        Level,
-                        activationGUID);
-                }
-
-                return;
-            }
-
             for (
                 int index = 0;
-                index < effects.Count;
+                index < effectsSO.Count;
                 index++)
             {
-                target.ApplyGameplayEffect(
+                ApplyGameplayEffectToTarget(
                     source,
-                    target,
-                    effects[index],
+                    CurrentActivationInfo,
+                    targetData,
+                    effectsSO[index],
+                    Level,
                     activationGUID);
             }
         }

@@ -194,6 +194,12 @@ namespace GAS.Mirror
         {
             base.OnStartClient();
 
+            if (isClientOnly)
+            {
+                m_AbilitySystem.AbilityActorInfo.SetNetAuthority(
+                    false);
+            }
+
             if (!isOwned)
             {
                 return;

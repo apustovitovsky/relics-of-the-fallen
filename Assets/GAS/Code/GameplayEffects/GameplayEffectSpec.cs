@@ -45,6 +45,15 @@ namespace GAS
             internal set;
         }
 
+        public float Period
+        {
+            get;
+            internal set;
+        }
+
+        internal bool IsPeriodic =>
+            Period > GameplayEffectGlobals.NoPeriod;
+
         public string ApplicationGuid
         {
             get;
@@ -77,25 +86,20 @@ namespace GAS
                     "Outgoing gameplay effect context has no instigator ability system.");
             }
 
-            Definition =
-                definition ?? throw new ArgumentNullException(
-                    nameof(definition));
+            Definition = definition ?? throw new ArgumentNullException(
+                nameof(definition));
 
-            EffectContext =
-                effectContext;
+            EffectContext = effectContext;
+            Level = level;
 
-            Level =
-                level;
+            Duration = GetInitialDuration(
+                Definition);
+            Period = GetInitialPeriod(
+                Definition);
 
-            Duration =
-                GetInitialDuration(
-                    Definition);
-
-            ApplicationGuid =
-                applicationGuid;
+            ApplicationGuid = applicationGuid;
 
             InitializeModifierSpecs();
-
             CaptureSourceSnapshots();
         }
 
@@ -162,6 +166,9 @@ namespace GAS
 
             Duration =
                 duration;
+                
+            Period = GetInitialPeriod(
+                Definition);
 
             InitializeModifierSpecs();
 
@@ -194,6 +201,9 @@ namespace GAS
                 throw new ArgumentNullException(
                     nameof(sourceSpec));
             }
+
+            Duration = sourceSpec.Duration;
+            Period = sourceSpec.Period;
 
             Definition =
                 sourceSpec.Definition;
@@ -299,6 +309,19 @@ namespace GAS
                             definition.durationType,
                             "Unsupported gameplay effect duration type.")
                 };
+        }
+
+        /// <summary>
+        /// Returns the initial period while preventing instant effects from becoming periodic.
+        /// </summary>
+        private static float GetInitialPeriod(
+            GameplayEffect definition)
+        {
+            return
+                definition.durationType ==
+                GameplayEffectDurationType.Instant
+                    ? GameplayEffectGlobals.NoPeriod
+                    : definition.period;
         }
 
         /// <summary>

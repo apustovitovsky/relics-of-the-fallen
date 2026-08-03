@@ -85,6 +85,16 @@ namespace GAS
         }
 
         /// <summary>
+        /// Returns whether this component's owning actor has authoritative execution control.
+        /// </summary>
+        public virtual bool IsOwnerActorAuthoritative()
+        {
+            return
+                AbilityActorInfo == null ||
+                AbilityActorInfo.IsNetAuthority();
+        }
+
+        /// <summary>
         /// Plays a montage and records its local ability and prediction state.
         /// </summary>
         public virtual float PlayMontage(
@@ -466,7 +476,8 @@ namespace GAS
 
         public event Action<GameplayEventData> OnGameplayEvent;
 
-        public List<GameplayEffect> appliedGameplayEffects;
+        public List<GameplayEffect> AppliedGameplayEffects =
+            new();
 
         public Action<GameplayEffect> OnGameplayEffectApplied;
         public Action<GameplayEffect> OnGameplayEffectRemoved;
@@ -521,11 +532,11 @@ namespace GAS
 
             OnGameplayEffectApplied +=
                 ge => OnGameplayEffectsChanged?.Invoke(
-                    appliedGameplayEffects);
+                    AppliedGameplayEffects);
 
             OnGameplayEffectRemoved +=
                 ge => OnGameplayEffectsChanged?.Invoke(
-                    appliedGameplayEffects);
+                    AppliedGameplayEffects);
 
             attributes.ForEach(
                 attribute =>
@@ -764,6 +775,41 @@ namespace GAS
                     ref newBaseValue,
                     this);
             }
+
+            attribute.SetBaseValue(
+                newBaseValue);
+
+            float newValue =
+                attribute.CurrentValue;
+
+            if (
+                Mathf.Approximately(
+                    oldValue,
+                    newValue))
+            {
+                return;
+            }
+
+            attribute.OnPostAttributeChange?.Invoke(
+                attribute.attributeName,
+                oldValue,
+                newValue,
+                null);
+        }
+
+        /// <summary>
+        /// Applies an authoritative replicated attribute base value while preserving local modifiers.
+        /// </summary>
+        public void SetBaseAttributeValueFromReplication(
+            AttributeName attributeName,
+            float newBaseValue)
+        {
+            Attribute attribute =
+                GetAttribute(
+                    attributeName);
+
+            float oldValue =
+                attribute.CurrentValue;
 
             attribute.SetBaseValue(
                 newBaseValue);
@@ -1732,6 +1778,16 @@ namespace GAS
         }
 
         /// <summary>
+        /// Executes one authoritative periodic tick for the specified active gameplay effect.
+        /// </summary>
+        public void ExecutePeriodicEffect(
+            ActiveGameplayEffectHandle handle)
+        {
+            ActiveGameplayEffects.ExecutePeriodicGameplayEffect(
+                handle);
+        }
+
+        /// <summary>
         /// Removes the active gameplay effect identified by its local handle.
         /// </summary>
         public bool RemoveActiveGameplayEffect(
@@ -1752,7 +1808,7 @@ namespace GAS
                 m_LegacyActiveEffectsByHandle.Remove(
                     handle);
 
-                appliedGameplayEffects.Remove(
+                AppliedGameplayEffects.Remove(
                     runtimeEffect);
 
                 if (invokeEventsGE)
@@ -1830,7 +1886,7 @@ namespace GAS
                     activeEffect.Handle,
                     runtimeEffect);
 
-                appliedGameplayEffects.Add(
+                AppliedGameplayEffects.Add(
                     runtimeEffect);
 
                 return activeEffect.Handle;
@@ -1840,7 +1896,7 @@ namespace GAS
                 m_LegacyActiveEffectsByHandle.Remove(
                     activeEffect.Handle);
 
-                appliedGameplayEffects.Remove(
+                AppliedGameplayEffects.Remove(
                     runtimeEffect);
 
                 ActiveGameplayEffects.RemoveActiveGameplayEffect(
@@ -1910,46 +1966,20 @@ namespace GAS
             GameplayEffectSpec spec,
             PredictionKey predictionKey = default)
         {
-            return ApplyGameplayEffectSpecToSelf(
-                spec,
-                predictionKey,
-                ActiveEffectAuthority.Authoritative);
-        }
+            bool isAuthoritative =
+                IsOwnerActorAuthoritative();
 
-        /// <summary>
-        /// Applies an ability effect specification according to its activation prediction state.
-        /// </summary>
-        internal ActiveGameplayEffectHandle ApplyGameplayEffectSpecToSelf(
-            GameplayEffectSpec spec,
-            GameplayAbilityActivationInfo activationInfo)
-        {
-            PredictionKey predictionKey =
-                activationInfo.GetActivationPredictionKey();
-
-            ActiveEffectAuthority authority;
-
-            switch (activationInfo.ActivationMode)
+            if (
+                !isAuthoritative &&
+                !predictionKey.IsValid)
             {
-                case GameplayAbilityActivationMode.Authority:
-                    authority =
-                        ActiveEffectAuthority.Authoritative;
-
-                    break;
-
-                case GameplayAbilityActivationMode.Predicting:
-                    if (!predictionKey.IsValid)
-                    {
-                        return default;
-                    }
-
-                    authority =
-                        ActiveEffectAuthority.Predicted;
-
-                    break;
-
-                default:
-                    return default;
+                return default;
             }
+
+            ActiveEffectAuthority authority =
+                isAuthoritative
+                    ? ActiveEffectAuthority.Authoritative
+                    : ActiveEffectAuthority.Predicted;
 
             return ApplyGameplayEffectSpecToSelf(
                 spec,
@@ -1974,15 +2004,22 @@ namespace GAS
             GameplayEffect definition =
                 spec.Definition;
 
-            if (logging)
+            if (
+                authority == ActiveEffectAuthority.Predicted &&
+                spec.IsPeriodic)
             {
-                Debug.Log(
-                    $"ASC ApplyGameplayEffectSpecToSelf " +
-                    $"{definition.name} {name} " +
-                    $"applicationGuid: {spec.ApplicationGuid} " +
-                    $"data: " +
-                    $"{JsonUtility.ToJson(definition, true)}");
+                return default;
             }
+
+            // if (logging)
+            // {
+            //     Debug.Log(
+            //         $"ASC ApplyGameplayEffectSpecToSelf " +
+            //         $"{definition.name} {name} " +
+            //         $"applicationGuid: {spec.ApplicationGuid} " +
+            //         $"data: " +
+            //         $"{JsonUtility.ToJson(definition, true)}");
+            // }
 
             if (
                 !TagProcessor.CheckApplicationTagRequirementsGE(
@@ -1990,13 +2027,13 @@ namespace GAS
                     definition,
                     tags))
             {
-                if (logging)
-                {
-                    Debug.Log(
-                        $"GE: {definition.name} " +
-                        "couldnt be applied on this ASC. " +
-                        "Failed application tag requirements");
-                }
+                // if (logging)
+                // {
+                //     Debug.Log(
+                //         $"GE: {definition.name} " +
+                //         "couldnt be applied on this ASC. " +
+                //         "Failed application tag requirements");
+                // }
 
                 return default;
             }
@@ -2040,7 +2077,7 @@ namespace GAS
                     {
                         if (authority == ActiveEffectAuthority.Authoritative)
                         {
-                            ApplyInstantGameplayEffect(
+                            ExecuteGameplayEffect(
                                 applicationSpec,
                                 runtimeEffect);
 
@@ -2116,6 +2153,24 @@ namespace GAS
                         "Unsupported gameplay effect duration type.");
             }
 
+            if (
+                authority ==
+                ActiveEffectAuthority.Authoritative &&
+                applicationSpec.IsPeriodic)
+            {
+                if (
+                    applicationSpec
+                        .Definition
+                        .ExecutePeriodicEffectOnApplication)
+                {
+                    ExecutePeriodicEffect(
+                        result);
+                }
+
+                ActiveGameplayEffects.StartPeriodicGameplayEffect(
+                    result);
+            }
+
             if (invokeEventsGE)
             {
                 OnGameplayEffectApplied?.Invoke(
@@ -2171,11 +2226,11 @@ namespace GAS
         }
 
         /// <summary>
-        /// Executes evaluated instant modifiers against authoritative attribute base values.
+        /// Executes evaluated gameplay effect modifiers against authoritative attribute base values.
         /// </summary>
-        private void ApplyInstantGameplayEffect(
+        internal void ExecuteGameplayEffect(
             GameplayEffectSpec applicationSpec,
-            GameplayEffect runtimeEffect)
+            GameplayEffect runtimeEffect = null)
         {
             foreach (
                 AttributeModifierSpec modifierSpec

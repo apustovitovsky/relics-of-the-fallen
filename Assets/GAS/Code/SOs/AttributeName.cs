@@ -1,19 +1,18 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using System;
-using System.Linq;
 
-namespace GAS {
-    public enum AttributeType {
-        STAT,
-        RESOURCE
+namespace GAS
+{
+    [CreateAssetMenu(
+        menuName = "GAS/AttributeName",
+        fileName = "AttributeName")]
+    public sealed class AttributeName :
+        ScriptableObject
+    {
+        [field: SerializeField]
+        public string Description
+        {
+            get;
+            private set;
+        }
     }
-
-    [CreateAssetMenu(menuName = "GAS/AttributeName", fileName = "AttributeName")]
-    [Serializable]
-    public class AttributeName : ScriptableObject {
-        public AttributeType attributeType;
-    }
-
 }

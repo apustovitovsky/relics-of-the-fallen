@@ -375,7 +375,9 @@ namespace GAS
                     "The replicated effect does not match its registered runtime item.");
             }
 
-            if (!activeEffect.IsInhibited)
+            if (
+                !activeEffect.IsInhibited &&
+                !activeEffect.Spec.IsPeriodic)
             {
                 IReadOnlyList<AttributeModifierSpec> modifierSpecs =
                     activeEffect.Spec.ModifierSpecs;
@@ -476,6 +478,7 @@ namespace GAS
                 handle);
 
             activeEffect.DisposeDurationHandle();
+            activeEffect.DisposePeriodHandle();
             activeEffect.DisposeOngoingTagSubscriptions();
             activeEffect.DisposePredictionSubscription();
 
@@ -585,6 +588,115 @@ namespace GAS
         }
 
         /// <summary>
+        /// Executes the evaluated modifiers of one active periodic gameplay effect.
+        /// </summary>
+        internal void ExecutePeriodicGameplayEffect(
+            ActiveGameplayEffectHandle handle)
+        {
+            if (
+                !TryGetActiveGameplayEffect(
+                    handle,
+                    out ActiveGameplayEffect activeEffect))
+            {
+                return;
+            }
+
+            if (
+                activeEffect.Authority !=
+                ActiveEffectAuthority.Authoritative)
+            {
+                return;
+            }
+
+            if (
+                !activeEffect.Spec.IsPeriodic ||
+                activeEffect.IsInhibited)
+            {
+                return;
+            }
+
+            m_Owner.ExecuteGameplayEffect(
+                activeEffect.Spec);
+        }
+
+        
+        /// <summary>
+        /// Starts the repeating execution timer owned by one authoritative periodic effect.
+        /// </summary>
+        internal void StartPeriodicGameplayEffect(
+            ActiveGameplayEffectHandle handle)
+        {
+            if (
+                !TryGetActiveGameplayEffect(
+                    handle,
+                    out ActiveGameplayEffect activeEffect))
+            {
+                return;
+            }
+
+            if (
+                activeEffect.Authority !=
+                ActiveEffectAuthority.Authoritative)
+            {
+                return;
+            }
+
+            if (!activeEffect.Spec.IsPeriodic)
+            {
+                return;
+            }
+
+            CancellationTokenSource periodCancellationSource =
+                CancellationTokenSource.CreateLinkedTokenSource(
+                    m_Owner.GetCancellationTokenOnDestroy());
+
+            void CancelPeriod()
+            {
+                periodCancellationSource.Cancel();
+                periodCancellationSource.Dispose();
+            }
+
+            activeEffect.SetPeriodHandle(
+                new DisposableSubscription(
+                    CancelPeriod));
+
+            RunPeriodicGameplayEffect(
+                    handle,
+                    activeEffect.Spec.Period,
+                    periodCancellationSource.Token)
+                .Forget();
+        }
+
+        /// <summary>
+        /// Waits for each period and executes the corresponding active gameplay effect.
+        /// </summary>
+        private async UniTaskVoid RunPeriodicGameplayEffect(
+            ActiveGameplayEffectHandle handle,
+            float period,
+            CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                bool isCanceled =
+                    await UniTask
+                        .Delay(
+                            TimeSpan.FromSeconds(
+                                period),
+                            cancellationToken:
+                                cancellationToken)
+                        .SuppressCancellationThrow();
+
+                if (isCanceled)
+                {
+                    return;
+                }
+
+                m_Owner.ExecutePeriodicEffect(
+                    handle);
+            }
+        }
+
+        /// <summary>
         /// Removes an expired effect or schedules another duration check.
         /// </summary>
         internal void CheckDuration(
@@ -667,7 +779,7 @@ namespace GAS
         }
 
         /// <summary>
-        /// Installs evaluated modifiers and granted tags when ongoing requirements are satisfied.
+        /// Installs persistent modifiers and granted tags when ongoing requirements are satisfied.
         /// </summary>
         private void ApplyModifiers(
             ActiveGameplayEffect activeEffect)
@@ -676,41 +788,41 @@ namespace GAS
                 !AreOngoingTagRequirementsSatisfied(
                     activeEffect))
             {
-                activeEffect.IsInhibited =
-                    true;
+                activeEffect.IsInhibited = true;
 
                 return;
             }
 
-            activeEffect.IsInhibited =
-                false;
+            activeEffect.IsInhibited = false;
 
-            foreach (
-                AttributeModifierSpec modifierSpec
-                in activeEffect.Spec.ModifierSpecs)
+            if (!activeEffect.Spec.IsPeriodic)
             {
-                if (!modifierSpec.HasEvaluatedMagnitude)
+                foreach (
+                    AttributeModifierSpec modifierSpec
+                    in activeEffect.Spec.ModifierSpecs)
                 {
-                    throw new InvalidOperationException(
-                        "An active effect requires evaluated modifier magnitudes.");
+                    if (!modifierSpec.HasEvaluatedMagnitude)
+                    {
+                        throw new InvalidOperationException(
+                            "An active effect requires evaluated modifier magnitudes.");
+                    }
+
+                    Attribute targetAttribute =
+                        m_Owner.GetAttribute(
+                            modifierSpec.Definition.Attribute);
+
+                    AttributeModifierHandle handle =
+                        targetAttribute.AddModifier(
+                            modifierSpec.EvaluatedMagnitude,
+                            modifierSpec.Definition.Operation);
+
+                    activeEffect.AddAppliedModifier(
+                        targetAttribute,
+                        handle);
                 }
-
-                Attribute targetAttribute =
-                    m_Owner.GetAttribute(
-                        modifierSpec.Definition.Attribute);
-
-                AttributeModifierHandle handle =
-                    targetAttribute.AddModifier(
-                        modifierSpec.EvaluatedMagnitude,
-                        modifierSpec.Definition.Operation);
-
-                activeEffect.AddAppliedModifier(
-                    targetAttribute,
-                    handle);
             }
 
-            activeEffect.GrantedTagsApplied =
-                true;
+            activeEffect.GrantedTagsApplied = true;
 
             m_Owner.UpdateGameplayTagCounts(
                 activeEffect.Spec

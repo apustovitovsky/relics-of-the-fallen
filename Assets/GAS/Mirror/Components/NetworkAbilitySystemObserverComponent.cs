@@ -1,13 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Mirror;
 using System;
+using System.Collections.Generic;
+using Mirror;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace GAS.Mirror
 {
-    // / <summary> An additional component to be attached to the asc's GameObject to enable networking replication and prediction. </summary>
-    public class NetworkAbilitySystemObserverComponent : NetworkBehaviour
+    /// <summary>
+    /// Replicates observable ability-system state to every relevant client.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class NetworkAbilitySystemObserverComponent :
+        NetworkBehaviour
     {
 
         [SerializeField]
@@ -17,11 +21,56 @@ namespace GAS.Mirror
             hook = nameof(OnReplicatedAnimMontageChanged))]
         private GameplayAbilityRepAnimMontageReplicationState m_ReplicatedAnimMontage;
 
-        public AbilitySystemComponent asc;
-        public static AbilitySystemComponent localPlayerAsc;
+        internal readonly SyncDictionary<
+            AssetId,
+            GameplayAttributeReplicationState> m_Attributes = new();
 
-        [SerializeReference] public readonly SyncDictionary<string, float> syncAttributes = new();
-        public GenericDictionary<string, Queue<float>> localAttributesBuffer = new(); // Buffers the sequence of changes to attributes. If the sequence is different from sequence of changes received from server the. Clear it and reset to server value.
+        [FormerlySerializedAs("asc")]
+        [SerializeField]
+        private AbilitySystemComponent m_AbilitySystem;
+
+        /// <summary>
+        /// Validates the serialized dependencies required by observer replication.
+        /// </summary>
+        private void Awake()
+        {
+            if (m_AbilitySystem == null)
+            {
+                throw new InvalidOperationException(
+                    "AbilitySystemComponent must be assigned.");
+            }
+
+            if (m_AssetRegistry == null)
+            {
+                throw new InvalidOperationException(
+                    "AssetRegistry must be assigned.");
+            }
+        }
+
+        /// <summary>
+        /// Starts authoritative observable attribute replication on the server.
+        /// </summary>
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+
+            m_AbilitySystem.attributes.ForEach(
+                SynchronizeAttribute);
+
+            m_AbilitySystem.OnAttributeChanged +=
+                SynchronizeAttribute;
+        }
+
+        /// <summary>
+        /// Stops authoritative observable attribute replication on the server.
+        /// </summary>
+        public override void OnStopServer()
+        {
+            m_AbilitySystem.OnAttributeChanged -=
+                SynchronizeAttribute;
+
+            base.OnStopServer();
+        }
 
         /// <summary>
         /// Resolves and applies authoritative montage state on a simulated client proxy.
@@ -51,7 +100,7 @@ namespace GAS.Mirror
                     newValue.IsStopped,
                     newValue.PredictionKey);
 
-            asc.OnRepReplicatedAnimMontage(
+            m_AbilitySystem.OnRepReplicatedAnimMontage(
                 repAnimMontageInfo);
         }
 
@@ -66,10 +115,10 @@ namespace GAS.Mirror
         /// </summary>
         private void SynchronizeReplicatedAnimMontage()
         {
-            asc.AnimMontageUpdateReplicatedData();
+            m_AbilitySystem.AnimMontageUpdateReplicatedData();
 
             GameplayAbilityRepAnimMontage repAnimMontageInfo =
-                asc.RepAnimMontageInfo;
+                m_AbilitySystem.RepAnimMontageInfo;
 
             GameplayAbilityMontage montage =
                 repAnimMontageInfo.Animation;
@@ -95,179 +144,120 @@ namespace GAS.Mirror
         }
 
         /// <summary>
-        /// Initializes observer replication without granting abilities to simulated proxies.
+        /// Starts observable attribute replication on a remote client copy.
         /// </summary>
-        private void Start()
+        public override void OnStartClient()
         {
-            name = name + " " + (isLocalPlayer ? "[LocalPlayer]" : "[Server]") + " netId=" + netId;
+            base.OnStartClient();
 
-            if (asc == null)
+            if (isServer)
             {
-                throw new ArgumentException(
-                    "AbilitySystemComponent must not be null.",
-                    nameof(asc));
-            }
-
-            if (isLocalPlayer)
-            {
-                localPlayerAsc = asc;
-            }
-
-            if (!isClientOnly)
-            {
-                asc.attributes.ForEach(
-                    attribute =>
-                        syncAttributes.TryAdd(
-                            attribute.attributeName.name,
-                            attribute.GetValue()));
-
-                asc.OnAttributeChanged +=
-                    (
-                        attributeName,
-                        oldValue,
-                        newValue,
-                        gameplayEffect) =>
-                    {
-                        syncAttributes[attributeName.name] = newValue;
-                    };
-
                 return;
             }
 
             if (!isOwned)
             {
-                asc.ClearAllAbilities();
+                m_AbilitySystem.ClearAllAbilities();
             }
 
-            asc.attributes.ForEach(
-                attribute =>
-                    localAttributesBuffer.TryAdd(
-                        attribute.attributeName.name,
-                        new Queue<float>()));
-
-            asc.OnAttributeChanged +=
-                AddAttributeToPredictionBuffer;
-
-            syncAttributes.OnChange +=
-                SynchronizeAttributes;
+            m_Attributes.OnChange +=
+                SynchronizeAttribute;
 
             foreach (
-                KeyValuePair<string, float> attributeEntry
-                in syncAttributes)
+                KeyValuePair<
+                    AssetId,
+                    GameplayAttributeReplicationState> attributeEntry
+                in m_Attributes)
             {
-                SynchronizeAttributes(
-                    SyncDictionary<string, float>.Operation.OP_ADD,
+                SynchronizeAttribute(
+                    SyncDictionary<
+                        AssetId,
+                        GameplayAttributeReplicationState>
+                        .Operation.OP_ADD,
                     attributeEntry.Key,
                     attributeEntry.Value);
             }
         }
 
-        private void SynchronizeAttributes(
-            SyncDictionary<string, float>.Operation operation,
-            string attributeName,
-            float callbackValue)
+        /// <summary>
+        /// Stops observable attribute replication on a remote client copy.
+        /// </summary>
+        public override void OnStopClient()
         {
-            if (!isClientOnly)
+            m_Attributes.OnChange -=
+                SynchronizeAttribute;
+
+            base.OnStopClient();
+        }
+
+        /// <summary>
+        /// Applies replicated gameplay attribute state according to the local network role.
+        /// </summary>
+        private void SynchronizeAttribute(
+            SyncDictionary<
+                AssetId,
+                GameplayAttributeReplicationState>.Operation operation,
+            AssetId attributeId,
+            GameplayAttributeReplicationState replicationState)
+        {
+            if (
+                !isClientOnly ||
+                operation ==
+                SyncDictionary<
+                    AssetId,
+                    GameplayAttributeReplicationState>
+                    .Operation.OP_REMOVE ||
+                operation ==
+                SyncDictionary<
+                    AssetId,
+                    GameplayAttributeReplicationState>
+                    .Operation.OP_CLEAR)
             {
                 return;
             }
 
-            StartCoroutine(
-                SynchronizeAttributesCoroutine(
-                    operation,
+            AttributeName attributeName =
+                m_AssetRegistry.GetAsset<AttributeName>(
+                    attributeId);
+
+            float replicatedValue =
+                isOwned
+                    ? replicationState.BaseValue
+                    : replicationState.CurrentValue;
+
+            m_AbilitySystem.SetBaseAttributeValueFromReplication(
+                attributeName,
+                replicatedValue);
+        }
+
+        /// <summary>
+        /// Refreshes replicated state after an authoritative gameplay attribute changes.
+        /// </summary>
+        private void SynchronizeAttribute(
+            AttributeName attributeName,
+            float oldValue,
+            float newValue,
+            GameplayEffect gameplayEffect)
+        {
+            SynchronizeAttribute(
+                m_AbilitySystem.GetAttribute(
                     attributeName));
         }
 
         /// <summary>
-        /// Reconciles a replicated attribute base value after the prediction frame completes.
+        /// Copies one authoritative gameplay attribute into observer replication state.
         /// </summary>
-        private IEnumerator SynchronizeAttributesCoroutine(
-            SyncDictionary<string, float>.Operation operation,
-            string attributeName)
+        private void SynchronizeAttribute(
+            Attribute attribute)
         {
-            yield return new WaitForEndOfFrame();
+            AssetId attributeId =
+                m_AssetRegistry.GetAssetId(
+                    attribute.attributeName);
 
-            if (
-                operation ==
-                SyncDictionary<string, float>.Operation.OP_REMOVE ||
-                operation ==
-                SyncDictionary<string, float>.Operation.OP_CLEAR)
-            {
-                yield break;
-            }
-
-            if (
-                !syncAttributes.TryGetValue(
-                    attributeName,
-                    out float authoritativeValue))
-            {
-                Debug.LogWarning(
-                    $"Cannot synchronize attribute '{attributeName}': " +
-                    "it is absent from the replicated attribute dictionary.",
-                    this);
-
-                yield break;
-            }
-
-            if (
-                !asc.AttributesDictionary.TryGetValue(
-                    attributeName,
-                    out GAS.Attribute attribute))
-            {
-                Debug.LogWarning(
-                    $"Cannot synchronize attribute '{attributeName}': " +
-                    "it is absent from the client ASC.",
-                    this);
-
-                yield break;
-            }
-
-            if (
-                localAttributesBuffer.TryGetValue(
-                    attributeName,
-                    out Queue<float> predictionBuffer) &&
-                predictionBuffer.Count > 0 &&
-                predictionBuffer.Contains(
-                    authoritativeValue))
-            {
-                while (predictionBuffer.Count > 0)
-                {
-                    float predictedValue =
-                        predictionBuffer.Dequeue();
-
-                    if (
-                        Mathf.Approximately(
-                            predictedValue,
-                            authoritativeValue))
-                    {
-                        break;
-                    }
-                }
-
-                yield break;
-            }
-
-            predictionBuffer?.Clear();
-
-            asc.SetNumericAttributeBase(
-                attribute.attributeName,
-                authoritativeValue);
-        }
-
-        // ATTRIBUTE PREDICTION BUFFER
-        private void AddAttributeToPredictionBuffer(AttributeName attName, float oldValue, float newValue, GameplayEffect ge)
-        {// Buffers the sequence of changes to attributes. If the sequence is different from sequence of changes receivedfrom server. Clear it and reset to server value.
-            if (ge == null || ge.source == null)
-            {
-                return; // !!! important. SynchronizeAttributes shouldn't trigger an addition to prediction buffer. (It comes from the server, not a client prediction). When invoking AttributeChange from there, we send a null ge.
-            }
-
-            if (ge != null && ge.source != null && ge.source != localPlayerAsc)
-            {
-                return; // Do not predict if not activated by local player. In other words, predict only when local player activated it.
-            }
-
-            localAttributesBuffer[attName.name].Enqueue(newValue);
+            m_Attributes[attributeId] =
+                new GameplayAttributeReplicationState(
+                    attribute.BaseValue,
+                    attribute.CurrentValue);
         }
     }
 }

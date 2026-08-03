@@ -5,6 +5,8 @@ namespace GAS
 {
     public class GameplayAbilityActorInfo
     {
+        private bool m_IsNetAuthority = true;
+
         public GameObject OwnerActor
         {
             get;
@@ -27,6 +29,24 @@ namespace GAS
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        /// Returns whether the owning actor has authoritative execution control.
+        /// </summary>
+        public bool IsNetAuthority()
+        {
+            return m_IsNetAuthority;
+        }
+
+        /// <summary>
+        /// Updates the authoritative execution state supplied by the platform adapter.
+        /// </summary>
+        public void SetNetAuthority(
+            bool isNetAuthority)
+        {
+            m_IsNetAuthority =
+                isNetAuthority;
         }
 
         /// <summary>

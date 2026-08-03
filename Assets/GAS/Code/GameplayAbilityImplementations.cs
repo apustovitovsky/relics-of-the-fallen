@@ -10,7 +10,7 @@ namespace GAS
     {
 
         /// <summary>
-        /// Applies all configured effects and immediately ends the ability.
+        /// Applies all configured effects to directly produced actor target data and ends the ability.
         /// </summary>
         public override void ActivateAbility(
             AbilitySystemComponent source,
@@ -34,9 +34,16 @@ namespace GAS
                 return;
             }
 
+            GameplayAbilityTargetData targetActorData =
+                new GameplayAbilityTargetData_ActorArray(
+                    target.AbilityActorInfo.OwnerActor);
+
+            GameplayAbilityTargetDataHandle targetData =
+                new(targetActorData);
+
             ApplyGameplayEffects(
                 source,
-                target,
+                targetData,
                 activationGUID);
 
             DeactivateAbility(
@@ -74,13 +81,29 @@ namespace GAS
         }
 
         /// <summary>
-        /// Spawns a projectile that applies the configured effects on impact.
+        /// Spawns a projectile that produces actor target data and applies effects on impact.
         /// </summary>
         public override void ActivateAbility(
             AbilitySystemComponent source,
             AbilitySystemComponent target,
             string activationGUID)
         {
+            void ApplyEffectsOnHit(
+                AbilitySystemComponent hitAbilitySystem)
+            {
+                GameplayAbilityTargetData targetActorData =
+                    new GameplayAbilityTargetData_ActorArray(
+                        hitAbilitySystem.AbilityActorInfo.OwnerActor);
+
+                GameplayAbilityTargetDataHandle targetData =
+                    new(targetActorData);
+
+                ApplyGameplayEffects(
+                    source,
+                    targetData,
+                    activationGUID);
+            }
+
             base.ActivateAbility(
                 source,
                 target,
@@ -130,11 +153,7 @@ namespace GAS
                 projectile.AddComponent<Projectile>();
 
             projectileComponent.OnHit +=
-                hitAbilitySystem =>
-                    ApplyGameplayEffects(
-                        source,
-                        hitAbilitySystem,
-                        activationGUID);
+                ApplyEffectsOnHit;
 
             projectileComponent.source =
                 source;
@@ -168,11 +187,8 @@ namespace GAS
     [Serializable]
     public class TargetedProjectileAbility : GameplayAbility
     {
-        //We could improve this by having the prefab be referenced here, and loaded from Resources for multiplayer.
-        // If we have a targeted projectile (like mobas and mmos, we just make the projectile follow the target)
-
         /// <summary>
-        /// Spawns a targeted projectile that applies the configured effects on impact.
+        /// Spawns a targeted projectile that produces actor target data on impact.
         /// </summary>
         public override void ActivateAbility(
             AbilitySystemComponent source,
@@ -181,9 +197,16 @@ namespace GAS
         {
             void ApplyEffectsOnHit()
             {
+                GameplayAbilityTargetData targetActorData =
+                    new GameplayAbilityTargetData_ActorArray(
+                        target.AbilityActorInfo.OwnerActor);
+
+                GameplayAbilityTargetDataHandle targetData =
+                    new(targetActorData);
+
                 ApplyGameplayEffects(
                     source,
-                    target,
+                    targetData,
                     activationGUID);
             }
 
@@ -211,12 +234,9 @@ namespace GAS
             projectile.name =
                 "projectile";
 
-            projectile.transform.position =
-                source.transform.position +
-                source.transform.forward;
-
-            projectile.transform.rotation =
-                source.transform.rotation;
+            projectile.transform.SetPositionAndRotation(
+                source.transform.position + source.transform.forward,
+                source.transform.rotation);
 
             TargetedProjectile projectileComponent =
                 projectile.AddComponent<TargetedProjectile>();

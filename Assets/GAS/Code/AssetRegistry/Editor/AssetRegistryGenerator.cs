@@ -12,7 +12,7 @@ namespace GAS
             "t:AssetRegistry";
 
         private const string k_GameplayAssetFilter =
-            "t:GameplayEffectSO t:GameplayAbilitySO";
+            "t:GameplayEffectSO t:GameplayAbilitySO t:AttributeName";
 
         /// <summary>
         /// Rebuilds the gameplay asset registry from supported Unity assets.

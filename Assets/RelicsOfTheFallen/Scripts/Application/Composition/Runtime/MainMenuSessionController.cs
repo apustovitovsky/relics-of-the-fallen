@@ -8,17 +8,17 @@ namespace RelicsOfTheFallen.Application.Composition
     [DisallowMultipleComponent]
     public sealed class MainMenuSessionController : MonoBehaviour
     {
-        const string k_ServerAddress = "localhost";
+        private const string k_ServerAddress = "localhost";
 
         [SerializeField]
-        Button m_HostRaidButton;
+        private Button m_HostRaidButton;
 
         [SerializeField]
-        Button m_JoinRaidButton;
+        private Button m_JoinRaidButton;
 
-        NetworkSessionManager m_NetworkSessionManager;
+        private NetworkSessionManager m_NetworkSessionManager;
 
-        void Awake()
+        private void Awake()
         {
             m_NetworkSessionManager =
                 NetworkManager.singleton as NetworkSessionManager;
@@ -39,7 +39,7 @@ namespace RelicsOfTheFallen.Application.Composition
                 JoinRaid);
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             if (m_HostRaidButton != null)
             {
@@ -54,14 +54,14 @@ namespace RelicsOfTheFallen.Application.Composition
             }
         }
 
-        void StartHostRaid()
+        private void StartHostRaid()
         {
             SetSessionButtonsInteractable(false);
 
             m_NetworkSessionManager.StartHost();
         }
 
-        void JoinRaid()
+        private void JoinRaid()
         {
             SetSessionButtonsInteractable(false);
 
@@ -71,7 +71,7 @@ namespace RelicsOfTheFallen.Application.Composition
             m_NetworkSessionManager.StartClient();
         }
 
-        void SetSessionButtonsInteractable(
+        private void SetSessionButtonsInteractable(
             bool interactable)
         {
             m_HostRaidButton.interactable =

@@ -18,9 +18,10 @@ MonoBehaviour:
     durationType: 0
     durationValue: 0
     period: 0
-    periodicExpired: 0
+    <ExecutePeriodicEffectOnApplication>k__BackingField: 0
     modifiers:
     - rid: 1610866384591650900
+    modifierDefinitions: []
     source: {fileID: 0}
     target: {fileID: 0}
     gameplayEffectTags:
@@ -54,6 +55,6 @@ MonoBehaviour:
       type: {class: BasicModifier, ns: GAS, asm: GAS}
       data:
         name: BasicModifier
-        attributeName: {fileID: 11400000, guid: 6bf7c58b9b397ae4988f5c0f36fd6bb1, type: 2}
+        attributeName: {fileID: 11400000, guid: 219553465e23cbb4cb54f849f6a78721, type: 2}
         attributeNameSerialized: 
         value: -10

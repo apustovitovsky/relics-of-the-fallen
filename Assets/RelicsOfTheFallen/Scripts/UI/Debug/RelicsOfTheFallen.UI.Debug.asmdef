@@ -1,10 +1,10 @@
 {
-    "name": "RelicsOfTheFallen.Networking.UI",
-    "rootNamespace": "RelicsOfTheFallen.Networking.UI",
+    "name": "RelicsOfTheFallen.UI.Debug",
+    "rootNamespace": "RelicsOfTheFallen.UI.Debug",
     "references": [
-        "Mirror",
+        "GAS",
         "RelicsOfTheFallen.Targeting",
-        "RelicsOfTheFallen.UI.Debug"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

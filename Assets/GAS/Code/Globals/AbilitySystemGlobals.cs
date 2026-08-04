@@ -39,7 +39,12 @@ namespace GAS
                 return false;
             }
 
-            return actor.TryGetComponent(out abilitySystem);
+            abilitySystem =
+                actor.GetComponentInChildren<
+                    AbilitySystemComponent>(
+                    true);
+
+            return abilitySystem != null;
         }
     }
 }

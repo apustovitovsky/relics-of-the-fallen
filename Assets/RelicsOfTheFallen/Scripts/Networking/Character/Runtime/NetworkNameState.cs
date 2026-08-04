@@ -49,6 +49,18 @@ namespace RelicsOfTheFallen.Networking
             ApplyDisplayName(m_DisplayName);
         }
 
+#if UNITY_EDITOR
+
+        public override void OnStartLocalPlayer()
+        {
+            base.OnStartLocalPlayer();
+
+            CmdSetDisplayName(
+                MultiplayerPlayModePlayerName.Get());
+        }
+
+#endif
+
         /// <summary>
         /// Changes the authoritative display name replicated to every client.
         /// </summary>
@@ -69,6 +81,19 @@ namespace RelicsOfTheFallen.Networking
 
             ApplyDisplayName(displayName);
         }
+
+#if UNITY_EDITOR
+
+        /// <summary>
+        /// Sends the Multiplayer Play Mode player name to the server.
+        /// </summary>
+        [Command]
+        private void CmdSetDisplayName(string displayName)
+        {
+            SetDisplayName(displayName);
+        }
+
+#endif
 
         private void OnDisplayNameChanged(
             string oldDisplayName,

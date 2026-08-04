@@ -1,5 +1,6 @@
 using Mirror;
 using RelicsOfTheFallen.Targeting;
+using RelicsOfTheFallen.UI.Debug;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Networking.UI
@@ -9,20 +10,21 @@ namespace RelicsOfTheFallen.Networking.UI
         MonoBehaviour
     {
         [field: SerializeField]
-        private TargetFramePresenter TargetFrame
+        private AbilitySystemDebugPresenter AbilitySystemDebug
         {
-            get; set;
+            get;
+            set;
         }
 
         private NetworkIdentity m_LocalPlayer;
 
         private void Awake()
         {
-            if (TargetFrame == null)
+            if (AbilitySystemDebug == null)
             {
                 Debug.LogError(
                     $"{nameof(NetworkPlayerHudBinder)} on '{name}' requires " +
-                    "a target frame presenter.",
+                    "an ability-system debug presenter.",
                     this);
 
                 enabled = false;
@@ -80,7 +82,7 @@ namespace RelicsOfTheFallen.Networking.UI
 
             m_LocalPlayer = localPlayer;
 
-            TargetFrame.Bind(
+            AbilitySystemDebug.Bind(
                 targeting,
                 targetCamera);
         }
@@ -92,10 +94,7 @@ namespace RelicsOfTheFallen.Networking.UI
         {
             m_LocalPlayer = null;
 
-            if (TargetFrame != null)
-            {
-                TargetFrame.Unbind();
-            }
+            AbilitySystemDebug?.Unbind();
         }
     }
 }

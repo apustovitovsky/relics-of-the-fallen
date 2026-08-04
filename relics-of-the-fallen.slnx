@@ -31,4 +31,5 @@
   <Project Path="RelicsOfTheFallen.Character.Input.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
   <Project Path="RelicsOfTheFallen.Player.csproj" />
+  <Project Path="RelicsOfTheFallen.UI.Debug.csproj" />
 </Solution>

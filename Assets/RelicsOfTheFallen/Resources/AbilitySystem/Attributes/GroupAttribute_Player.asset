@@ -13,12 +13,18 @@ MonoBehaviour:
   m_Name: GroupAttribute_Player
   m_EditorClassIdentifier: GAS::GAS.GroupAttribute
   group:
-  - name: 'Attribute.Health: 100'
-    attributeName: {fileID: 11400000, guid: 6bf7c58b9b397ae4988f5c0f36fd6bb1, type: 2}
+  - name: 'Health: 100'
+    attributeName: {fileID: 11400000, guid: 219553465e23cbb4cb54f849f6a78721, type: 2}
     baseValue: 100
-  - name: 'Attribute.HealthMax: 100'
-    attributeName: {fileID: 11400000, guid: 61ebaddd3e4a15640be46831695ecfb3, type: 2}
+  - name: 'HealthMax: 100'
+    attributeName: {fileID: 11400000, guid: efcc22832d947f64385413f8b7981968, type: 2}
     baseValue: 100
-  - name: 'Attribute.Speed: 5'
-    attributeName: {fileID: 11400000, guid: 67bca21e884e5ba43be5f84fdbb20a32, type: 2}
+  - name: 'Mana: 100'
+    attributeName: {fileID: 11400000, guid: 96b68b16e05724e458a1c105f31002b1, type: 2}
+    baseValue: 100
+  - name: 'ManaMax: 100'
+    attributeName: {fileID: 11400000, guid: 96060d461d34e5f4b9a20e1fb4800ab7, type: 2}
+    baseValue: 100
+  - name: 'MovementSpeed: 5'
+    attributeName: {fileID: 11400000, guid: ba6d348032e5a69429761b72a5ccd6d9, type: 2}
     baseValue: 5

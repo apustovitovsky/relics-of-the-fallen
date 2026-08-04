@@ -46,18 +46,9 @@ MonoBehaviour:
   - m_AssetName: GE_AntiPoison
     m_Asset: {fileID: 11400000, guid: 5e42a5bb83a606b44a4515d22f30c34c, type: 2}
     m_Id: 5e42a5bb83a606b44a4515d22f30c34c
-  - m_AssetName: Attribute_HealthMax
-    m_Asset: {fileID: 11400000, guid: 61ebaddd3e4a15640be46831695ecfb3, type: 2}
-    m_Id: 61ebaddd3e4a15640be46831695ecfb3
   - m_AssetName: GE_AttackSpeed
     m_Asset: {fileID: 11400000, guid: 61fbc3a80a018a44bba765e246c3b2ea, type: 2}
     m_Id: 61fbc3a80a018a44bba765e246c3b2ea
-  - m_AssetName: Attribute_Speed
-    m_Asset: {fileID: 11400000, guid: 67bca21e884e5ba43be5f84fdbb20a32, type: 2}
-    m_Id: 67bca21e884e5ba43be5f84fdbb20a32
-  - m_AssetName: Attribute_Health
-    m_Asset: {fileID: 11400000, guid: 6bf7c58b9b397ae4988f5c0f36fd6bb1, type: 2}
-    m_Id: 6bf7c58b9b397ae4988f5c0f36fd6bb1
   - m_AssetName: Armor
     m_Asset: {fileID: 11400000, guid: 737280e4bb6d45b4ebc4ce8fea66fc4d, type: 2}
     m_Id: 737280e4bb6d45b4ebc4ce8fea66fc4d

@@ -1018,12 +1018,11 @@ namespace GAS
             IsActive =
                 false;
 
-            AbilityEndedData abilityEndedData =
-                new AbilityEndedData(
-                    this,
-                    handle,
-                    replicateEndAbility,
-                    wasCancelled);
+            AbilityEndedData abilityEndedData = new(
+                this,
+                handle,
+                replicateEndAbility,
+                wasCancelled);
 
             abilitySystemComponent.BroadcastAbilityEnded(
                 abilityEndedData);
@@ -1033,7 +1032,7 @@ namespace GAS
                 this,
                 wasCancelled);
         }
-        
+
         /// <summary>
         /// Determines whether the supplied ability specification can activate for the current actor.
         /// </summary>

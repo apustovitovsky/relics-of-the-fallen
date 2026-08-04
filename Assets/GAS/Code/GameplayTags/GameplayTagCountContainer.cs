@@ -21,6 +21,7 @@ namespace GAS
             Action<GameplayTag, int>>
             m_AnyCountChangeEvents = new();
 
+        private Action<GameplayTag, int> m_GenericGameplayEvent;
 
         /// <summary>
         /// Registers a callback for changes to one gameplay tag.
@@ -62,6 +63,22 @@ namespace GAS
                         tag,
                         eventType,
                         handler));
+        }
+
+        /// <summary>
+        /// Registers a callback for additions or removals of any gameplay tag.
+        /// </summary>
+        internal IDisposable RegisterGenericGameplayEvent(
+            Action<GameplayTag, int> handler)
+        {
+            m_GenericGameplayEvent +=
+                handler ?? throw new ArgumentNullException(
+                    nameof(handler));
+
+            return
+                new DisposableSubscription(() =>
+                    m_GenericGameplayEvent -=
+                        handler);
         }
 
         /// <summary>
@@ -332,6 +349,10 @@ namespace GAS
             {
                 return;
             }
+
+            m_GenericGameplayEvent?.Invoke(
+                tag,
+                newCount);
 
             if (
                 m_NewOrRemovedEvents.TryGetValue(

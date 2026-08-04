@@ -5,8 +5,9 @@ namespace GAS.Tests
         /// <summary>
         /// Creates an instant ability that applies one additive attribute modifier.
         /// </summary>
-        public static GameplayAbilitySO_InstantAbility Create(
+        public static GameplayAbilitySO Create(
             AbilitySystemTestEnvironment environment,
+            GameplayAbilityTargetActor targetActorPrefab,
             AttributeName attributeName,
             float magnitude)
         {
@@ -31,17 +32,23 @@ namespace GAS.Tests
                     value = magnitude
                 });
 
-            GameplayAbilitySO_InstantAbility gameplayAbility =
-                environment.CreateScriptableObject<GameplayAbilitySO_InstantAbility>(
+            GameplayAbilitySO gameplayAbility =
+                environment.CreateScriptableObject<GameplayAbilityTestAsset>(
                     "GA_InstantAdditive");
 
-            gameplayAbility.ga =
-                new InstantAbility();
+            InstantAdditiveAbility instantAdditiveAbility =
+                new();
 
-            gameplayAbility.ga.abilityTags.initialized = true;
+            instantAdditiveAbility.SetTargetActorPrefab(
+                targetActorPrefab);
 
-            gameplayAbility.ga.effectsSO.Add(
+            instantAdditiveAbility.abilityTags.initialized = true;
+
+            instantAdditiveAbility.effectsSO.Add(
                 gameplayEffect);
+
+            gameplayAbility.ga =
+                instantAdditiveAbility;
 
             return gameplayAbility;
         }

@@ -125,10 +125,13 @@ namespace GAS
         public List<GameplayEffect> effects = new();
 
 
-        [SerializeReference] public AbilityTags abilityTags = new();
+        [SerializeReference]
+        public AbilityTags abilityTags = new();
 
-        public AbilitySystemComponent source, target, owner; //Only filled on activation/instantiation. Owner adds the ASC that has it instantiated on. Mostly used by PassiveAbility
-        [SerializeReference] public List<GameplayTag> cuesTags = new();
+        public AbilitySystemComponent source, owner;
+
+        [SerializeReference]
+        public List<GameplayTag> cuesTags = new();
 
         [ReadOnly] public string Guid;
         [ReadOnly] public string ClassName;
@@ -145,8 +148,11 @@ namespace GAS
         public virtual GameplayAbility Instantiate(
             AbilitySystemComponent owner)
         {
-            this.owner =
-                owner;
+            if (owner == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(owner));
+            }
 
             Type classType =
                 GetType();
@@ -154,6 +160,9 @@ namespace GAS
             GameplayAbility gaCopy =
                 (GameplayAbility)Activator.CreateInstance(
                     classType);
+
+            gaCopy.owner =
+                owner;
 
             gaCopy.Guid =
                 System.Guid.NewGuid().ToString();
@@ -274,15 +283,15 @@ namespace GAS
         /// </summary>
         public virtual void PreActivate(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
             string activationGUID)
         {
-            IsActive = true;
+            IsActive =
+                true;
 
-            this.source = source;
-            this.target = target;
+            this.source =
+                source;
 
-            this.ActivationGUID =
+            ActivationGUID =
                 activationGUID;
 
             source.ApplyAbilityBlockAndCancelTags(
@@ -293,12 +302,9 @@ namespace GAS
                 true,
                 abilityTags.CancelAbilitiesWithTags);
 
-            source.UpdateGameplayTagCounts(
+            source.UpdateTagMap(
                 abilityTags.ActivationOwnedTags,
-                1,
-                source,
-                target,
-                activationGUID);
+                1);
 
             source.OnGameplayAbilityPreActivate?.Invoke(
                 this,
@@ -310,7 +316,6 @@ namespace GAS
         /// </summary>
         public virtual void ActivateAbility(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
             string activationGUID)
         {
         }
@@ -458,13 +463,11 @@ namespace GAS
         /// </summary>
         public virtual bool CommitAbility(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
             string activationGUID)
         {
             if (
                 !CommitCheck(
                     source,
-                    target,
                     activationGUID))
             {
                 return false;
@@ -472,7 +475,6 @@ namespace GAS
 
             CommitExecute(
                 source,
-                target,
                 activationGUID);
 
             return true;
@@ -483,12 +485,12 @@ namespace GAS
         /// </summary>
         public virtual bool CommitCheck(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
             string activationGUID)
         {
             return
                 CheckCooldown() &&
-                CheckCost(source);
+                CheckCost(
+                    source);
         }
 
         /// <summary>
@@ -496,7 +498,6 @@ namespace GAS
         /// </summary>
         public virtual void CommitExecute(
             AbilitySystemComponent source,
-            AbilitySystemComponent target,
             string activationGUID)
         {
             ApplyCooldown(
@@ -698,7 +699,7 @@ namespace GAS
         }
 
         /// <summary>
-        /// Ends the active ability, its tasks, and its owned and blocking tags.
+        /// Ends the active ability, its tasks, replicated data, and owned and blocking tags.
         /// </summary>
         public virtual void DeactivateAbility(
             string activationGUID = null)
@@ -710,6 +711,10 @@ namespace GAS
 
             EndAbilityTasks();
 
+            source.ClearAbilityReplicatedDataCache(
+                CurrentSpecHandle,
+                CurrentActivationInfo);
+
             source.ApplyAbilityBlockAndCancelTags(
                 abilityTags.DescriptionTags,
                 this,
@@ -718,12 +723,9 @@ namespace GAS
                 false,
                 abilityTags.CancelAbilitiesWithTags);
 
-            source.UpdateGameplayTagCounts(
+            source.UpdateTagMap(
                 abilityTags.ActivationOwnedTags,
-                -1,
-                source,
-                target,
-                activationGUID);
+                -1);
 
             IsActive = false;
 
@@ -790,29 +792,37 @@ namespace GAS
         }
 
         /// <summary>
-        /// You can override this and make additional checks if needed.
-        /// e.g. SERVER CHECKS FOR TARGET ASC's CONNECTION.
-        /// e.g. CHECK DISTANCE, CHECK LOS...
+        /// Determines whether the owning ability system can activate this ability.
         /// </summary>
-        public virtual bool CanActivateAbility(AbilitySystemComponent src, AbilitySystemComponent target, string activationGUID, bool sendFailedEvent)
+        public virtual bool CanActivateAbility(
+            AbilitySystemComponent source,
+            string activationGUID,
+            bool sendFailedEvent)
         {
-            //Cannot activate if already active
-            if (this.IsActive)
+            if (IsActive)
             {
-                if (src.logging || target.logging)
-                    Debug.Log($"{this.name} is already active.");
+                if (source.logging)
+                {
+                    Debug.Log(
+                        $"{name} is already active.");
+                }
+
                 if (sendFailedEvent)
-                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.ALREADY_ACTIVE);
+                {
+                    source.OnGameplayAbilityFailedActivation?.Invoke(
+                        this,
+                        activationGUID,
+                        ActivationFailure.ALREADY_ACTIVE);
+                }
+
                 return false;
             }
 
             if (
-                src.AreAbilityTagsBlocked(
+                source.AreAbilityTagsBlocked(
                     abilityTags.DescriptionTags))
             {
-                if (
-                    src.logging ||
-                    target.logging)
+                if (source.logging)
                 {
                     Debug.Log(
                         $"{name} is blocked by ability tags.");
@@ -820,7 +830,7 @@ namespace GAS
 
                 if (sendFailedEvent)
                 {
-                    src.OnGameplayAbilityFailedActivation?.Invoke(
+                    source.OnGameplayAbilityFailedActivation?.Invoke(
                         this,
                         activationGUID,
                         ActivationFailure.TAGS_BLOCKED);
@@ -829,24 +839,43 @@ namespace GAS
                 return false;
             }
 
-            //Check cooldown
-            if (GetCooldownRemaining() > 0)
-            { // Cooldown without tags...is it ok? Maybe. How can we track it for things that need to know if this ability is happening? e.g. isRolling is needed for Jumping
-                if (src.logging || target.logging)
-                    Debug.Log($"{this.name} is on Cooldown. Time Remaining: {GetCooldownRemaining()}");
+            float cooldownRemaining =
+                GetCooldownRemaining();
+
+            if (cooldownRemaining > 0f)
+            {
+                if (source.logging)
+                {
+                    Debug.Log(
+                        $"{name} is on cooldown. " +
+                        $"Time remaining: {cooldownRemaining}.");
+                }
+
                 if (sendFailedEvent)
-                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COOLDOWN);
+                {
+                    source.OnGameplayAbilityFailedActivation?.Invoke(
+                        this,
+                        activationGUID,
+                        ActivationFailure.COOLDOWN);
+                }
+
                 return false;
             }
 
-            //Check Cost
-            if (!CheckCost(src))
+            if (!CheckCost(
+                    source))
             {
                 if (sendFailedEvent)
-                    src.OnGameplayAbilityFailedActivation?.Invoke(this, activationGUID, ActivationFailure.COST);
+                {
+                    source.OnGameplayAbilityFailedActivation?.Invoke(
+                        this,
+                        activationGUID,
+                        ActivationFailure.COST);
+                }
+
                 return false;
             }
-            //If no constraint prevents activation, we activate
+
             return true;
         }
 
@@ -911,9 +940,7 @@ namespace GAS
                         attributeName.name,
                         out Attribute attribute))
                 {
-                    if (
-                        source.logging ||
-                        target.logging)
+                    if (source.logging)
                     {
                         Debug.Log(
                             $"ASC does not contain cost attribute " +
@@ -932,9 +959,7 @@ namespace GAS
                     continue;
                 }
 
-                if (
-                    source.logging ||
-                    target.logging)
+                if (source.logging)
                 {
                     Debug.Log(
                         $"Cannot pay ability cost: " +

@@ -38,6 +38,12 @@ namespace GAS
             private set;
         }
 
+        public IAbilitySystemReplicationTransport ReplicationTransport
+        {
+            private get;
+            set;
+        }
+
         private readonly Dictionary<
             ActiveGameplayEffectHandle,
             GameplayEffect> m_LegacyActiveEffectsByHandle = new();
@@ -47,6 +53,9 @@ namespace GAS
 
         [NonSerialized]
         private PredictionKeyDelegates m_PredictionKeyDelegates;
+
+        private readonly GameplayAbilityReplicatedDataContainer
+            m_AbilityTargetDataMap = new();
 
         [NonSerialized]
         private uint m_PredictionKeySequence;
@@ -487,12 +496,6 @@ namespace GAS
 
         public List<GameplayTag> tags =
             new();
-
-        public Action<
-            List<GameplayTag>,
-            AbilitySystemComponent,
-            AbilitySystemComponent,
-            string> OnTagsChanged;
 
         public Action<
             List<GameplayTag>,
@@ -981,6 +984,207 @@ namespace GAS
         }
 
         /// <summary>
+        /// Registers a callback for confirmed target data belonging to one ability activation.
+        /// </summary>
+        public IDisposable AbilityTargetDataSetDelegate(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            Action<GameplayAbilityTargetDataHandle, GameplayTag> handler)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            return cache.RegisterTargetSetDelegate(
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a callback for target cancellation belonging to one ability activation.
+        /// </summary>
+        public IDisposable AbilityTargetDataCancelledDelegate(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            Action handler)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            return cache.RegisterTargetCancelledDelegate(
+                handler);
+        }
+
+        /// <summary>
+        /// Sends confirmed target data through the configured ability-system replication transport.
+        /// </summary>
+        public void CallServerSetReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            GameplayAbilityTargetDataHandle replicatedTargetDataHandle,
+            GameplayTag applicationTag,
+            PredictionKey currentPredictionKey)
+        {
+            IAbilitySystemReplicationTransport replicationTransport =
+                GetReplicationTransport();
+
+            replicationTransport.CallServerSetReplicatedTargetData(
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                replicatedTargetDataHandle,
+                applicationTag,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Sends target-data cancellation through the configured ability-system replication transport.
+        /// </summary>
+        public void ServerSetReplicatedTargetDataCancelled(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            IAbilitySystemReplicationTransport replicationTransport =
+                GetReplicationTransport();
+
+            replicationTransport.ServerSetReplicatedTargetDataCancelled(
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Returns the configured replication transport required by non-authoritative execution.
+        /// </summary>
+        private IAbilitySystemReplicationTransport GetReplicationTransport()
+        {
+            if (ReplicationTransport == null)
+            {
+                throw new InvalidOperationException(
+                    "Ability system replication transport is not configured.");
+            }
+
+            return ReplicationTransport;
+        }
+
+        /// <summary>
+        /// Stores confirmed replicated target data and notifies the waiting ability task.
+        /// </summary>
+        public void SetReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            GameplayAbilityTargetDataHandle replicatedTargetDataHandle,
+            GameplayTag applicationTag,
+            PredictionKey currentPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            cache.SetTargetData(
+                replicatedTargetDataHandle,
+                applicationTag,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Stores replicated target cancellation and notifies the waiting ability task.
+        /// </summary>
+        public void SetReplicatedTargetDataCancelled(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            cache.SetTargetCancelled(
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Invokes cached target confirmation or cancellation when it has already arrived.
+        /// </summary>
+        public bool CallReplicatedTargetDataDelegatesIfSet(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.Find(
+                    key);
+
+            return
+                cache != null &&
+                cache.CallDelegatesIfSet();
+        }
+
+        /// <summary>
+        /// Consumes cached client target data while preserving registered delegates.
+        /// </summary>
+        public void ConsumeClientReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.Find(
+                    key);
+
+            if (cache == null)
+            {
+                return;
+            }
+
+            cache.Reset();
+        }
+
+        /// <summary>
+        /// Removes all cached replicated data and delegates for one ability activation.
+        /// </summary>
+        public void ClearAbilityReplicatedDataCache(
+            GameplayAbilitySpecHandle abilityHandle,
+            GameplayAbilityActivationInfo activationInfo)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    activationInfo.GetActivationPredictionKey());
+
+            m_AbilityTargetDataMap.Remove(
+                key);
+        }
+
+        /// <summary>
         /// Confirms a predicted ability activation without resolving its predicted side effects.
         /// </summary>
         public void ConfirmAbilityActivation(
@@ -1239,6 +1443,17 @@ namespace GAS
         }
 
         /// <summary>
+        /// Registers a callback for additions or removals of any owned gameplay tag.
+        /// </summary>
+        public IDisposable RegisterGenericGameplayTagEvent(
+            Action<GameplayTag, int> handler)
+        {
+            return
+                OwnedGameplayTags.RegisterGenericGameplayEvent(
+                    handler);
+        }
+
+        /// <summary>
         /// Returns the owned count of a gameplay tag including matching child tags.
         /// </summary>
         public int GetGameplayTagCount(
@@ -1283,14 +1498,11 @@ namespace GAS
         }
 
         /// <summary>
-        /// Updates owned gameplay tag contributions and refreshes the legacy tag view.
+        /// Updates owned gameplay tag contribution counts and refreshes the legacy tag view.
         /// </summary>
-        internal void UpdateGameplayTagCounts(
+        internal void UpdateTagMap(
             IReadOnlyList<GameplayTag> gameplayTags,
-            int countDelta,
-            AbilitySystemComponent source,
-            AbilitySystemComponent target,
-            string activationGUID)
+            int countDelta)
         {
             if (gameplayTags == null)
             {
@@ -1329,12 +1541,6 @@ namespace GAS
 
             OwnedGameplayTags.GetOwnedGameplayTags(
                 tags);
-
-            OnTagsChanged?.Invoke(
-                tags,
-                source,
-                target,
-                activationGUID);
         }
 
         /// <summary>
@@ -1542,7 +1748,6 @@ namespace GAS
         /// </summary>
         public void CallActivateAbility(
             GameplayAbility gameplayAbility,
-            AbilitySystemComponent target,
             string activationGUID)
         {
             if (gameplayAbility == null)
@@ -1551,15 +1756,8 @@ namespace GAS
                     nameof(gameplayAbility));
             }
 
-            if (target == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(target));
-            }
-
             gameplayAbility.PreActivate(
                 this,
-                target,
                 activationGUID);
 
             NotifyAbilityActivated(
@@ -1568,62 +1766,7 @@ namespace GAS
 
             gameplayAbility.ActivateAbility(
                 this,
-                target,
                 activationGUID);
-        }
-
-        /// <summary>
-        /// Attempts to activate a granted gameplay ability identified by its runtime name.
-        /// </summary>
-        public void TryActivateAbility(
-            string abilityName,
-            AbilitySystemComponent target)
-        {
-            GameplayAbility gameplayAbility = grantedGameplayAbilities.Find(
-                ability =>
-                    ability.name == abilityName);
-
-            gameplayAbility ??= grantedGameplayAbilities.Find(
-                    ability =>
-                        ability.name.Contains(
-                            abilityName));
-
-            if (gameplayAbility == null)
-            {
-                Debug.Log(
-                    $"No granted ability named '{abilityName}'.",
-                    this);
-
-                return;
-            }
-
-            TryActivateAbility(
-                gameplayAbility.CurrentSpecHandle,
-                target);
-        }
-
-        /// <summary>
-        /// Attempts to activate a granted gameplay ability at the requested runtime index.
-        /// </summary>
-        [EasyButtons.Button]
-        public void TryActivateAbility(
-            int index,
-            AbilitySystemComponent target)
-        {
-            if (
-                index < 0 ||
-                index >= grantedGameplayAbilities.Count)
-            {
-                Debug.Log(
-                    $"No granted ability at index '{index}'.",
-                    this);
-
-                return;
-            }
-
-            TryActivateAbility(
-                grantedGameplayAbilities[index].CurrentSpecHandle,
-                target);
         }
 
         /// <summary>
@@ -1631,39 +1774,10 @@ namespace GAS
         /// </summary>
         public UniTask<bool> TryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            AbilitySystemComponent target,
             string activationGUID = null)
         {
             return InternalTryActivateAbility(
                 handle,
-                target,
-                activationGUID);
-        }
-
-        /// <summary>
-        /// Attempts to activate a granted gameplay ability identified by its legacy runtime GUID.
-        /// </summary>
-        public void TryActivateAbility(
-            string guid,
-            AbilitySystemComponent target,
-            string activationGUID)
-        {
-            GameplayAbility gameplayAbility = grantedGameplayAbilities.Find(
-                ability =>
-                    ability.Guid == guid);
-
-            if (gameplayAbility == null)
-            {
-                Debug.LogWarning(
-                    $"No granted ability with GUID '{guid}'.",
-                    this);
-
-                return;
-            }
-
-            TryActivateAbility(
-                gameplayAbility.CurrentSpecHandle,
-                target,
                 activationGUID);
         }
 
@@ -1672,7 +1786,6 @@ namespace GAS
         /// </summary>
         private async UniTask<bool> InternalTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            AbilitySystemComponent target,
             string activationGUID = null)
         {
             GameplayAbilitySpec abilitySpec = FindAbilitySpecFromHandle(
@@ -1697,7 +1810,6 @@ namespace GAS
             }
 
             gameplayAbility.source = this;
-            gameplayAbility.target = target;
             gameplayAbility.ActivationGUID = activationGUID;
 
             OnGameplayAbilityTryActivate?.Invoke(
@@ -1706,13 +1818,11 @@ namespace GAS
 
             await InputBuffering(
                 gameplayAbility,
-                target,
                 gameplayAbility.ActivationGUID);
 
             if (
                 !gameplayAbility.CanActivateAbility(
                     this,
-                    target,
                     gameplayAbility.ActivationGUID,
                     true))
             {
@@ -1721,7 +1831,6 @@ namespace GAS
 
             CallActivateAbility(
                 gameplayAbility,
-                target,
                 gameplayAbility.ActivationGUID);
 
             return true;
@@ -1732,17 +1841,17 @@ namespace GAS
         /// </summary>
         public async UniTask InputBuffering(
             GameplayAbility gameplayAbility,
-            AbilitySystemComponent target,
             string activationGUID = null)
         {
-            float finalTime = Time.realtimeSinceStartup + inputBufferDurationSeconds;
+            float finalTime =
+                Time.realtimeSinceStartup +
+                inputBufferDurationSeconds;
 
             while (
                 !gameplayAbility.IsActive &&
                 Time.realtimeSinceStartup < finalTime &&
                 !gameplayAbility.CanActivateAbility(
                     this,
-                    target,
                     activationGUID,
                     false))
             {

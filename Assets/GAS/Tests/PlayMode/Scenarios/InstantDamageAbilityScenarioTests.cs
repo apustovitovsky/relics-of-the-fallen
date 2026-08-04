@@ -28,9 +28,15 @@ namespace GAS.Tests
                     health,
                     100f);
 
-            GameplayAbilitySO_InstantAbility ability =
+            DirectActorTargetActor targetActorPrefab =
+                environment.CreateDirectActorTargetActorPrefab(
+                    "TA_DirectActor",
+                    target.AbilityActorInfo.OwnerActor);
+
+            GameplayAbilitySO ability =
                 InstantAdditiveAbilityTestFactory.Create(
                     environment,
+                    targetActorPrefab,
                     health,
                     -10f);
 
@@ -41,8 +47,7 @@ namespace GAS.Tests
                         1));
 
             await source.TryActivateAbility(
-                abilityHandle,
-                target);
+                abilityHandle);
 
             Assert.That(
                 targetHealth.BaseValue,

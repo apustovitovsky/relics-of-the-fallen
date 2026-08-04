@@ -94,19 +94,19 @@ namespace GAS
         }
 
         public static bool operator ==(
-            ActiveGameplayEffectHandle lhs,
-            ActiveGameplayEffectHandle rhs)
+            ActiveGameplayEffectHandle left,
+            ActiveGameplayEffectHandle right)
         {
-            return lhs.Equals(
-                rhs);
+            return left.Equals(
+                right);
         }
 
         public static bool operator !=(
-            ActiveGameplayEffectHandle lhs,
-            ActiveGameplayEffectHandle rhs)
+            ActiveGameplayEffectHandle left,
+            ActiveGameplayEffectHandle right)
         {
-            return !lhs.Equals(
-                rhs);
+            return !left.Equals(
+                right);
         }
     }
 }

@@ -1,101 +1,98 @@
-﻿Примерный план такой.
+﻿Сейчас TargetData MVP и оба локальных сценария работают. Перед добавлением новых крупных механик я бы выбрал один из четырёх путей.
 
-1. Завершить текущую миграцию
+| Путь | Что реализуем | Результат |
+|---|---|---|
+| 1. Ability lifecycle — рекомендую | `EndAbility`, корректный `CancelAbility`, удаление `activationGUID`, идентификация через `GameplayAbilitySpecHandle + ActivationInfo/PredictionKey` | Убираем главный legacy-каркас и приближаем всю цепочку к GAS |
+| 2. Prediction | `ScopedPredictionWindow`, отдельный current prediction key для отложенного TargetData | Корректная prediction для `AbilityTask`, подтверждения цели и других latent-операций |
+| 3. Полный WaitTargetData | `ShouldProduceTargetDataOnServer`, `GenericConfirm`, `GenericCancel`, replicated generic events | Получаем обе оригинальные модели: клиент передаёт TargetData либо сервер создаёт его сам |
+| 4. Gameplay Effects | live NonSnapshot captures, затем stacking | Duration/Infinite-эффекты динамически реагируют на атрибуты; несколько одинаковых эффектов складываются по GAS-правилам |
 
-- Проверить компиляцию после восстановления методов.
-- Запустить Instant и Periodic сценарии.
-- Убедиться, что в `GameplayAbility` осталась только TargetData-ветка применения.
-- Обновить документацию.
+### 1. Ability lifecycle — лучший следующий шаг
 
-2. Убрать `target ASC` из activation pipeline
-
-Сейчас главный legacy-хвост:
+Сейчас `activationGUID` проходит через core и Mirror примерно в 73 местах. Это собственная строковая identity, которой нет в GAS. Оригинальная цепочка строится вокруг:
 
 ```text
-TryActivateAbility(handle, target)
-→ ActivateAbility(source, target)
+GameplayAbilitySpecHandle
++ GameplayAbilityActivationInfo
++ PredictionKey
 ```
 
-Должно стать ближе к GAS:
+Нужно постепенно получить:
 
 ```text
-TryActivateAbility(handle)
-→ ActivateAbility(...)
-→ конкретная ability / AbilityTask получает TargetData
+TryActivateAbility
+→ ActivateAbility
+→ CommitAbility
+→ EndAbility
 ```
 
-`CommitAbility` также не должен зависеть от готового target, если стоимость и cooldown относятся к владельцу.
-
-3. Добавить минимальный аналог `AbilityTask_WaitTargetData`
-
-Для DoT:
+и отдельный путь:
 
 ```text
-PeriodicDamageAbility активируется
-→ targeting/task получает выбранного actor
-→ создаёт GameplayAbilityTargetDataHandle
-→ ability продолжает выполнение
-→ создаёт spec
-→ применяет через TargetData
+CancelAbility
+→ EndAbility(wasCancelled: true)
 ```
 
-Сначала реализуем только direct actor targeting. `SingleTargetHit` и `LocationInfo` добавим вместе с соответствующими сценариями.
+Текущий `DeactivateAbility` заменяется GAS-совместимым `EndAbility`. Mirror-методы после этого тоже перестают передавать строковый GUID.
 
-4. Реализовать replicated TargetData cache в ASC
+Это соответствует API [`UGameplayAbility`](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/GameplayAbilities/UGameplayAbility) и цепочке Lyra в [LyraGameplayAbility.cpp](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.cpp:194).
 
-По аналогии с GAS:
+Почему сейчас: зелёные сценарные тесты дают безопасную опору, а Scoped Prediction, replicated events и batching лучше не строить поверх `activationGUID`.
+
+### 2. Scoped Prediction
+
+После lifecycle добавляем аналог `FScopedPredictionWindow`.
+
+Текущий простой DoT по заранее известной цели создаёт TargetData сразу, поэтому может работать с ключом активации. Но если TargetData появляется позже:
 
 ```text
-AbilitySpecHandle + PredictionKey
-→ TargetData cache
-→ delegate ожидающей ability task
-→ ConsumeClientReplicatedTargetData
+ActivateAbility
+→ WaitTargetData
+→ игрок выбрал цель через секунду
 ```
 
-Это позволит серверной ability либо сразу получить данные, либо дождаться их прихода.
+исходный prediction key уже не должен автоматически использоваться. В GAS для такой новой атомарной predictive-операции открывается новое prediction window. Именно это делает Lyra в [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:484). Это также описано в [GASDocumentation — Prediction Key](https://github.com/tranek/GASDocumentation#concepts-pk).
 
-5. Перевести Mirror на `ServerSetReplicatedTargetData`
+### 3. Завершить WaitTargetData
 
-```text
-Client:
-активирует ability
-→ собирает TargetData
-→ отправляет ServerSetReplicatedTargetData
-
-Server:
-активирует ту же ability
-→ получает/ожидает TargetData
-→ применяет authoritative periodic GE
-```
-
-Из activation RPC удалится `targetNetworkId`. Mirror будет сериализовать `ActorArray` через `netId`, а core продолжит работать с `GameObject`.
-
-6. Завершить сетевой DoT
-
-Итоговая цепочка:
+Текущий MVP реализует основной вариант:
 
 ```text
-client input
-→ predicted ability activation
-→ TargetData
+Client TargetData
 → ServerSetReplicatedTargetData
-→ authoritative GameplayEffectSpec
-→ server-only periodic ticks
-→ BaseValue replication
-→ Health обновляется на клиентах
+→ replicated data cache
+→ server ability
 ```
 
-Периодический эффект на клиенте предиктивно не создаётся — это уже реализовано.
+У оригинала есть ещё:
 
-7. После готового DoT
+```text
+ShouldProduceTargetDataOnServer = true
+→ клиент отправляет GenericConfirm
+→ сервер самостоятельно вычисляет TargetData
+```
 
-Дальнейшие крупные части GAS:
+Отмена в оригинальном `WaitTargetData` проходит через `GenericCancel`. Наш прямой RPC отмены функционален, но не полностью повторяет эту цепочку. Для заранее известной цели этот путь пока не нужен. См. [GASDocumentation — Targeting](https://github.com/tranek/GASDocumentation#concepts-targeting).
 
+### 4. Углубить Gameplay Effects
+
+Можно вместо networking/lifecycle заняться игровой семантикой:
+
+- live Source/Target NonSnapshot dependencies;
+- обновление magnitude активного Duration/Infinite GE;
 - stacking;
-- live non-snapshot captures;
-- дополнительные TargetData-типы;
-- Gameplay Cues для observer-ов;
-- execution calculations и `Damage` meta-attribute;
-- удаление оставшегося legacy API и старых ability implementations.
+- stack duration/period policies.
 
-Ближайшая цель: **скомпилировать текущий шаг, затем удалить `target` из core activation lifecycle и ввести минимальный `AbilityTask_WaitTargetData`**. Это главный оставшийся архитектурный разрыв перед полноценным сетевым DoT.
+Сейчас snapshot и начальный non-snapshot capture существуют, но live dependency ещё не поддерживается. Это даст больше возможностей для бафов и DoT, однако оставит legacy activation lifecycle.
+
+Моя рекомендация:
+
+```text
+1. EndAbility/CancelAbility и удаление activationGUID
+2. ScopedPredictionWindow
+3. GenericConfirm/GenericCancel при реальной необходимости
+4. Live NonSnapshot captures
+5. Stacking
+```
+
+Саму конкретную DoT-способность уже можно собрать на существующем TargetData pipeline, но сначала я бы небольшими правками очистил lifecycle. Текущий [Plan.md](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Plan.md:1) также пора актуализировать: этапы cache и TargetData RPC в нём уже фактически выполнены.

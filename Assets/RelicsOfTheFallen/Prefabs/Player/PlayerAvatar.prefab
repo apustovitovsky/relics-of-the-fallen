@@ -204,10 +204,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   m_AssetRegistry: {fileID: 11400000, guid: 5335b334a17c51f4db303c559b5f5702, type: 2}
-  asc: {fileID: 5720873888179496438}
-  localAttributesBuffer:
-    list: []
-    keyCollision: 0
+  m_AbilitySystem: {fileID: 5720873888179496438}
 --- !u!1 &1574558217860554032
 GameObject:
   m_ObjectHideFlags: 0
@@ -352,7 +349,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4878354982249804906}
   - component: {fileID: 5720873888179496438}
-  - component: {fileID: 6192964600843311394}
   m_Layer: 0
   m_Name: AbilitySystem
   m_TagString: Untagged
@@ -391,7 +387,7 @@ MonoBehaviour:
   attributes: []
   attributesProcessors: []
   grantedGameplayAbilities: []
-  appliedGameplayEffects: []
+  AppliedGameplayEffects: []
   tags: []
   level: 1
   instancedCues: []
@@ -402,20 +398,6 @@ MonoBehaviour:
   references:
     version: 2
     RefIds: []
---- !u!114 &6192964600843311394
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5661350738243022778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b22ce11277164b4caec2446c56adb51, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.AbilitySystem::RelicsOfTheFallen.AbilitySystem.AbilityAnimationPresenter
-  m_AbilitySystem: {fileID: 5720873888179496438}
-  m_Animator: {fileID: 1414234138643742697}
 --- !u!1 &6381687019198764681
 GameObject:
   m_ObjectHideFlags: 0
@@ -528,7 +510,7 @@ MonoBehaviour:
   m_NetworkAbilitySystem: {fileID: 0}
   m_CharacterInput: {fileID: 6058243792797642424}
   m_AbilitySystem: {fileID: 5720873888179496438}
-  m_AttackAbility: {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
+  m_AttackAbility: {fileID: 0}
   m_LogDebugEvents: 1
 --- !u!1001 &2440872948756546113
 PrefabInstance:
@@ -546,10 +528,6 @@ PrefabInstance:
       propertyPath: m_AbilitySystem
       value: 
       objectReference: {fileID: 5720873888179496438}
-    - target: {fileID: 5486424813889430557, guid: 9286223cca005554a938e950863aac13, type: 3}
-      propertyPath: m_AnimationPresenter
-      value: 
-      objectReference: {fileID: 6192964600843311394}
     - target: {fileID: 5812575584469228466, guid: 9286223cca005554a938e950863aac13, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -590,7 +568,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5486424813889430557, guid: 9286223cca005554a938e950863aac13, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:

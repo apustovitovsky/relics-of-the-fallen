@@ -70,19 +70,19 @@ namespace GAS
         }
 
         public static bool operator ==(
-            GameplayAbilitySpecHandle lhs,
-            GameplayAbilitySpecHandle rhs)
+            GameplayAbilitySpecHandle left,
+            GameplayAbilitySpecHandle right)
         {
-            return lhs.Equals(
-                rhs);
+            return left.Equals(
+                right);
         }
 
         public static bool operator !=(
-            GameplayAbilitySpecHandle lhs,
-            GameplayAbilitySpecHandle rhs)
+            GameplayAbilitySpecHandle left,
+            GameplayAbilitySpecHandle right)
         {
-            return !lhs.Equals(
-                rhs);
+            return !left.Equals(
+                right);
         }
     }
 }

@@ -40,17 +40,17 @@ namespace GAS
         }
 
         public static bool operator ==(
-            PredictionKey lhs,
-            PredictionKey rhs)
+            PredictionKey left,
+            PredictionKey right)
         {
-            return lhs.Equals(rhs);
+            return left.Equals(right);
         }
 
         public static bool operator !=(
-            PredictionKey lhs,
-            PredictionKey rhs)
+            PredictionKey left,
+            PredictionKey right)
         {
-            return !lhs.Equals(rhs);
+            return !left.Equals(right);
         }
     }
 }

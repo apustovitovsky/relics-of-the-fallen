@@ -21,8 +21,7 @@ namespace GAS
         public GameplayAbilityTargetDataHandle(
             GameplayAbilityTargetData data)
         {
-            Add(
-                data);
+            Add(data);
         }
 
         /// <summary>
@@ -61,8 +60,7 @@ namespace GAS
                     nameof(data));
             }
 
-            m_Data.Add(
-                data);
+            m_Data.Add(data);
         }
     }
 }

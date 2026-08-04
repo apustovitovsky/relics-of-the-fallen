@@ -11,7 +11,8 @@ namespace GAS.Mirror
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class NetworkAbilitySystemComponent :
-        NetworkBehaviour
+        NetworkBehaviour,
+        IAbilitySystemReplicationTransport
     {
         [SerializeField]
         private AbilitySystemComponent m_AbilitySystem;
@@ -40,13 +41,16 @@ namespace GAS.Mirror
             PredictionKey> m_ReplicatedPredictionKeyMap = new();
 
         /// <summary>
-        /// Initializes ability actor information for this networked avatar instance.
+        /// Initializes ability actor information and installs the Mirror target-data transport.
         /// </summary>
         private void Awake()
         {
             m_AbilitySystem.InitAbilityActorInfo(
                 gameObject,
                 gameObject);
+
+            m_AbilitySystem.ReplicationTransport =
+                this;
         }
 
         /// <summary>
@@ -55,6 +59,8 @@ namespace GAS.Mirror
         public override void OnStartAuthority()
         {
             base.OnStartAuthority();
+            m_AbilitySystem.AbilityActorInfo.SetLocallyControlled(
+                true);
 
             if (!isClientOnly)
             {
@@ -87,6 +93,9 @@ namespace GAS.Mirror
         /// </summary>
         public override void OnStopAuthority()
         {
+            m_AbilitySystem.AbilityActorInfo.SetLocallyControlled(
+                false);
+
             m_ActiveGameplayEffects.OnAdd -=
                 AddReplicatedActiveGameplayEffect;
 
@@ -110,6 +119,9 @@ namespace GAS.Mirror
         public override void OnStartServer()
         {
             base.OnStartServer();
+
+            m_AbilitySystem.AbilityActorInfo.SetLocallyControlled(
+                false);
 
             GameplayAbilitySpecContainer abilitySpecs =
                 m_AbilitySystem.ActivatableAbilities;
@@ -193,6 +205,9 @@ namespace GAS.Mirror
         public override void OnStartClient()
         {
             base.OnStartClient();
+
+            m_AbilitySystem.AbilityActorInfo.SetLocallyControlled(
+                isOwned);
 
             if (isClientOnly)
             {
@@ -721,20 +736,17 @@ namespace GAS.Mirror
         /// Starts a predicted ability activation for the owning client.
         /// </summary>
         public void TryActivateAbility(
-            GameplayAbilitySO ability,
-            NetworkAbilitySystemComponent target)
+            GameplayAbilitySO ability)
         {
             InternalTryActivateAbility(
-                ability,
-                target).Forget();
+                ability).Forget();
         }
 
         /// <summary>
         /// Performs local prediction and forwards a successful activation request to the server.
         /// </summary>
         private async UniTask InternalTryActivateAbility(
-            GameplayAbilitySO ability,
-            NetworkAbilitySystemComponent target)
+            GameplayAbilitySO ability)
         {
             if (!isOwned)
             {
@@ -757,15 +769,6 @@ namespace GAS.Mirror
                 return;
             }
 
-            if (target == null)
-            {
-                Debug.LogWarning(
-                    $"Cannot activate ability '{abilitySpec.Handle}' without a network target.",
-                    this);
-
-                return;
-            }
-
             PredictionKey predictionKey = m_AbilitySystem.CreateNewPredictionKey();
             string activationGUID = System.Guid.NewGuid().ToString();
 
@@ -780,7 +783,6 @@ namespace GAS.Mirror
 
             bool wasActivated = await m_AbilitySystem.TryActivateAbility(
                 abilitySpec.Handle,
-                target.m_AbilitySystem,
                 activationGUID);
 
             if (!wasActivated)
@@ -794,7 +796,6 @@ namespace GAS.Mirror
 
             CallServerTryActivateAbility(
                 abilitySpec.Handle,
-                target,
                 predictionKey,
                 activationGUID);
         }
@@ -804,15 +805,132 @@ namespace GAS.Mirror
         /// </summary>
         private void CallServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            NetworkAbilitySystemComponent target,
             PredictionKey predictionKey,
             string activationGUID)
         {
             ServerTryActivateAbility(
                 handle,
-                target.netId,
                 predictionKey,
                 activationGUID);
+        }
+
+        /// <summary>
+        /// Sends client-produced target data to authoritative ability execution.
+        /// </summary>
+        public void CallServerSetReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            GameplayAbilityTargetDataHandle replicatedTargetDataHandle,
+            GameplayTag applicationTag,
+            PredictionKey currentPredictionKey)
+        {
+            Guid applicationTagId = Guid.Empty;
+
+            if (applicationTag != null)
+            {
+                applicationTagId =
+                    m_AssetRegistry
+                        .GetAssetId(
+                            applicationTag)
+                        .Value;
+            }
+
+            ServerSetReplicatedTargetData(
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                replicatedTargetDataHandle,
+                applicationTagId,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Receives client-produced target data for one predicted ability activation.
+        /// </summary>
+        [Command]
+        private void ServerSetReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            GameplayAbilityTargetDataHandle replicatedTargetDataHandle,
+            Guid applicationTagId,
+            PredictionKey currentPredictionKey)
+        {
+            if (
+                !CanAcceptReplicatedTargetData(
+                    abilityHandle,
+                    abilityOriginalPredictionKey))
+            {
+                return;
+            }
+
+            GameplayTag applicationTag =
+                null;
+
+            if (applicationTagId != Guid.Empty)
+            {
+                applicationTag =
+                    m_AssetRegistry.GetAsset<GameplayTag>(
+                        new AssetId(
+                            applicationTagId));
+            }
+
+            m_AbilitySystem.SetReplicatedTargetData(
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                replicatedTargetDataHandle,
+                applicationTag,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Receives target-data cancellation for one predicted ability activation.
+        /// </summary>
+        [Command]
+        public void ServerSetReplicatedTargetDataCancelled(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            if (
+                !CanAcceptReplicatedTargetData(
+                    abilityHandle,
+                    abilityOriginalPredictionKey))
+            {
+                return;
+            }
+
+            m_AbilitySystem.SetReplicatedTargetDataCancelled(
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                currentPredictionKey);
+        }
+
+        /// <summary>
+        /// Validates the ability activation addressed by incoming replicated target data.
+        /// </summary>
+        private bool CanAcceptReplicatedTargetData(
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey)
+        {
+            GameplayAbilitySpec abilitySpec =
+                m_AbilitySystem.FindAbilitySpecFromHandle(
+                    abilityHandle);
+
+            if (
+                abilitySpec != null &&
+                abilityOriginalPredictionKey.IsValid &&
+                abilitySpec
+                    .ActivationInfo
+                    .GetActivationPredictionKey() ==
+                abilityOriginalPredictionKey)
+            {
+                return true;
+            }
+
+            Debug.LogWarning(
+                $"Rejected target data for ability '{abilityHandle}'.",
+                this);
+
+            return false;
         }
 
         /// <summary>
@@ -847,13 +965,11 @@ namespace GAS.Mirror
         [Command]
         private void ServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            uint targetNetworkId,
             PredictionKey predictionKey,
             string activationGUID)
         {
             InternalServerTryActivateAbility(
                 handle,
-                targetNetworkId,
                 predictionKey,
                 activationGUID).Forget();
         }
@@ -863,7 +979,6 @@ namespace GAS.Mirror
         /// </summary>
         private async UniTask InternalServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            uint targetNetworkId,
             PredictionKey predictionKey,
             string activationGUID)
         {
@@ -893,37 +1008,6 @@ namespace GAS.Mirror
                 return;
             }
 
-            if (!NetworkServer.spawned.TryGetValue(
-                    targetNetworkId,
-                    out NetworkIdentity targetIdentity))
-            {
-                Debug.LogWarning(
-                    $"Cannot activate ability '{handle}': " +
-                    $"target network identity '{targetNetworkId}' was not found.",
-                    this);
-
-                ClientActivateAbilityFailed(
-                    handle,
-                    predictionKey);
-
-                return;
-            }
-
-            if (!targetIdentity.TryGetComponent(
-                    out NetworkAbilitySystemComponent targetNetwork))
-            {
-                Debug.LogWarning(
-                    $"Cannot activate ability '{handle}': " +
-                    $"target has no {nameof(NetworkAbilitySystemComponent)}.",
-                    this);
-
-                ClientActivateAbilityFailed(
-                    handle,
-                    predictionKey);
-
-                return;
-            }
-
             GameplayAbilityActivationInfo activationInfo = new(
                 GameplayAbilityActivationMode.Authority,
                 predictionKey);
@@ -934,7 +1018,6 @@ namespace GAS.Mirror
 
             bool wasActivated = await m_AbilitySystem.TryActivateAbility(
                 handle,
-                targetNetwork.m_AbilitySystem,
                 activationGUID);
 
             if (wasActivated)

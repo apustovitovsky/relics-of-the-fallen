@@ -5,8 +5,9 @@ namespace GAS.Tests
         /// <summary>
         /// Creates an ability that applies periodic additive damage for a fixed duration.
         /// </summary>
-        public static GameplayAbilitySO_InstantAbility Create(
+        public static GameplayAbilitySO Create(
             AbilitySystemTestEnvironment environment,
+            GameplayAbilityTargetActor targetActorPrefab,
             AttributeName healthAttribute,
             float damagePerPeriod,
             float duration,
@@ -36,17 +37,23 @@ namespace GAS.Tests
                     value = -damagePerPeriod
                 });
 
-            GameplayAbilitySO_InstantAbility gameplayAbility =
-                environment.CreateScriptableObject<GameplayAbilitySO_InstantAbility>(
+            GameplayAbilitySO gameplayAbility =
+                environment.CreateScriptableObject<GameplayAbilityTestAsset>(
                     "GA_PeriodicDamage");
 
-            gameplayAbility.ga =
-                new PeriodicDamageAbility();
+            PeriodicDamageAbility periodicDamageAbility =
+                new();
 
-            gameplayAbility.ga.abilityTags.initialized = true;
+            periodicDamageAbility.SetTargetActorPrefab(
+                targetActorPrefab);
 
-            gameplayAbility.ga.effectsSO.Add(
+            periodicDamageAbility.abilityTags.initialized = true;
+
+            periodicDamageAbility.effectsSO.Add(
                 gameplayEffect);
+
+            gameplayAbility.ga =
+                periodicDamageAbility;
 
             return gameplayAbility;
         }

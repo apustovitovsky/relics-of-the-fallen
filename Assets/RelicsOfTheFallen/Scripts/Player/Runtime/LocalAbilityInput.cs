@@ -69,8 +69,7 @@ namespace RelicsOfTheFallen.Player
             }
 
             m_NetworkAbilitySystem.TryActivateAbility(
-                m_AttackAbility,
-                m_NetworkAbilitySystem);
+                m_AttackAbility);
         }
 
         private void HandleGameplayEvent(

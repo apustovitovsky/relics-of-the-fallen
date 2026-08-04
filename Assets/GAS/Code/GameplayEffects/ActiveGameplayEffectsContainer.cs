@@ -619,7 +619,7 @@ namespace GAS
                 activeEffect.Spec);
         }
 
-        
+
         /// <summary>
         /// Starts the repeating execution timer owned by one authoritative periodic effect.
         /// </summary>
@@ -824,15 +824,12 @@ namespace GAS
 
             activeEffect.GrantedTagsApplied = true;
 
-            m_Owner.UpdateGameplayTagCounts(
+            m_Owner.UpdateTagMap(
                 activeEffect.Spec
                     .Definition
                     .gameplayEffectTags
                     .GrantedTags,
-                1,
-                activeEffect.Spec.Source,
-                m_Owner,
-                activeEffect.Spec.ApplicationGuid);
+                1);
         }
 
         /// <summary>
@@ -863,15 +860,12 @@ namespace GAS
                 return;
             }
 
-            m_Owner.UpdateGameplayTagCounts(
+            m_Owner.UpdateTagMap(
                 activeEffect.Spec
                     .Definition
                     .gameplayEffectTags
                     .GrantedTags,
-                -1,
-                activeEffect.Spec.Source,
-                m_Owner,
-                activeEffect.Spec.ApplicationGuid);
+                -1);
 
             activeEffect.GrantedTagsApplied =
                 false;

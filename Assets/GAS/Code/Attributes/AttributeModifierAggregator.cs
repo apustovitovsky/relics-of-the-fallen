@@ -42,17 +42,17 @@ namespace GAS
         }
 
         public static bool operator ==(
-            AttributeModifierHandle lhs,
-            AttributeModifierHandle rhs)
+            AttributeModifierHandle left,
+            AttributeModifierHandle right)
         {
-            return lhs.Equals(rhs);
+            return left.Equals(right);
         }
 
         public static bool operator !=(
-            AttributeModifierHandle lhs,
-            AttributeModifierHandle rhs)
+            AttributeModifierHandle left,
+            AttributeModifierHandle right)
         {
-            return !lhs.Equals(rhs);
+            return !left.Equals(right);
         }
     }
 

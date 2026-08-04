@@ -100,7 +100,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5812575584469228466}
   - component: {fileID: 3638881524296301992}
-  - component: {fileID: 5486424813889430557}
   m_Layer: 0
   m_Name: PlayerVisual
   m_TagString: Untagged
@@ -146,17 +145,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &5486424813889430557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5091300048166180487}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04eafff51c00f7444abf28e78606c541, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RelicsOfTheFallen.AbilitySystem::RelicsOfTheFallen.AbilitySystem.AbilityAnimationEventRelay
-  m_AbilitySystem: {fileID: 0}
-  m_AnimationPresenter: {fileID: 0}

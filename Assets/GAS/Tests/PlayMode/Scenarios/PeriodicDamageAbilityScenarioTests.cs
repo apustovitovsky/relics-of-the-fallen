@@ -28,9 +28,15 @@ namespace GAS.Tests
                     health,
                     100f);
 
-            GameplayAbilitySO_InstantAbility ability =
-                PeriodicDamageAbilityTestFactory.Create(
+            DirectActorTargetActor targetActorPrefab =
+                environment.CreateDirectActorTargetActorPrefab(
+                    "TA_DirectActor",
+                    target.AbilityActorInfo.OwnerActor);
+
+            GameplayAbilitySO ability =
+                    PeriodicDamageAbilityTestFactory.Create(
                     environment,
+                    targetActorPrefab,
                     health,
                     10f,
                     0.18f,
@@ -43,8 +49,7 @@ namespace GAS.Tests
                         1));
 
             await source.TryActivateAbility(
-                abilityHandle,
-                target);
+                abilityHandle);
 
             await Task.Delay(
                 300);

@@ -12,5 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7fcde891181399143a15e1fb00be10d7, type: 3}
   m_Name: GroupGA_Player
   m_EditorClassIdentifier: GAS::GAS.GroupGA
-  group:
-  - {fileID: 11400000, guid: 909278e5f18748445abf8a8f7150045b, type: 2}
+  group: []

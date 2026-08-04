@@ -3,7 +3,7 @@ using System;
 namespace GAS.Tests
 {
     [Serializable]
-    internal sealed class PeriodicDamageAbility :
+    internal sealed class InstantAdditiveAbility :
         GameplayAbility
     {
         private GameplayAbilityTargetActor m_TargetActorPrefab;
@@ -29,8 +29,8 @@ namespace GAS.Tests
         public override GameplayAbility Instantiate(
             AbilitySystemComponent owner)
         {
-            PeriodicDamageAbility instance =
-                (PeriodicDamageAbility)base.Instantiate(
+            InstantAdditiveAbility instance =
+                (InstantAdditiveAbility)base.Instantiate(
                     owner);
 
             instance.m_TargetActorPrefab =
@@ -40,7 +40,7 @@ namespace GAS.Tests
         }
 
         /// <summary>
-        /// Waits for target data before applying the configured periodic gameplay effect.
+        /// Waits for target data before applying the configured instant gameplay effect.
         /// </summary>
         public override void ActivateAbility(
             AbilitySystemComponent source,

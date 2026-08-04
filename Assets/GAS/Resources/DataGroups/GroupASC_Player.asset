@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attributes: {fileID: 11400000, guid: e1766b86ed437c844b59562edb0bf8f6, type: 2}
   attributeProcessors: {fileID: 11400000, guid: 17fdfc73596b8ee4f941eb7a45e9482d, type: 2}
-  abilities: {fileID: 11400000, guid: 1934bb64382b21e46b50069a44f9eff4, type: 2}
+  abilities: {fileID: 0}

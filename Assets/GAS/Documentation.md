@@ -251,6 +251,39 @@ GameplayAbility.ApplyGameplayEffectSpecToTarget
 → AbilitySystemComponent.ApplyGameplayEffectSpecToSelf
 ```
 
+Базовый `GameplayAbility` не создаёт конкретный TargetData из готового целевого ASC. Цель получает `GameplayAbilityTargetActor`, а `AbilityTask_WaitTargetData` управляет ожиданием, подтверждением и отменой таргетинга:
+
+```text
+GameplayAbilityTargetActor.StartTargeting
+→ ConfirmTargetingAndContinue
+→ GameplayAbilityTargetDataHandle
+→ AbilityTask_WaitTargetData.ValidData
+→ GameplayAbility.ApplyGameplayEffectSpecToTarget
+```
+
+`WaitTargetData()` создаёт отдельный экземпляр Unity prefab `GameplayAbilityTargetActor` для одной активации. `WaitTargetDataUsingActor()` принимает уже созданный экземпляр. Task владеет TargetActor, снимает свои подписки и уничтожает его при завершении.
+
+`GameplayTargetingConfirmation.Instant` подтверждает цель сразу после `StartTargeting()`. `UserConfirmed` и `Custom` ожидают внешнего подтверждения, а `CustomMulti` допускает несколько выдач TargetData до явного завершения task.
+
+Acceptance-сценарии Instant и Periodic GameplayEffect получают `GameplayAbilityTargetData_ActorArray` через `AbilityTask_WaitTargetData`. Несетевой ASC по умолчанию выполняет тот же task как локально управляемый authoritative instance и не требует replication transport.
+
+Для predicted activation локально управляемый client создаёт TargetData и передаёт его через единый optional `IAbilitySystemReplicationTransport`. Mirror-адаптер кодирует тип каждого payload и его сетевые поля, после чего authoritative ASC сохраняет результат в `AbilityReplicatedDataCache`, адресованный парой `GameplayAbilitySpecHandle + original PredictionKey`:
+
+```text
+client GameplayAbilityTargetActor
+→ client AbilityTask_WaitTargetData
+→ AbilitySystemComponent.CallServerSetReplicatedTargetData
+→ IAbilitySystemReplicationTransport
+→ NetworkAbilitySystemComponent.ServerSetReplicatedTargetData
+→ server AbilityReplicatedDataCache
+→ server AbilityTask_WaitTargetData
+→ authoritative ability
+```
+
+Cache различает подтверждённые TargetData и отмену. `CallReplicatedTargetDataDelegatesIfSet()` обрабатывает данные, которые пришли раньше регистрации server task, а `ConsumeClientReplicatedTargetData()` очищает использованное состояние, сохраняя подписки текущей activation. При завершении ability весь cache этой activation удаляется.
+
+Текущая Mirror-сериализация поддерживает `GameplayAbilityTargetData_ActorArray`. Каждый target обязан быть spawned `GameObject` с `NetworkIdentity`; по сети передаётся его `netId`, а принимающая сторона восстанавливает локальную копию объекта. Пока `ScopedPredictionWindow` не реализован, `currentPredictionKey` совпадает с original activation key.
+
 Целевой `AbilitySystemComponent` самостоятельно определяет authoritative или predicted применение через `IsOwnerActorAuthoritative()`. Несетевой ASC по умолчанию считается authoritative. В сетевой конфигурации Mirror-адаптер сообщает `GameplayAbilityActorInfo` роль локальной копии, не передавая Mirror-типы в core GAS. На неавторитетной копии эффект применяется только при наличии действительного `PredictionKey`; без него применение отклоняется.
 
 После проверки application requirements и chance создаётся отдельная application-копия spec, захватываются данные Target и вычисляются modifier magnitudes.

@@ -6,6 +6,7 @@ namespace GAS
     public class GameplayAbilityActorInfo
     {
         private bool m_IsNetAuthority = true;
+        private bool m_IsLocallyControlled = true;
 
         public GameObject OwnerActor
         {
@@ -37,6 +38,24 @@ namespace GAS
         public bool IsNetAuthority()
         {
             return m_IsNetAuthority;
+        }
+
+        /// <summary>
+        /// Returns whether this ability actor is controlled by the local process.
+        /// </summary>
+        public bool IsLocallyControlled()
+        {
+            return m_IsLocallyControlled;
+        }
+
+        /// <summary>
+        /// Updates the local-control state supplied by the platform adapter.
+        /// </summary>
+        public void SetLocallyControlled(
+            bool isLocallyControlled)
+        {
+            m_IsLocallyControlled =
+                isLocallyControlled;
         }
 
         /// <summary>

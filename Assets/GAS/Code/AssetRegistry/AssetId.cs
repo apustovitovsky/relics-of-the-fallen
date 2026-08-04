@@ -79,19 +79,19 @@ namespace GAS
         }
 
         public static bool operator ==(
-            AssetId lhs,
-            AssetId rhs)
+            AssetId left,
+            AssetId right)
         {
-            return lhs.Equals(
-                rhs);
+            return left.Equals(
+                right);
         }
 
         public static bool operator !=(
-            AssetId lhs,
-            AssetId rhs)
+            AssetId left,
+            AssetId right)
         {
-            return !lhs.Equals(
-                rhs);
+            return !left.Equals(
+                right);
         }
     }
 }

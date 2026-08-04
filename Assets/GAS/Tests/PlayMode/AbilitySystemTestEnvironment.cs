@@ -74,6 +74,31 @@ namespace GAS.Tests
         }
 
         /// <summary>
+        /// Creates a transient direct-actor targeting prefab for an acceptance scenario.
+        /// </summary>
+        public DirectActorTargetActor CreateDirectActorTargetActorPrefab(
+            string name,
+            GameObject targetActor)
+        {
+            GameObject targetActorObject =
+                new(name);
+
+            targetActorObject.SetActive(
+                false);
+
+            m_Objects.Add(
+                targetActorObject);
+
+            DirectActorTargetActor targetActorPrefab =
+                targetActorObject.AddComponent<DirectActorTargetActor>();
+
+            targetActorPrefab.SetTargetActor(
+                targetActor);
+
+            return targetActorPrefab;
+        }
+
+        /// <summary>
         /// Creates a transient ScriptableObject owned by this test environment.
         /// </summary>
         public T CreateScriptableObject<T>(

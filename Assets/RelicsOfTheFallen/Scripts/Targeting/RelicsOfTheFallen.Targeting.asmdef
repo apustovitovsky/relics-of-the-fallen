@@ -1,12 +1,8 @@
 {
-    "name": "RelicsOfTheFallen.Networking.Character",
-    "rootNamespace": "RelicsOfTheFallen.Networking.Character",
+    "name": "RelicsOfTheFallen.Targeting",
+    "rootNamespace": "RelicsOfTheFallen.Targeting",
     "references": [
-        "Mirror",
-        "GAS",
-        "RelicsOfTheFallen.Networking",
-        "RelicsOfTheFallen.Character",
-        "RelicsOfTheFallen.Targeting"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

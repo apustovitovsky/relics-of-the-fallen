@@ -1,10 +1,11 @@
 {
-    "name": "RelicsOfTheFallen.Editor",
-    "rootNamespace": "RelicsOfTheFallen.Editor",
-    "references": [],
-    "includePlatforms": [
-        "Editor"
+    "name": "RelicsOfTheFallen.Networking.UI",
+    "rootNamespace": "RelicsOfTheFallen.Networking.UI",
+    "references": [
+        "Mirror",
+        "RelicsOfTheFallen.Targeting"
     ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

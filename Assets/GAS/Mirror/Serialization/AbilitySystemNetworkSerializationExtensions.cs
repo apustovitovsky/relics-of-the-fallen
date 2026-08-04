@@ -107,6 +107,38 @@ namespace GAS.Mirror
         }
 
         /// <summary>
+        /// Writes the activation mode and prediction key of one gameplay ability activation.
+        /// </summary>
+        public static void WriteGameplayAbilityActivationInfo(
+            this NetworkWriter writer,
+            GameplayAbilityActivationInfo value)
+        {
+            writer.WriteByte(
+                (byte)value.ActivationMode);
+
+            writer.WritePredictionKey(
+                value.GetActivationPredictionKey());
+        }
+
+        /// <summary>
+        /// Reads the activation mode and prediction key of one gameplay ability activation.
+        /// </summary>
+        public static GameplayAbilityActivationInfo
+            ReadGameplayAbilityActivationInfo(
+                this NetworkReader reader)
+        {
+            GameplayAbilityActivationMode activationMode =
+                (GameplayAbilityActivationMode)reader.ReadByte();
+
+            PredictionKey predictionKey =
+                reader.ReadPredictionKey();
+
+            return new GameplayAbilityActivationInfo(
+                activationMode,
+                predictionKey);
+        }
+
+        /// <summary>
         /// Writes the replication state of one gameplay ability animation montage.
         /// </summary>
         public static void WriteGameplayAbilityRepAnimMontageReplicationState(

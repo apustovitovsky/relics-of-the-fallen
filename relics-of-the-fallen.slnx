@@ -15,7 +15,6 @@
   <Project Path="EncryptionTransportEditor.csproj" />
   <Project Path="EasyButtons.Editor.csproj" />
   <Project Path="RelicsOfTheFallen.Networking.csproj" />
-  <Project Path="RelicsOfTheFallen.AbilitySystem.csproj" />
   <Project Path="RelicsOfTheFallen.Character.csproj" />
   <Project Path="GAS.Mirror.csproj" />
   <Project Path="Telepathy.csproj" />

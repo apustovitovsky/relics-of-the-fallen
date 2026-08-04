@@ -19,5 +19,13 @@ namespace GAS
             GameplayAbilitySpecHandle abilityHandle,
             PredictionKey abilityOriginalPredictionKey,
             PredictionKey currentPredictionKey);
+
+        /// <summary>
+        /// Replicates a normal or cancelled gameplay ability ending to the remote execution side.
+        /// </summary>
+        void ReplicateEndOrCancelAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActivationInfo activationInfo,
+            bool wasCancelled);
     }
 }

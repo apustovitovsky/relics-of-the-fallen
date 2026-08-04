@@ -73,7 +73,7 @@ namespace RelicsOfTheFallen.Player
         }
 
         private void HandleGameplayEvent(
-            GameplayEventData gameplayEvent)
+         GameplayEventData gameplayEvent)
         {
             if (!m_LogDebugEvents)
             {
@@ -87,9 +87,7 @@ namespace RelicsOfTheFallen.Player
 
             Debug.Log(
                 $"[AbilityTest] Gameplay event " +
-                $"'{tagName}', activation " +
-                $"'{gameplayEvent.ActivationGUID}' " +
-                $"at {Time.time:F3}.",
+                $"'{tagName}' at {Time.time:F3}.",
                 this);
         }
 

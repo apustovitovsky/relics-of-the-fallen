@@ -535,6 +535,42 @@ namespace GAS
         }
 
         /// <summary>
+        /// Returns the remaining times of active gameplay effects that satisfy a query.
+        /// </summary>
+        public List<float> GetActiveEffectsTimeRemaining(
+            GameplayEffectQuery query)
+        {
+            if (query == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(query));
+            }
+
+            double currentWorldTime =
+                Time.timeAsDouble;
+
+            List<float> timesRemaining = new();
+
+            foreach (
+                ActiveGameplayEffect activeEffect
+                in m_ActiveByHandle.Values)
+            {
+                if (
+                    !query.Matches(
+                        activeEffect))
+                {
+                    continue;
+                }
+
+                timesRemaining.Add(
+                    (float)activeEffect.GetTimeRemaining(
+                        currentWorldTime));
+            }
+
+            return timesRemaining;
+        }
+        
+        /// <summary>
         /// Modifies an active gameplay effect start time and refreshes its duration state.
         /// </summary>
         public void ModifyActiveEffectStartTime(

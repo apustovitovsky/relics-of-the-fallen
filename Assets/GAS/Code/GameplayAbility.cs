@@ -1,45 +1,129 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System;
-using UnityEngine.Events;
-using EasyButtons;
-
 
 namespace GAS
 {
-    /// <summary>
-    ///  A Gameplay Ability is any action the ASC (Ability System Component) can use. <br />
-    /// These can be spells, skills, passives, interactions or any other action.
-    /// The most common uses (e.g. Instant, Projectile, etc..) examples are implemented. <br />
-    /// You can also extend that class to create even more interesting abilities.
-    /// </summary>
-    // Instant, Passive, Toggeable, Channelled(todo), Cast(todo), triggered(todo?)
-    // Some channelled abilities still have a duration time e.g. MindControl
     [Serializable]
     public class GameplayAbility
     {
         [ReadOnly] public string name;
-        public GameplayEffect cooldown = null; // GE with duration of Xs
-        public GameplayEffect cost = null;
 
         [SerializeField]
-        private GameplayEffectSO m_CooldownGameplayEffect;
+        protected GameplayEffectSO m_CooldownGameplayEffect;
 
         [SerializeField]
-        private GameplayEffectSO m_CostGameplayEffect;
+        protected GameplayEffectSO m_CostGameplayEffect;
 
-        public GameplayEffectSO CooldownGameplayEffect =>
-            m_CooldownGameplayEffect;
+        [NonSerialized]
+        private readonly GameplayTagContainer m_TempCooldownTags = new();
 
         [NonSerialized]
         private readonly List<AbilityTask> m_ActiveTasks = new();
 
-        public GameplayEffectSO CostGameplayEffect =>
-            m_CostGameplayEffect;
+        /// <summary>
+        /// Returns the gameplay effect definition used to apply this ability's cooldown.
+        /// </summary>
+        public virtual GameplayEffectSO GetCooldownGameplayEffect()
+        {
+            return m_CooldownGameplayEffect;
+        }
+
+        /// <summary>
+        /// Returns the gameplay tags used to identify this ability's active cooldown.
+        /// </summary>
+        public virtual GameplayTagContainer GetCooldownTags()
+        {
+            GameplayEffectSO cooldownGameplayEffect =
+                GetCooldownGameplayEffect();
+
+            if (
+                cooldownGameplayEffect == null ||
+                cooldownGameplayEffect.ge == null ||
+                cooldownGameplayEffect.ge.gameplayEffectTags == null)
+            {
+                return null;
+            }
+
+            m_TempCooldownTags.Reset();
+
+            IReadOnlyList<GameplayTag> grantedTags =
+                cooldownGameplayEffect.ge.gameplayEffectTags.GrantedTags;
+
+            for (
+                int index = 0;
+                index < grantedTags.Count;
+                index++)
+            {
+                m_TempCooldownTags.AddTag(
+                    grantedTags[index]);
+            }
+
+            return m_TempCooldownTags;
+        }
+
+        /// <summary>
+        /// Returns the longest remaining time among this ability's active cooldown effects.
+        /// </summary>
+        public virtual float GetCooldownTimeRemaining(
+            GameplayAbilityActorInfo actorInfo)
+        {
+            if (actorInfo == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(actorInfo));
+            }
+
+            GameplayTagContainer cooldownTags =
+                GetCooldownTags();
+
+            if (
+                cooldownTags == null ||
+                cooldownTags.IsEmpty())
+            {
+                return 0f;
+            }
+
+            GameplayEffectQuery query =
+                GameplayEffectQuery.MakeQuery_MatchAnyOwningTags(
+                    cooldownTags);
+
+            List<float> timesRemaining =
+                actorInfo
+                    .AbilitySystemComponent
+                    .GetActiveEffectsTimeRemaining(
+                        query);
+
+            float longestTimeRemaining = 0f;
+
+            for (
+                int index = 0;
+                index < timesRemaining.Count;
+                index++)
+            {
+                longestTimeRemaining = Math.Max(
+                    longestTimeRemaining,
+                    timesRemaining[index]);
+            }
+
+            return longestTimeRemaining;
+        }
+
+        /// <summary>
+        /// Returns the gameplay effect definition used to apply this ability's cost.
+        /// </summary>
+        public virtual GameplayEffectSO GetCostGameplayEffect()
+        {
+            return m_CostGameplayEffect;
+        }
 
         public GameplayAbilitySpecHandle CurrentSpecHandle
+        {
+            get; internal set;
+        }
+
+        public GameplayAbilityActorInfo CurrentActorInfo
         {
             get; internal set;
         }
@@ -47,6 +131,38 @@ namespace GAS
         public GameplayAbilityActivationInfo CurrentActivationInfo
         {
             get; internal set;
+        }
+
+        /// <summary>
+        /// Returns the level currently assigned to this instantiated ability.
+        /// </summary>
+        public int GetAbilityLevel()
+        {
+            return Level;
+        }
+
+        /// <summary>
+        /// Returns the level stored by the requested gameplay ability specification.
+        /// </summary>
+        public int GetAbilityLevel(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo)
+        {
+            if (actorInfo == null)
+            {
+                return 1;
+            }
+
+            GameplayAbilitySpec abilitySpec =
+                actorInfo
+                    .AbilitySystemComponent
+                    .FindAbilitySpecFromHandle(
+                        handle);
+
+            return
+                abilitySpec != null
+                    ? abilitySpec.Level
+                    : 1;
         }
 
         /// <summary>
@@ -138,8 +254,6 @@ namespace GAS
 
         public int Level = 1;
         public bool IsActive;
-        private float m_TimeActivated;
-        public string ActivationGUID;
 
 
         /// <summary>
@@ -208,29 +322,6 @@ namespace GAS
             gaCopy.cuesTags =
                 cuesTags;
 
-            if (cooldown != null)
-            {
-                gaCopy.CreateCoolDownGE(
-                    cooldown.durationValue);
-
-                gaCopy.cooldown.gameplayEffectTags =
-                    cooldown.gameplayEffectTags;
-            }
-
-            if (cost != null)
-            {
-                gaCopy.CreateCostGE(
-                    cost.modifiers,
-                    cost.durationType,
-                    cost.durationValue);
-
-                gaCopy.cost.gameplayEffectTags =
-                    cost.gameplayEffectTags;
-            }
-
-            gaCopy.abilityTags =
-                abilityTags;
-
             if (!abilityTags.initialized)
             {
                 gaCopy.abilityTags.FillTags(
@@ -279,20 +370,108 @@ namespace GAS
         }
 
         /// <summary>
+        /// Executes the pre-activation and activation stages for this gameplay ability.
+        /// </summary>
+        public void CallActivateAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            Action<GameplayAbility> onGameplayAbilityEndedDelegate,
+            GameplayEventData? triggerEventData)
+        {
+            if (!handle.IsValid)
+            {
+                throw new ArgumentException(
+                    "Gameplay ability activation requires a valid specification handle.",
+                    nameof(handle));
+            }
+
+            if (actorInfo == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(actorInfo));
+            }
+
+            AbilitySystemComponent abilitySystemComponent =
+                actorInfo.AbilitySystemComponent;
+
+            if (onGameplayAbilityEndedDelegate != null)
+            {
+                IDisposable abilityEndedSubscription = null;
+
+                void HandleGameplayAbilityEnded(
+                    AbilityEndedData abilityEndedData)
+                {
+                    if (
+                        !ReferenceEquals(
+                            abilityEndedData.AbilityThatEnded,
+                            this))
+                    {
+                        return;
+                    }
+
+                    abilityEndedSubscription.Dispose();
+
+                    onGameplayAbilityEndedDelegate(
+                        this);
+                }
+
+                abilityEndedSubscription =
+                    abilitySystemComponent.RegisterAbilityEnded(
+                        HandleGameplayAbilityEnded);
+            }
+
+            PreActivate(
+                handle,
+                actorInfo,
+                activationInfo);
+
+            abilitySystemComponent.NotifyAbilityActivated(
+                handle,
+                this);
+
+            ActivateAbility(
+                handle,
+                actorInfo,
+                activationInfo,
+                triggerEventData);
+        }
+
+        /// <summary>
         /// Initializes runtime state and applies activation-owned and blocking tags.
         /// </summary>
         public virtual void PreActivate(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo)
         {
+            if (!handle.IsValid)
+            {
+                throw new ArgumentException(
+                    "Gameplay ability activation requires a valid specification handle.",
+                    nameof(handle));
+            }
+
+            if (actorInfo == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(actorInfo));
+            }
+
+            CurrentSpecHandle =
+                handle;
+
+            CurrentActorInfo =
+                actorInfo;
+
+            CurrentActivationInfo =
+                activationInfo;
+
             IsActive =
                 true;
 
-            this.source =
-                source;
-
-            ActivationGUID =
-                activationGUID;
+            source =
+                actorInfo.AbilitySystemComponent;
 
             source.ApplyAbilityBlockAndCancelTags(
                 abilityTags.DescriptionTags,
@@ -305,18 +484,16 @@ namespace GAS
             source.UpdateTagMap(
                 abilityTags.ActivationOwnedTags,
                 1);
-
-            source.OnGameplayAbilityPreActivate?.Invoke(
-                this,
-                activationGUID);
         }
 
         /// <summary>
-        /// Executes the ability-specific behavior after pre-activation completes.
+        /// Executes ability-specific behavior using the supplied activation context.
         /// </summary>
-        public virtual void ActivateAbility(
-            AbilitySystemComponent source,
-            string activationGUID)
+        protected virtual void ActivateAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEventData? triggerEventData)
         {
         }
 
@@ -324,14 +501,15 @@ namespace GAS
         /// Applies a prepared gameplay effect specification to the owner of this ability.
         /// </summary>
         protected ActiveGameplayEffectHandle ApplyGameplayEffectSpecToOwner(
-            AbilitySystemComponent ownerAbilitySystem,
+            GameplayAbilitySpecHandle abilityHandle,
+            GameplayAbilityActorInfo actorInfo,
             GameplayAbilityActivationInfo activationInfo,
             GameplayEffectSpec spec)
         {
             PredictionKey predictionKey =
                 activationInfo.GetActivationPredictionKey();
 
-            return ownerAbilitySystem.ApplyGameplayEffectSpecToSelf(
+            return actorInfo.AbilitySystemComponent.ApplyGameplayEffectSpecToSelf(
                 spec,
                 predictionKey);
         }
@@ -402,7 +580,8 @@ namespace GAS
                 applicationGuid);
 
             return ApplyGameplayEffectSpecToOwner(
-                ownerAbilitySystem,
+                CurrentSpecHandle,
+                ownerAbilitySystem.AbilityActorInfo,
                 activationInfo,
                 spec);
         }
@@ -440,8 +619,8 @@ namespace GAS
         /// </summary>
         protected void ApplyGameplayEffects(
             AbilitySystemComponent source,
-            GameplayAbilityTargetDataHandle targetData,
-            string activationGUID)
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayAbilityTargetDataHandle targetData)
         {
             for (
                 int index = 0;
@@ -450,11 +629,10 @@ namespace GAS
             {
                 ApplyGameplayEffectToTarget(
                     source,
-                    CurrentActivationInfo,
+                    activationInfo,
                     targetData,
                     effectsSO[index],
-                    Level,
-                    activationGUID);
+                    Level);
             }
         }
 
@@ -462,20 +640,25 @@ namespace GAS
         /// Performs the final commit check and applies the ability cost and cooldown.
         /// </summary>
         public virtual bool CommitAbility(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayTagContainer optionalRelevantTags = null)
         {
             if (
                 !CommitCheck(
-                    source,
-                    activationGUID))
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    optionalRelevantTags))
             {
                 return false;
             }
 
             CommitExecute(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo);
 
             return true;
         }
@@ -484,101 +667,185 @@ namespace GAS
         /// Performs the final cost and cooldown checks before committing the ability.
         /// </summary>
         public virtual bool CommitCheck(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayTagContainer optionalRelevantTags = null)
         {
             return
-                CheckCooldown() &&
+                CheckCooldown(
+                    handle,
+                    actorInfo,
+                    optionalRelevantTags) &&
                 CheckCost(
-                    source);
+                    handle,
+                    actorInfo,
+                    optionalRelevantTags);
         }
 
         /// <summary>
         /// Applies the ability cooldown and cost after a successful commit check.
         /// </summary>
         public virtual void CommitExecute(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo)
         {
             ApplyCooldown(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo);
 
             ApplyCost(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo);
         }
 
         /// <summary>
-        /// Checks whether the ability is currently outside its cooldown period.
+        /// Checks whether the ability owner has any tag that places this ability on cooldown.
         /// </summary>
-        public virtual bool CheckCooldown()
+        public virtual bool CheckCooldown(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayTagContainer optionalRelevantTags = null)
         {
-            return
-                cooldown == null ||
-                GetCooldownRemaining() <= 0f;
+            GameplayTagContainer cooldownTags =
+                GetCooldownTags();
+
+            if (
+                cooldownTags == null ||
+                cooldownTags.IsEmpty())
+            {
+                return true;
+            }
+
+            AbilitySystemComponent abilitySystem =
+                actorInfo.AbilitySystemComponent;
+
+            if (
+                !abilitySystem.HasAnyMatchingGameplayTags(
+                    cooldownTags))
+            {
+                return true;
+            }
+
+            if (optionalRelevantTags != null)
+            {
+                optionalRelevantTags.AddTag(
+                    AbilitySystemGlobals.ActivateFailCooldownTag);
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Applies the configured cooldown gameplay effect to the ability owner.
         /// </summary>
         public virtual void ApplyCooldown(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo)
         {
+            GameplayEffectSO cooldownGameplayEffect =
+                GetCooldownGameplayEffect();
+
             if (
-                cooldown == null ||
-                cooldown.durationValue <= 0f)
+                cooldownGameplayEffect == null ||
+                cooldownGameplayEffect.ge == null)
             {
                 return;
             }
 
-            m_TimeActivated =
-                Time.time;
+            AbilitySystemComponent abilitySystem =
+                actorInfo.AbilitySystemComponent;
 
-            source.ApplyGameplayEffect(
-                source,
-                source,
-                cooldown,
-                activationGUID);
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                handle,
+                actorInfo);
+
+            int abilityLevel =
+                GetAbilityLevel(
+                    handle,
+                    actorInfo);
+
+            GameplayEffectSpec cooldownSpec = abilitySystem.MakeOutgoingSpec(
+                cooldownGameplayEffect,
+                abilityLevel,
+                effectContext);
+
+            ApplyGameplayEffectSpecToOwner(
+                handle,
+                actorInfo,
+                activationInfo,
+                cooldownSpec);
         }
 
         /// <summary>
         /// Applies the configured cost gameplay effect to the ability owner.
         /// </summary>
         public virtual void ApplyCost(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo)
         {
+            GameplayEffectSO costGameplayEffect =
+                GetCostGameplayEffect();
+
             if (
-                cost == null ||
-                !cost.HasModifiers)
+                costGameplayEffect == null ||
+                costGameplayEffect.ge == null ||
+                !costGameplayEffect.ge.HasModifiers)
             {
                 return;
             }
 
-            source.ApplyGameplayEffect(
-                source,
-                source,
-                cost,
-                activationGUID);
+            AbilitySystemComponent abilitySystem =
+                actorInfo.AbilitySystemComponent;
+
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                handle,
+                actorInfo);
+
+            int abilityLevel =
+                GetAbilityLevel(
+                    handle,
+                    actorInfo);
+
+            GameplayEffectSpec costSpec = abilitySystem.MakeOutgoingSpec(
+                costGameplayEffect,
+                abilityLevel,
+                effectContext);
+
+            ApplyGameplayEffectSpecToOwner(
+                handle,
+                actorInfo,
+                activationInfo,
+                costSpec);
         }
 
         /// <summary>
         /// Checks and applies only the configured ability cost.
         /// </summary>
         public virtual bool CommitAbilityCost(
-            AbilitySystemComponent source,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayTagContainer optionalRelevantTags = null)
         {
-            if (!CheckCost(source))
+            if (
+                !CheckCost(
+                    handle,
+                    actorInfo,
+                    optionalRelevantTags))
             {
                 return false;
             }
 
             ApplyCost(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo);
 
             return true;
         }
@@ -587,20 +854,26 @@ namespace GAS
         /// Checks and applies only the configured ability cooldown.
         /// </summary>
         public virtual bool CommitAbilityCooldown(
-            AbilitySystemComponent source,
-            string activationGUID,
-            bool forceCooldown = false)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            bool forceCooldown,
+            GameplayTagContainer optionalRelevantTags = null)
         {
             if (
                 !forceCooldown &&
-                !CheckCooldown())
+                !CheckCooldown(
+                    handle,
+                    actorInfo,
+                    optionalRelevantTags))
             {
                 return false;
             }
 
             ApplyCooldown(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo);
 
             return true;
         }
@@ -659,15 +932,17 @@ namespace GAS
         /// Cancels every active task before ending this gameplay ability.
         /// </summary>
         public virtual void CancelAbility(
-            string activationGUID = null)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            bool replicateCancelAbility)
         {
             if (!IsActive)
             {
                 return;
             }
 
-            AbilityTask[] activeTasks =
-                m_ActiveTasks.ToArray();
+            AbilityTask[] activeTasks = m_ActiveTasks.ToArray();
 
             for (
                 int index = 0;
@@ -679,8 +954,7 @@ namespace GAS
                     return;
                 }
 
-                AbilityTask task =
-                    activeTasks[index];
+                AbilityTask task = activeTasks[index];
 
                 if (!task.IsEnded)
                 {
@@ -688,34 +962,48 @@ namespace GAS
                 }
             }
 
-            string resolvedActivationGUID =
-                string.IsNullOrEmpty(
-                    activationGUID)
-                    ? this.ActivationGUID
-                    : activationGUID;
-
-            DeactivateAbility(
-                resolvedActivationGUID);
+            EndAbility(
+                handle,
+                actorInfo,
+                activationInfo,
+                replicateCancelAbility,
+                true);
         }
 
         /// <summary>
-        /// Ends the active ability, its tasks, replicated data, and owned and blocking tags.
+        /// Ends the active ability and releases all state owned by its activation.
         /// </summary>
-        public virtual void DeactivateAbility(
-            string activationGUID = null)
+        public virtual void EndAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            bool replicateEndAbility,
+            bool wasCancelled)
         {
             if (!IsActive)
             {
                 return;
             }
 
+            AbilitySystemComponent abilitySystemComponent =
+                actorInfo.AbilitySystemComponent;
+
+            if (replicateEndAbility)
+            {
+                abilitySystemComponent.ReplicateEndOrCancelAbility(
+                    handle,
+                    activationInfo,
+                    this,
+                    wasCancelled);
+            }
+
             EndAbilityTasks();
 
-            source.ClearAbilityReplicatedDataCache(
-                CurrentSpecHandle,
-                CurrentActivationInfo);
+            abilitySystemComponent.ClearAbilityReplicatedDataCache(
+                handle,
+                activationInfo);
 
-            source.ApplyAbilityBlockAndCancelTags(
+            abilitySystemComponent.ApplyAbilityBlockAndCancelTags(
                 abilityTags.DescriptionTags,
                 this,
                 false,
@@ -723,186 +1011,130 @@ namespace GAS
                 false,
                 abilityTags.CancelAbilitiesWithTags);
 
-            source.UpdateTagMap(
+            abilitySystemComponent.UpdateTagMap(
                 abilityTags.ActivationOwnedTags,
                 -1);
 
-            IsActive = false;
+            IsActive =
+                false;
 
-            if (source.invokeEventsGA)
-            {
-                source.OnGameplayAbilityDeactivated?.Invoke(
+            AbilityEndedData abilityEndedData =
+                new AbilityEndedData(
                     this,
-                    activationGUID);
-            }
+                    handle,
+                    replicateEndAbility,
+                    wasCancelled);
+
+            abilitySystemComponent.BroadcastAbilityEnded(
+                abilityEndedData);
+
+            abilitySystemComponent.NotifyAbilityEnded(
+                handle,
+                this,
+                wasCancelled);
         }
-
-        public float GetCooldownRemaining()
-        {
-            if (cooldown == null)
-                return 0;
-            return Math.Clamp((m_TimeActivated + cooldown.durationValue) - Time.time, 0, 100000f);
-        }
-
-        public GameplayEffect CreateCoolDownGE(float durationValue, GameplayTag cooldownTag = null, string cooldownName = "Cooldown")
-        {
-            cooldown = new GameplayEffect()
-            {
-                durationType = GameplayEffectDurationType.Duration,
-                name = cooldownName + " " + name,
-                durationValue = durationValue,
-            };
-            if (cooldownTag != null)
-            {
-                cooldown.gameplayEffectTags = new GameplayEffectTags()
-                {
-                    GrantedTags = new List<GameplayTag>() { cooldownTag }
-                };
-            }
-            // Debug.Log("cooldown from" + name + " : " + JsonUtility.ToJson(cooldown)); //This causes some weirds error when exiting playmode. related to coroutine usage.
-            return cooldown;
-        }
-
-        public GameplayEffect CreateCostGE(List<Modifier> modifiers, GameplayEffectDurationType durationType = GameplayEffectDurationType.Instant, float duration = 0, GameplayTag costTag = null, string costName = "Cost")
-        {
-            if (costTag == null)
-                costTag = GameplayTagLibrary.Instance.GetByName("Ability.Cost"); // GameplayTags.library.GetByName("Ability.Cost");
-
-            var createdCost = new GameplayEffect()
-            {
-                durationType = durationType,
-                name = costName + " " + name,
-                durationValue = duration,
-                gameplayEffectTags = new GameplayEffectTags()
-                {
-                    GrantedTags = new List<GameplayTag>() { costTag }
-                }
-            };
-            if (costTag != null)
-            {
-                createdCost.gameplayEffectTags = new GameplayEffectTags()
-                {
-                    GrantedTags = new List<GameplayTag>() { costTag }
-                };
-            }
-            // Debug.Log("createdCost from" + createdCost + " : " + JsonUtility.ToJson(createdCost)); //This causes some weirds error when exiting playmode. related to coroutine usage.
-            createdCost.modifiers = modifiers;
-            cost = createdCost;
-            return createdCost;
-        }
-
+        
         /// <summary>
-        /// Determines whether the owning ability system can activate this ability.
+        /// Determines whether the supplied ability specification can activate for the current actor.
         /// </summary>
         public virtual bool CanActivateAbility(
-            AbilitySystemComponent source,
-            string activationGUID,
-            bool sendFailedEvent)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayTagContainer sourceTags = null,
+            GameplayTagContainer targetTags = null,
+            GameplayTagContainer optionalRelevantTags = null)
         {
+            AbilitySystemComponent abilitySystem =
+                actorInfo.AbilitySystemComponent;
+
             if (IsActive)
             {
-                if (source.logging)
+                if (abilitySystem.logging)
                 {
                     Debug.Log(
                         $"{name} is already active.");
                 }
 
-                if (sendFailedEvent)
-                {
-                    source.OnGameplayAbilityFailedActivation?.Invoke(
-                        this,
-                        activationGUID,
-                        ActivationFailure.ALREADY_ACTIVE);
-                }
-
                 return false;
             }
 
             if (
-                source.AreAbilityTagsBlocked(
+                abilitySystem.AreAbilityTagsBlocked(
                     abilityTags.DescriptionTags))
             {
-                if (source.logging)
+                if (abilitySystem.logging)
                 {
                     Debug.Log(
                         $"{name} is blocked by ability tags.");
                 }
 
-                if (sendFailedEvent)
-                {
-                    source.OnGameplayAbilityFailedActivation?.Invoke(
-                        this,
-                        activationGUID,
-                        ActivationFailure.TAGS_BLOCKED);
-                }
-
                 return false;
             }
 
-            float cooldownRemaining =
-                GetCooldownRemaining();
-
-            if (cooldownRemaining > 0f)
+            if (
+                !CheckCooldown(
+                    handle,
+                    actorInfo,
+                    optionalRelevantTags))
             {
-                if (source.logging)
+                if (abilitySystem.logging)
                 {
+                    float cooldownRemaining =
+                        GetCooldownTimeRemaining(
+                            actorInfo);
+
                     Debug.Log(
                         $"{name} is on cooldown. " +
                         $"Time remaining: {cooldownRemaining}.");
                 }
 
-                if (sendFailedEvent)
-                {
-                    source.OnGameplayAbilityFailedActivation?.Invoke(
-                        this,
-                        activationGUID,
-                        ActivationFailure.COOLDOWN);
-                }
-
                 return false;
             }
 
-            if (!CheckCost(
-                    source))
-            {
-                if (sendFailedEvent)
-                {
-                    source.OnGameplayAbilityFailedActivation?.Invoke(
-                        this,
-                        activationGUID,
-                        ActivationFailure.COST);
-                }
-
-                return false;
-            }
-
-            return true;
+            return CheckCost(
+                handle,
+                actorInfo,
+                optionalRelevantTags);
         }
 
         /// <summary>
-        /// Checks whether the source can afford the evaluated gameplay effect cost.
+        /// Checks whether the ability owner can afford the evaluated gameplay effect cost.
         /// </summary>
         public virtual bool CheckCost(
-            AbilitySystemComponent source)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayTagContainer optionalRelevantTags = null)
         {
+            GameplayEffectSO costGameplayEffect =
+                GetCostGameplayEffect();
+
             if (
-                cost == null ||
-                !cost.HasModifiers)
+                costGameplayEffect == null ||
+                costGameplayEffect.ge == null ||
+                !costGameplayEffect.ge.HasModifiers)
             {
                 return true;
             }
 
-            GameplayEffectContextHandle effectContext = MakeEffectContext(
-                CurrentSpecHandle,
-                source.AbilityActorInfo);
+            AbilitySystemComponent abilitySystem =
+                actorInfo.AbilitySystemComponent;
 
-            GameplayEffectSpec costSpec = source.MakeOutgoingSpec(
-                cost,
-                cost.level,
+            GameplayEffectContextHandle effectContext = MakeEffectContext(
+                handle,
+                actorInfo);
+
+            int abilityLevel =
+                GetAbilityLevel(
+                    handle,
+                    actorInfo);
+
+            GameplayEffectSpec costSpec = abilitySystem.MakeOutgoingSpec(
+                costGameplayEffect,
+                abilityLevel,
                 effectContext);
 
             costSpec.CaptureAttributeDataFromTarget(
-                source);
+                abilitySystem);
 
             costSpec.CalculateModifierMagnitudes();
 
@@ -936,16 +1168,19 @@ namespace GAS
                     modifierSpec.Definition.Attribute;
 
                 if (
-                    !source.AttributesDictionary.TryGetValue(
+                    !abilitySystem.AttributesDictionary.TryGetValue(
                         attributeName.name,
                         out Attribute attribute))
                 {
-                    if (source.logging)
+                    if (abilitySystem.logging)
                     {
                         Debug.Log(
                             $"ASC does not contain cost attribute " +
                             $"'{attributeName}'.");
                     }
+
+                    optionalRelevantTags?.AddTag(
+                        AbilitySystemGlobals.ActivateFailCostTag);
 
                     return false;
                 }
@@ -959,7 +1194,7 @@ namespace GAS
                     continue;
                 }
 
-                if (source.logging)
+                if (abilitySystem.logging)
                 {
                     Debug.Log(
                         $"Cannot pay ability cost: " +
@@ -967,25 +1202,14 @@ namespace GAS
                         $"cost magnitude is {magnitude}.");
                 }
 
+                optionalRelevantTags?.AddTag(
+                    AbilitySystemGlobals.ActivateFailCostTag);
+
                 return false;
             }
 
             return true;
         }
-    }
-
-    /// <summary>
-    /// Reason for an activation failure. You can add new reasons when implementing your own abilities.
-    /// </summary>
-    public enum ActivationFailure
-    {
-        ALREADY_ACTIVE,
-        COST,
-        COOLDOWN,
-        TAGS_SOURCE_FAILED,
-        TAGS_TARGET_FAILED,
-        TAGS_BLOCKED,
-        OTHER,
     }
 
     /// <summary>

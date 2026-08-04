@@ -59,7 +59,21 @@ NetworkAbilitySystemComponent.TryActivateAbility
 → ClientActivateAbilitySucceed или ClientActivateAbilityFailed
 ```
 
-Локально отклонённая activation не отправляется серверу. Её `PredictionKey` немедленно получает reject, что запускает откат связанных predicted effects и modifiers. Серверный результат передаётся owning client явным Target RPC; в owner activation lifecycle события `OnGameplayAbilityTryActivate`, `OnGameplayAbilityActivated` и `OnGameplayAbilityFailedActivation` используются только как уведомления.
+Локально отклонённая activation не отправляется серверу. Её `PredictionKey` немедленно получает reject, что запускает откат связанных predicted effects и modifiers. Серверный результат передаётся owning client явным Target RPC. Активация идентифицируется только через `GameplayAbilitySpecHandle`, `GameplayAbilityActivationInfo` и `PredictionKey`; отдельная строковая identity не используется.
+
+Завершение с `replicateEndAbility: true` проходит по GAS-совместимой цепочке:
+
+```text
+GameplayAbility.EndAbility
+→ AbilitySystemComponent.ReplicateEndOrCancelAbility
+→ IAbilitySystemReplicationTransport
+→ ServerEndAbility / ServerCancelAbility
+  или ClientEndAbility / ClientCancelAbility
+→ AbilitySystemComponent.RemoteEndOrCancelAbility
+→ GameplayAbility.EndAbility(replicateEndAbility: false)
+```
+
+Удалённая сторона находит ability по `GameplayAbilitySpecHandle` и принимает завершение только для совпадающего `PredictionKey`. Повторная репликация отключается последним вызовом `EndAbility`, поэтому RPC не образуют цикл. Без сетевого transport тот же API выполняет только локальное завершение.
 
 Observer RPC активации ability и legacy `syncGrantedAbilities` удалены. `GameplayAbilitySpec` реплицируется только owning client через `NetworkAbilitySystemComponent`; simulated proxies не получают и не запускают abilities. Визуальное состояние передаётся им через montage replication и Gameplay Cues.
 
@@ -208,7 +222,7 @@ TryActivateAbility
 
 `CommitAbilityCost()` и `CommitAbilityCooldown()` позволяют выполнить только одну часть commit. Основной `CommitAbility()` применяет обе части через `CommitExecute()`.
 
-### Активация GameplayAbility
+#### 4.6.4 Activating Abilities
 
 `AbilitySystemComponent.TryActivateAbility()` выполняет первоначальный `CanActivateAbility()`. После успешной проверки `CallActivateAbility()` переводит ability в активное состояние и вызывает её `ActivateAbility()`.
 
@@ -222,13 +236,96 @@ TryActivateAbility
 → CommitAbility в выбранный ability момент
 ```
 
-### Ability cost
+#### 4.6.5 Canceling Abilities
 
-Стандартный ability cost представляет собой Instant GameplayEffect с отрицательными `Additive` modifiers.
+`CancelAbility()` отменяет активные `AbilityTask`, после чего вызывает `EndAbility()` с `wasCancelled: true`. Обычное и отменённое завершение используют одну cleanup-цепочку: очищают replicated data cache, снимают blocking и activation-owned tags, переводят ability в неактивное состояние и вызывают `NotifyAbilityEnded()`.
 
-Перед активацией `CheckCost()` создаёт `GameplayEffectSpec`, захватывает Source и Target attributes и вычисляет magnitude тем же способом, который используется при последующем применении cost. Проверка выполняется относительно текущего агрегированного `CurrentValue`.
+```text
+CancelAbility
+→ AbilityTask.ExternalCancel
+→ EndAbility(wasCancelled: true)
+```
 
-Стандартная реализация не принимает `Multiplicative`, `Division` и `Override` cost modifiers. Для нестандартных ресурсов или иной семантики стоимости следует переопределить `CheckCost()`.
+Если `replicateCancelAbility` включён, удалённая сторона получает `ServerCancelAbility` или `ClientCancelAbility`. Identity активации задаётся парой `GameplayAbilitySpecHandle + PredictionKey`; отмена другой или уже завершённой активации игнорируется.
+
+#### 4.5.14 Cost Gameplay Effect
+
+Gameplay Ability может иметь отдельный `GameplayEffect`, определяющий её
+стоимость. Обычный Cost GE — это Instant-эффект с одним или несколькими
+отрицательными `Additive` modifiers. Ability возвращает его через
+`GetCostGameplayEffect()`.
+
+`CanActivateAbility()` вызывает `CheckCost()` до активации. `CommitCheck()`
+повторяет проверку непосредственно перед списанием, поскольку за время
+targeting или cast значение ресурса могло измениться. После успешного
+commit `ApplyCost()` создаёт новый `GameplayEffectSpec` и применяет его к owner.
+
+```text
+CanActivateAbility
+→ CheckCost
+→ ActivateAbility
+→ CommitAbility
+    → CommitCheck
+        → CheckCost
+    → CommitExecute
+        → ApplyCost
+```
+
+`CheckCost()` формирует spec с тем же ability level и effect context, захватывает
+Source и Target attributes и вычисляет magnitude тем же способом, который
+использует `ApplyCost()`. Доступность проверяется по текущему
+агрегированному `CurrentValue`.
+
+Стандартная реализация не принимает `Multiplicative`, `Division` и `Override`
+cost modifiers. Для другой математики стоимости следует переопределить
+`CheckCost()` и согласованный с ним `ApplyCost()`.
+
+#### 4.5.15 Cooldown Gameplay Effect
+
+Cooldown также задаётся отдельным `GameplayEffect`, который ability возвращает
+через `GetCooldownGameplayEffect()`. Обычный Cooldown GE имеет Duration policy,
+не имеет modifiers и выдаёт уникальный cooldown tag через `GrantedTags`.
+
+Ability проверяет не наличие конкретного effect instance, а наличие cooldown tag
+в owned tags ASC. `GetCooldownTags()` возвращает `GrantedTags` definition, а
+`CheckCooldown()` проверяет их через `HasAnyMatchingGameplayTags()`. Один и тот же
+тег можно использовать для общего cooldown нескольких abilities.
+
+```text
+CommitAbility
+→ CommitCheck
+    → CheckCooldown
+→ CommitExecute
+    → ApplyCooldown
+        → MakeOutgoingSpec
+        → ApplyGameplayEffectSpecToOwner
+```
+
+Cooldown хранится только как `ActiveGameplayEffect`. Отдельного таймера внутри
+`GameplayAbility` нет. При истечении Duration GE контейнер удаляет эффект,
+а вместе с ним уменьшает owned-tag count.
+
+Текущая base-реализация берёт duration и cooldown tags из definition. Dynamic duration
+и `DynamicGrantedTags` для переиспользуемого Cooldown GE через `SetByCaller` ещё не
+реализованы.
+
+##### 4.5.15.1 Get the Cooldown Gameplay Effect's Remaining Time
+
+`GetCooldownTimeRemaining()` создаёт `GameplayEffectQuery` через
+`MakeQuery_MatchAnyOwningTags()` и запрашивает у ASC время всех подходящих
+active effects. Если один cooldown tag выдают несколько эффектов, метод
+возвращает наибольшее оставшееся время.
+
+```text
+GetCooldownTimeRemaining
+→ GameplayEffectQuery.MakeQuery_MatchAnyOwningTags
+→ AbilitySystemComponent.GetActiveEffectsTimeRemaining
+→ ActiveGameplayEffect.GetTimeRemaining
+```
+
+Значение отражает только те active effects, которые присутствуют на локальном ASC.
+На observer-клиенте без репликации `ActiveGameplayEffect` этот API не может показать
+удалённый cooldown.
 
 ### Совместимость legacy modifiers
 

@@ -1,38 +1,129 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace GAS
 {
     public static class GameplayCueManager
     {
-        public static void Register(AbilitySystemComponent asc)
+        /// <summary>
+        /// Registers gameplay cue observers and returns their shared lifetime.
+        /// </summary>
+        public static IDisposable Register(
+            AbilitySystemComponent abilitySystemComponent)
         {
-            asc.OnGameplayEffectApplied += (ge) => { if (ge.cuesTags?.Count > 0) OnApplyCue(ge.cuesTags, asc, ge.durationType == GameplayEffectDurationType.Instant, null, ge); };
-            asc.OnGameplayEffectRemoved += (ge) => { if (ge.cuesTags?.Count > 0) OnRemoveCue(ge.cuesTags, asc, null, ge); };
+            if (abilitySystemComponent == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(abilitySystemComponent));
+            }
 
-            asc.OnGameplayAbilityActivated += (ga, activationGUID) => { if (ga.cuesTags?.Count > 0) OnApplyCue(ga.cuesTags, asc, !ga.IsActive, ga, null); };
-            asc.OnGameplayAbilityDeactivated += (ga, activationGUID) => { if (ga.cuesTags?.Count > 0) OnRemoveCue(ga.cuesTags, asc, ga, null); };
+            DisposableGroup subscriptions = new();
+
+            void HandleGameplayEffectApplied(
+                GameplayEffect gameplayEffect)
+            {
+                if (gameplayEffect.cuesTags?.Count > 0)
+                {
+                    OnApplyCue(
+                        gameplayEffect.cuesTags,
+                        abilitySystemComponent,
+                        gameplayEffect.durationType ==
+                            GameplayEffectDurationType.Instant,
+                        null,
+                        gameplayEffect);
+                }
+            }
+
+            void HandleGameplayEffectRemoved(
+                GameplayEffect gameplayEffect)
+            {
+                if (gameplayEffect.cuesTags?.Count > 0)
+                {
+                    OnRemoveCue(
+                        gameplayEffect.cuesTags,
+                        abilitySystemComponent,
+                        null,
+                        gameplayEffect);
+                }
+            }
+
+            void HandleGameplayAbilityActivated(
+                GameplayAbility gameplayAbility)
+            {
+                if (gameplayAbility.cuesTags?.Count > 0)
+                {
+                    OnApplyCue(
+                        gameplayAbility.cuesTags,
+                        abilitySystemComponent,
+                        !gameplayAbility.IsActive,
+                        gameplayAbility,
+                        null);
+                }
+            }
+
+            void HandleGameplayAbilityEnded(
+                AbilityEndedData abilityEndedData)
+            {
+                GameplayAbility gameplayAbility =
+                    abilityEndedData.AbilityThatEnded;
+
+                if (gameplayAbility.cuesTags?.Count > 0)
+                {
+                    OnRemoveCue(
+                        gameplayAbility.cuesTags,
+                        abilitySystemComponent,
+                        gameplayAbility,
+                        null);
+                }
+            }
+
+            abilitySystemComponent.OnGameplayEffectApplied +=
+                HandleGameplayEffectApplied;
+
+            subscriptions.Add(
+                new DisposableSubscription(() =>
+                    abilitySystemComponent.OnGameplayEffectApplied -=
+                        HandleGameplayEffectApplied));
+
+            abilitySystemComponent.OnGameplayEffectRemoved +=
+                HandleGameplayEffectRemoved;
+
+            subscriptions.Add(
+                new DisposableSubscription(() =>
+                    abilitySystemComponent.OnGameplayEffectRemoved -=
+                        HandleGameplayEffectRemoved));
+
+            subscriptions.Add(
+                abilitySystemComponent.RegisterAbilityActivatedCallback(
+                    HandleGameplayAbilityActivated));
+
+            subscriptions.Add(
+                abilitySystemComponent.RegisterAbilityEnded(
+                    HandleGameplayAbilityEnded));
+
+            return subscriptions;
         }
 
-        static void OnApplyCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, bool instantDestroy, GameplayAbility ga, GameplayEffect ge)
+        private static void OnApplyCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, bool instantDestroy, GameplayAbility ga, GameplayEffect ge)
         {
             foreach (GameplayTag cueTag in cueTags)
             {
                 List<GameplayCue> instancedCues = CuesLibrary.Instance.CreateCues(cueTag);
-                foreach (var instancedCue in instancedCues)
+                foreach (GameplayCue instancedCue in instancedCues)
                 {
                     if (instancedCue == null)
+                    {
                         return;
+                    }
+
                     instancedCue.AddCue(asc, instantDestroy, new GameplayCueApplicationData(ga, ge, asc, null));
                 }
             }
         }
 
-        static void OnRemoveCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, GameplayAbility ga, GameplayEffect ge)
+        private static void OnRemoveCue(List<GameplayTag> cueTags, AbilitySystemComponent asc, GameplayAbility ga, GameplayEffect ge)
         {
             for (int i = 0; i < asc.instancedCues.Count; i++)
             {

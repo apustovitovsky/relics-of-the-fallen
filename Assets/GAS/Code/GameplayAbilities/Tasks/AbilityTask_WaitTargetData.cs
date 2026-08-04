@@ -9,11 +9,11 @@ namespace GAS
         private readonly DisposableGroup m_Subscriptions =
             new();
 
-        public event Action<GameplayAbilityTargetDataHandle>
-            ValidData;
+        private readonly DisposableEvent<
+            GameplayAbilityTargetDataHandle> m_ValidDataDelegate = new();
 
-        public event Action<GameplayAbilityTargetDataHandle>
-            Cancelled;
+        private readonly DisposableEvent<
+            GameplayAbilityTargetDataHandle> m_CancelledDelegate = new();
 
         public string TaskInstanceName
         {
@@ -47,6 +47,36 @@ namespace GAS
             TaskInstanceName = taskInstanceName;
             ConfirmationType = confirmationType;
             TargetActor = targetActor;
+        }
+
+        /// <summary>
+        /// Registers a valid-target-data handler for the lifetime of this task.
+        /// </summary>
+        public IDisposable RegisterValidDataDelegate(
+            Action<GameplayAbilityTargetDataHandle> handler)
+        {
+            IDisposable subscription =
+                m_ValidDataDelegate.Subscribe(
+                    handler);
+
+            m_Subscriptions.Add(
+                subscription);
+
+            return subscription;
+        }
+
+        /// <summary>
+        /// Registers a target-data cancellation handler for the lifetime of this task.
+        /// </summary>
+        public IDisposable RegisterCancelledDelegate(
+            Action<GameplayAbilityTargetDataHandle> handler)
+        {
+            IDisposable subscription =
+                m_CancelledDelegate.Subscribe(handler);
+
+            m_Subscriptions.Add(subscription);
+
+            return subscription;
         }
 
         /// <summary>
@@ -112,7 +142,7 @@ namespace GAS
 
             if (TargetActor == null)
             {
-                Cancelled?.Invoke(
+                m_CancelledDelegate.Invoke(
                     new GameplayAbilityTargetDataHandle());
 
                 EndTask();
@@ -286,7 +316,7 @@ namespace GAS
                     predictionKey);
             }
 
-            ValidData?.Invoke(
+            m_ValidDataDelegate.Invoke(
                 targetData);
 
             if (
@@ -369,7 +399,7 @@ namespace GAS
                     predictionKey);
             }
 
-            Cancelled?.Invoke(
+            m_CancelledDelegate.Invoke(
                 targetData);
 
             EndTask();

@@ -1,15 +1,15 @@
-﻿Сейчас TargetData MVP и оба локальных сценария работают. Перед добавлением новых крупных механик я бы выбрал один из четырёх путей.
+﻿TargetData MVP и локальные acceptance-сценарии работают. Первый путь завершён; остальные пути остаются отдельными следующими этапами.
 
 | Путь | Что реализуем | Результат |
 |---|---|---|
-| 1. Ability lifecycle — рекомендую | `EndAbility`, корректный `CancelAbility`, удаление `activationGUID`, идентификация через `GameplayAbilitySpecHandle + ActivationInfo/PredictionKey` | Убираем главный legacy-каркас и приближаем всю цепочку к GAS |
+| 1. Ability lifecycle — завершён | `EndAbility`, корректный `CancelAbility`, удаление `activationGUID`, идентификация через `GameplayAbilitySpecHandle + ActivationInfo/PredictionKey` | Главный legacy-каркас активации удалён; lifecycle и RPC завершения соответствуют GAS |
 | 2. Prediction | `ScopedPredictionWindow`, отдельный current prediction key для отложенного TargetData | Корректная prediction для `AbilityTask`, подтверждения цели и других latent-операций |
 | 3. Полный WaitTargetData | `ShouldProduceTargetDataOnServer`, `GenericConfirm`, `GenericCancel`, replicated generic events | Получаем обе оригинальные модели: клиент передаёт TargetData либо сервер создаёт его сам |
 | 4. Gameplay Effects | live NonSnapshot captures, затем stacking | Duration/Infinite-эффекты динамически реагируют на атрибуты; несколько одинаковых эффектов складываются по GAS-правилам |
 
-### 1. Ability lifecycle — лучший следующий шаг
+### 1. Ability lifecycle — завершён
 
-Сейчас `activationGUID` проходит через core и Mirror примерно в 73 местах. Это собственная строковая identity, которой нет в GAS. Оригинальная цепочка строится вокруг:
+Строковая identity `activationGUID` удалена из core, Mirror и gameplay events. Активация строится вокруг:
 
 ```text
 GameplayAbilitySpecHandle
@@ -17,7 +17,7 @@ GameplayAbilitySpecHandle
 + PredictionKey
 ```
 
-Нужно постепенно получить:
+Реализована основная цепочка:
 
 ```text
 TryActivateAbility
@@ -33,11 +33,11 @@ CancelAbility
 → EndAbility(wasCancelled: true)
 ```
 
-Текущий `DeactivateAbility` заменяется GAS-совместимым `EndAbility`. Mirror-методы после этого тоже перестают передавать строковый GUID.
+`DeactivateAbility` удалён и заменён GAS-совместимым `EndAbility`. `CancelAbility` отменяет активные tasks и вызывает `EndAbility(wasCancelled: true)`. При включённой репликации завершение проходит через `ReplicateEndOrCancelAbility`, `ServerEndAbility`/`ServerCancelAbility`, `ClientEndAbility`/`ClientCancelAbility` и `RemoteEndOrCancelAbility`.
 
 Это соответствует API [`UGameplayAbility`](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/GameplayAbilities/UGameplayAbility) и цепочке Lyra в [LyraGameplayAbility.cpp](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.cpp:194).
 
-Почему сейчас: зелёные сценарные тесты дают безопасную опору, а Scoped Prediction, replicated events и batching лучше не строить поверх `activationGUID`.
+Локальные acceptance-сценарии после миграции проходят. Эта lifecycle-основа больше не блокирует Scoped Prediction, replicated events и batching.
 
 ### 2. Scoped Prediction
 
@@ -88,11 +88,11 @@ ShouldProduceTargetDataOnServer = true
 Моя рекомендация:
 
 ```text
-1. EndAbility/CancelAbility и удаление activationGUID
+1. EndAbility/CancelAbility и удаление activationGUID — завершено
 2. ScopedPredictionWindow
 3. GenericConfirm/GenericCancel при реальной необходимости
 4. Live NonSnapshot captures
 5. Stacking
 ```
 
-Саму конкретную DoT-способность уже можно собрать на существующем TargetData pipeline, но сначала я бы небольшими правками очистил lifecycle. Текущий [Plan.md](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Plan.md:1) также пора актуализировать: этапы cache и TargetData RPC в нём уже фактически выполнены.
+Конкретную DoT-способность уже можно собирать на существующем TargetData pipeline. Lifecycle больше не содержит строковой identity и готов служить основой для следующих этапов.

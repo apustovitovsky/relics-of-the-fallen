@@ -3,13 +3,16 @@ namespace GAS.Tests
     internal static class InstantAdditiveAbilityTestFactory
     {
         /// <summary>
-        /// Creates an instant ability that applies one additive attribute modifier.
+        /// Creates an instant additive ability with a resource cost and duration-based cooldown.
         /// </summary>
         public static GameplayAbilitySO Create(
             AbilitySystemTestEnvironment environment,
             GameplayAbilityTargetActor targetActorPrefab,
-            AttributeName attributeName,
-            float magnitude)
+            AttributeName affectedAttribute,
+            float magnitude,
+            AttributeName costAttribute,
+            float costMagnitude,
+            float cooldownDuration)
         {
             GameplayEffectSO gameplayEffect =
                 environment.CreateScriptableObject<GameplayEffectSO>(
@@ -28,9 +31,52 @@ namespace GAS.Tests
             gameplayEffect.ge.modifiers.Add(
                 new BasicModifier()
                 {
-                    attributeName = attributeName,
+                    attributeName = affectedAttribute,
                     value = magnitude
                 });
+
+            GameplayEffectSO costGameplayEffect =
+                environment.CreateScriptableObject<GameplayEffectSO>(
+                    "GE_InstantAdditiveCost");
+
+            costGameplayEffect.ge =
+                new GameplayEffect()
+                {
+                    name = "InstantAdditiveCost",
+                    durationType =
+                        GameplayEffectDurationType.Instant
+                };
+
+            costGameplayEffect.ge.gameplayEffectTags.initialized = true;
+
+            costGameplayEffect.ge.modifiers.Add(
+                new BasicModifier()
+                {
+                    attributeName = costAttribute,
+                    value = costMagnitude
+                });
+
+            GameplayTag cooldownTag =
+                GameplayTagLibrary.Instance.GetByName(
+                    "Ability.Cooldown.Global");
+
+            GameplayEffectSO cooldownGameplayEffect =
+                environment.CreateScriptableObject<GameplayEffectSO>(
+                    "GE_InstantAdditiveCooldown");
+
+            cooldownGameplayEffect.ge =
+                new GameplayEffect()
+                {
+                    name = "InstantAdditiveCooldown",
+                    durationType =
+                        GameplayEffectDurationType.Duration,
+                    durationValue = cooldownDuration
+                };
+
+            cooldownGameplayEffect.ge.gameplayEffectTags.initialized = true;
+
+            cooldownGameplayEffect.ge.gameplayEffectTags.GrantedTags.Add(
+                cooldownTag);
 
             GameplayAbilitySO gameplayAbility =
                 environment.CreateScriptableObject<GameplayAbilityTestAsset>(
@@ -41,6 +87,12 @@ namespace GAS.Tests
 
             instantAdditiveAbility.SetTargetActorPrefab(
                 targetActorPrefab);
+
+            instantAdditiveAbility.SetCostGameplayEffect(
+                costGameplayEffect);
+
+            instantAdditiveAbility.SetCooldownGameplayEffect(
+                cooldownGameplayEffect);
 
             instantAdditiveAbility.abilityTags.initialized = true;
 

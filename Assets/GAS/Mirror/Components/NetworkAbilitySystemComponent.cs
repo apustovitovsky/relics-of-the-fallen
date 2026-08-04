@@ -770,7 +770,6 @@ namespace GAS.Mirror
             }
 
             PredictionKey predictionKey = m_AbilitySystem.CreateNewPredictionKey();
-            string activationGUID = System.Guid.NewGuid().ToString();
 
             GameplayAbilityActivationInfo activationInfo =
                 new(
@@ -782,8 +781,7 @@ namespace GAS.Mirror
                 activationInfo);
 
             bool wasActivated = await m_AbilitySystem.TryActivateAbility(
-                abilitySpec.Handle,
-                activationGUID);
+                abilitySpec.Handle);
 
             if (!wasActivated)
             {
@@ -796,8 +794,7 @@ namespace GAS.Mirror
 
             CallServerTryActivateAbility(
                 abilitySpec.Handle,
-                predictionKey,
-                activationGUID);
+                predictionKey);
         }
 
         /// <summary>
@@ -805,13 +802,11 @@ namespace GAS.Mirror
         /// </summary>
         private void CallServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            PredictionKey predictionKey,
-            string activationGUID)
+            PredictionKey predictionKey)
         {
             ServerTryActivateAbility(
                 handle,
-                predictionKey,
-                activationGUID);
+                predictionKey);
         }
 
         /// <summary>
@@ -960,18 +955,121 @@ namespace GAS.Mirror
         }
 
         /// <summary>
+        /// Routes a local ability ending to the authoritative server or owning client.
+        /// </summary>
+        public void ReplicateEndOrCancelAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActivationInfo activationInfo,
+            bool wasCancelled)
+        {
+            if (isServer)
+            {
+                if (wasCancelled)
+                {
+                    ClientCancelAbility(
+                        handle,
+                        activationInfo);
+                }
+                else
+                {
+                    ClientEndAbility(
+                        handle,
+                        activationInfo);
+                }
+
+                return;
+            }
+
+            if (wasCancelled)
+            {
+                ServerCancelAbility(
+                    handle,
+                    activationInfo);
+            }
+            else
+            {
+                ServerEndAbility(
+                    handle,
+                    activationInfo,
+                    activationInfo.GetActivationPredictionKey());
+            }
+        }
+
+        /// <summary>
+        /// Receives a normal predicted ability ending on the authoritative server.
+        /// </summary>
+        [Command]
+        private void ServerEndAbility(
+            GameplayAbilitySpecHandle abilityToEnd,
+            GameplayAbilityActivationInfo activationInfo,
+            PredictionKey predictionKey)
+        {
+            if (
+                activationInfo.GetActivationPredictionKey() !=
+                predictionKey)
+            {
+                return;
+            }
+
+            m_AbilitySystem.RemoteEndOrCancelAbility(
+                abilityToEnd,
+                activationInfo,
+                false);
+        }
+
+        /// <summary>
+        /// Receives a predicted ability cancellation on the authoritative server.
+        /// </summary>
+        [Command]
+        private void ServerCancelAbility(
+            GameplayAbilitySpecHandle abilityToCancel,
+            GameplayAbilityActivationInfo activationInfo)
+        {
+            m_AbilitySystem.RemoteEndOrCancelAbility(
+                abilityToCancel,
+                activationInfo,
+                true);
+        }
+
+        /// <summary>
+        /// Ends an authoritative ability activation on its owning client.
+        /// </summary>
+        [TargetRpc]
+        private void ClientEndAbility(
+            GameplayAbilitySpecHandle abilityToEnd,
+            GameplayAbilityActivationInfo activationInfo)
+        {
+            m_AbilitySystem.RemoteEndOrCancelAbility(
+                abilityToEnd,
+                activationInfo,
+                false);
+        }
+
+        /// <summary>
+        /// Cancels an authoritative ability activation on its owning client.
+        /// </summary>
+        [TargetRpc]
+        private void ClientCancelAbility(
+            GameplayAbilitySpecHandle abilityToCancel,
+            GameplayAbilityActivationInfo activationInfo)
+        {
+            m_AbilitySystem.RemoteEndOrCancelAbility(
+                abilityToCancel,
+                activationInfo,
+                true);
+        }
+
+        /// <summary>
         /// Receives an owning client's predicted ability activation request.
         /// </summary>
         [Command]
         private void ServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            PredictionKey predictionKey,
-            string activationGUID)
+            PredictionKey predictionKey)
         {
             InternalServerTryActivateAbility(
                 handle,
-                predictionKey,
-                activationGUID).Forget();
+                predictionKey).Forget();
         }
 
         /// <summary>
@@ -979,8 +1077,7 @@ namespace GAS.Mirror
         /// </summary>
         private async UniTask InternalServerTryActivateAbility(
             GameplayAbilitySpecHandle handle,
-            PredictionKey predictionKey,
-            string activationGUID)
+            PredictionKey predictionKey)
         {
             if (!predictionKey.IsValid)
             {
@@ -1017,8 +1114,7 @@ namespace GAS.Mirror
                 activationInfo);
 
             bool wasActivated = await m_AbilitySystem.TryActivateAbility(
-                handle,
-                activationGUID);
+                handle);
 
             if (wasActivated)
             {

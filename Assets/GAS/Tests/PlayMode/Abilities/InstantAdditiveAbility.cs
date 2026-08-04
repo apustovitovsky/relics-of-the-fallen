@@ -24,6 +24,22 @@ namespace GAS.Tests
         }
 
         /// <summary>
+        /// Assigns the cooldown gameplay effect used by this test ability.
+        /// </summary>
+        public void SetCooldownGameplayEffect(
+            GameplayEffectSO cooldownGameplayEffect)
+        {
+            if (cooldownGameplayEffect == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(cooldownGameplayEffect));
+            }
+
+            m_CooldownGameplayEffect =
+                cooldownGameplayEffect;
+        }
+
+        /// <summary>
         /// Creates a runtime ability instance that retains its targeting prefab.
         /// </summary>
         public override GameplayAbility Instantiate(
@@ -40,23 +56,54 @@ namespace GAS.Tests
         }
 
         /// <summary>
+        /// Assigns the cost gameplay effect used by this test ability.
+        /// </summary>
+        public void SetCostGameplayEffect(
+            GameplayEffectSO costGameplayEffect)
+        {
+            if (costGameplayEffect == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(costGameplayEffect));
+            }
+
+            m_CostGameplayEffect =
+                costGameplayEffect;
+        }
+
+        /// <summary>
         /// Waits for target data before applying the configured instant gameplay effect.
         /// </summary>
-        public override void ActivateAbility(
-            AbilitySystemComponent source,
-            string activationGUID)
+        /// <summary>
+        /// Waits for target data before applying the configured instant gameplay effect.
+        /// </summary>
+        protected override void ActivateAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEventData? triggerEventData)
         {
             base.ActivateAbility(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo,
+                triggerEventData);
+
+            AbilitySystemComponent source =
+                actorInfo.AbilitySystemComponent;
 
             if (
                 !CommitAbility(
-                    source,
-                    activationGUID))
+                    handle,
+                    actorInfo,
+                    activationInfo))
             {
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    false);
 
                 return;
             }
@@ -66,18 +113,26 @@ namespace GAS.Tests
             {
                 ApplyGameplayEffects(
                     source,
-                    targetData,
-                    activationGUID);
+                    activationInfo,
+                    targetData);
 
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    false);
             }
 
             void HandleTargetDataCancelled(
                 GameplayAbilityTargetDataHandle _)
             {
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    true);
             }
 
             AbilityTask_WaitTargetData targetDataTask =
@@ -87,11 +142,11 @@ namespace GAS.Tests
                     GameplayTargetingConfirmation.Instant,
                     m_TargetActorPrefab);
 
-            targetDataTask.ValidData +=
-                HandleTargetDataReady;
+            targetDataTask.RegisterValidDataDelegate(
+                HandleTargetDataReady);
 
-            targetDataTask.Cancelled +=
-                HandleTargetDataCancelled;
+            targetDataTask.RegisterCancelledDelegate(
+                HandleTargetDataCancelled);
 
             targetDataTask.ReadyForActivation();
         }

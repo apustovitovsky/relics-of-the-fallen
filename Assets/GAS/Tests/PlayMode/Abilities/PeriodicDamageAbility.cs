@@ -30,8 +30,7 @@ namespace GAS.Tests
             AbilitySystemComponent owner)
         {
             PeriodicDamageAbility instance =
-                (PeriodicDamageAbility)base.Instantiate(
-                    owner);
+                (PeriodicDamageAbility)base.Instantiate(owner);
 
             instance.m_TargetActorPrefab =
                 m_TargetActorPrefab;
@@ -42,21 +41,33 @@ namespace GAS.Tests
         /// <summary>
         /// Waits for target data before applying the configured periodic gameplay effect.
         /// </summary>
-        public override void ActivateAbility(
-            AbilitySystemComponent source,
-            string activationGUID)
+        protected override void ActivateAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayEventData? triggerEventData)
         {
             base.ActivateAbility(
-                source,
-                activationGUID);
+                handle,
+                actorInfo,
+                activationInfo,
+                triggerEventData);
+
+            AbilitySystemComponent source =
+                actorInfo.AbilitySystemComponent;
 
             if (
                 !CommitAbility(
-                    source,
-                    activationGUID))
+                    handle,
+                    actorInfo,
+                    activationInfo))
             {
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    false);
 
                 return;
             }
@@ -66,18 +77,26 @@ namespace GAS.Tests
             {
                 ApplyGameplayEffects(
                     source,
-                    targetData,
-                    activationGUID);
+                    activationInfo,
+                    targetData);
 
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    false);
             }
 
             void HandleTargetDataCancelled(
                 GameplayAbilityTargetDataHandle _)
             {
-                DeactivateAbility(
-                    activationGUID);
+                EndAbility(
+                    handle,
+                    actorInfo,
+                    activationInfo,
+                    true,
+                    true);
             }
 
             AbilityTask_WaitTargetData targetDataTask =
@@ -87,11 +106,11 @@ namespace GAS.Tests
                     GameplayTargetingConfirmation.Instant,
                     m_TargetActorPrefab);
 
-            targetDataTask.ValidData +=
-                HandleTargetDataReady;
+            targetDataTask.RegisterValidDataDelegate(
+                HandleTargetDataReady);
 
-            targetDataTask.Cancelled +=
-                HandleTargetDataCancelled;
+            targetDataTask.RegisterCancelledDelegate(
+                HandleTargetDataCancelled);
 
             targetDataTask.ReadyForActivation();
         }

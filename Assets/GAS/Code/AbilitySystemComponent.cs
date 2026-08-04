@@ -8,21 +8,16 @@ namespace GAS
 {
     public readonly struct GameplayEventData
     {
+        /// <summary>
+        /// Creates gameplay event data for the supplied event tag.
+        /// </summary>
         public GameplayEventData(
-            GameplayTag tag,
-            string activationGUID)
+            GameplayTag tag)
         {
-
             Tag = tag;
-            ActivationGUID = activationGUID;
         }
 
         public GameplayTag Tag
-        {
-            get;
-        }
-
-        public string ActivationGUID
         {
             get;
         }
@@ -53,6 +48,19 @@ namespace GAS
 
         [NonSerialized]
         private PredictionKeyDelegates m_PredictionKeyDelegates;
+
+        private readonly DisposableEvent<
+            AbilityEndedData> m_OnAbilityEnded = new();
+
+        private readonly DisposableEvent<
+            GameplayAbility> m_AbilityActivatedCallbacks =
+            new();
+
+        private readonly DisposableEvent<
+            GameplayAbility> m_AbilityEndedCallbacks =
+            new();
+
+        private IDisposable m_GameplayCueRegistration;
 
         private readonly GameplayAbilityReplicatedDataContainer
             m_AbilityTargetDataMap = new();
@@ -459,27 +467,6 @@ namespace GAS
         public List<GameplayAbility> grantedGameplayAbilities =
             new();
 
-        public Action<
-            GameplayAbility,
-            string> OnGameplayAbilityPreActivate;
-
-        public Action<
-            GameplayAbility,
-            string> OnGameplayAbilityActivated;
-
-        public Action<
-            GameplayAbility,
-            string> OnGameplayAbilityTryActivate;
-
-        public Action<
-            GameplayAbility,
-            string> OnGameplayAbilityDeactivated;
-
-        public Action<
-            GameplayAbility,
-            string,
-            ActivationFailure> OnGameplayAbilityFailedActivation;
-
         public Action<GameplayAbility> OnGameplayAbilityGranted;
         public Action<GameplayAbility> OnGameplayAbilityUngranted;
 
@@ -560,8 +547,7 @@ namespace GAS
             attributes.ForEach(
                 attribute =>
                 {
-                    attribute.name =
-                        attribute.attributeName.name;
+                    attribute.name = attribute.attributeName.name;
 
                     AttributesDictionary.Add(
                         attribute.attributeName.name,
@@ -571,7 +557,8 @@ namespace GAS
             OnGameplayEffectApplied +=
                 TriggerOnTagsAdded;
 
-            GameplayCueManager.Register(this);
+            m_GameplayCueRegistration =
+                GameplayCueManager.Register(this);
         }
 
         /// <summary>
@@ -613,23 +600,9 @@ namespace GAS
                     {
                         Debug.Log(
                             $"[GAMEPLAY EVENT] " +
-                            $"{gameplayEvent.Tag.name} / " +
-                            $"activation: " +
-                            $"{gameplayEvent.ActivationGUID}");
+                            $"{gameplayEvent.Tag.name}");
                     };
             }
-
-            OnGameplayAbilityFailedActivation +=
-                (
-                    gameplayAbility,
-                    activationGUID,
-                    failureCause) =>
-                {
-                    Debug.Log(
-                        $"GA Failed Activation: " +
-                        $"{gameplayAbility.name} " +
-                        $"{failureCause}");
-                };
         }
 
         private void OnDestroy()
@@ -638,26 +611,28 @@ namespace GAS
                 GameplayAbility gameplayAbility
                 in grantedGameplayAbilities)
             {
-
-                if (gameplayAbility.IsActive)
+                if (!gameplayAbility.IsActive)
                 {
-                    gameplayAbility.DeactivateAbility();
+                    continue;
                 }
+
+                gameplayAbility.EndAbility(
+                    gameplayAbility.CurrentSpecHandle,
+                    AbilityActorInfo,
+                    gameplayAbility.CurrentActivationInfo,
+                    false,
+                    true);
             }
+
+            m_GameplayCueRegistration?.Dispose();
         }
 
         /// <summary>
-        /// Отправляет одноразовое локальное событие активным
-        /// способностям этого ASC.
-        ///
-        /// GameplayTag используется только как идентификатор события
-        /// и не добавляется в список постоянных ASC tags.
+        /// Broadcasts a gameplay event payload for the supplied event tag.
         /// </summary>
         public void SendGameplayEvent(
-            GameplayTag tag,
-            string activationGUID = null)
+            GameplayTag tag)
         {
-
             if (tag == null)
             {
                 Debug.LogWarning(
@@ -670,8 +645,7 @@ namespace GAS
 
             OnGameplayEvent?.Invoke(
                 new GameplayEventData(
-                    tag,
-                    activationGUID));
+                    tag));
         }
 
         public void TriggerOnTagsAdded(
@@ -1064,6 +1038,32 @@ namespace GAS
         }
 
         /// <summary>
+        /// Replicates an ability ending or cancellation through the configured network transport.
+        /// </summary>
+        public virtual void ReplicateEndOrCancelAbility(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActivationInfo activationInfo,
+            GameplayAbility gameplayAbility,
+            bool wasCancelled)
+        {
+            if (gameplayAbility == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(gameplayAbility));
+            }
+
+            if (ReplicationTransport == null)
+            {
+                return;
+            }
+
+            ReplicationTransport.ReplicateEndOrCancelAbility(
+                handle,
+                activationInfo,
+                wasCancelled);
+        }
+
+        /// <summary>
         /// Returns the configured replication transport required by non-authoritative execution.
         /// </summary>
         private IAbilitySystemReplicationTransport GetReplicationTransport()
@@ -1266,7 +1266,7 @@ namespace GAS
         }
 
         /// <summary>
-        /// Removes the gameplay ability specification identified by the requested handle.
+        /// Cancels and removes the gameplay ability specification identified by its handle.
         /// </summary>
         public void ClearAbility(
             GameplayAbilitySpecHandle handle)
@@ -1284,6 +1284,17 @@ namespace GAS
                 abilitySpec.PrimaryInstance;
 
             if (
+                primaryInstance != null &&
+                primaryInstance.IsActive)
+            {
+                primaryInstance.CancelAbility(
+                    handle,
+                    AbilityActorInfo,
+                    primaryInstance.CurrentActivationInfo,
+                    false);
+            }
+
+            if (
                 !m_ActivatableAbilities.Remove(
                     handle,
                     out _))
@@ -1296,9 +1307,6 @@ namespace GAS
             {
                 return;
             }
-
-            primaryInstance.DeactivateAbility(
-                null);
 
             grantedGameplayAbilities.Remove(
                 primaryInstance);
@@ -1412,8 +1420,14 @@ namespace GAS
                 return;
             }
 
-            gameplayAbility.DeactivateAbility(
-                null);
+            if (gameplayAbility.IsActive)
+            {
+                gameplayAbility.CancelAbility(
+                    gameplayAbility.CurrentSpecHandle,
+                    AbilityActorInfo,
+                    gameplayAbility.CurrentActivationInfo,
+                    false);
+            }
 
             grantedGameplayAbilities.Remove(
                 gameplayAbility);
@@ -1473,6 +1487,22 @@ namespace GAS
             return
                 OwnedGameplayTags.HasMatchingGameplayTag(
                     tag);
+        }
+
+        /// <summary>
+        /// Returns whether this component owns any tag from a gameplay tag container.
+        /// </summary>
+        public bool HasAnyMatchingGameplayTags(
+            GameplayTagContainer gameplayTags)
+        {
+            if (gameplayTags == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(gameplayTags));
+            }
+
+            return OwnedGameplayTags.HasAnyMatchingGameplayTags(
+                gameplayTags.GetGameplayTagArray());
         }
 
         /// <summary>
@@ -1650,7 +1680,10 @@ namespace GAS
                 }
 
                 ability.CancelAbility(
-                    ability.ActivationGUID);
+                    ability.CurrentSpecHandle,
+                    AbilityActorInfo,
+                    ability.CurrentActivationInfo,
+                    true);
             }
         }
 
@@ -1727,28 +1760,11 @@ namespace GAS
         }
 
         /// <summary>
-        /// Notifies listeners that a gameplay ability has entered its active state.
+        /// Notifies the ability system that a gameplay ability has entered its active state.
         /// </summary>
         public virtual void NotifyAbilityActivated(
-            GameplayAbility gameplayAbility,
-            string activationGUID)
-        {
-            if (!invokeEventsGA)
-            {
-                return;
-            }
-
-            OnGameplayAbilityActivated?.Invoke(
-                gameplayAbility,
-                activationGUID);
-        }
-
-        /// <summary>
-        /// Initializes and invokes an ability after its activation checks succeed.
-        /// </summary>
-        public void CallActivateAbility(
-            GameplayAbility gameplayAbility,
-            string activationGUID)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbility gameplayAbility)
         {
             if (gameplayAbility == null)
             {
@@ -1756,37 +1772,175 @@ namespace GAS
                     nameof(gameplayAbility));
             }
 
-            gameplayAbility.PreActivate(
-                this,
-                activationGUID);
+            if (!invokeEventsGA)
+            {
+                return;
+            }
 
-            NotifyAbilityActivated(
-                gameplayAbility,
-                activationGUID);
+            m_AbilityActivatedCallbacks.Invoke(
+                gameplayAbility);
+        }
 
-            gameplayAbility.ActivateAbility(
-                this,
-                activationGUID);
+        /// <summary>
+        /// Ends the locally active ability instance matching a remotely supplied activation identity.
+        /// </summary>
+        public void RemoteEndOrCancelAbility(
+            GameplayAbilitySpecHandle abilityToEnd,
+            GameplayAbilityActivationInfo activationInfo,
+            bool wasCancelled)
+        {
+            GameplayAbilitySpec abilitySpec = FindAbilitySpecFromHandle(
+                abilityToEnd);
+
+            if (abilitySpec == null)
+            {
+                return;
+            }
+
+            GameplayAbility gameplayAbility =
+                abilitySpec.PrimaryInstance;
+
+            if (
+                gameplayAbility == null ||
+                !gameplayAbility.IsActive)
+            {
+                return;
+            }
+
+            PredictionKey localPredictionKey =
+                gameplayAbility
+                    .CurrentActivationInfo
+                    .GetActivationPredictionKey();
+
+            PredictionKey remotePredictionKey =
+                activationInfo.GetActivationPredictionKey();
+
+            if (localPredictionKey != remotePredictionKey)
+            {
+                return;
+            }
+
+            gameplayAbility.EndAbility(
+                abilityToEnd,
+                AbilityActorInfo,
+                gameplayAbility.CurrentActivationInfo,
+                false,
+                wasCancelled);
+        }
+
+        /// <summary>
+        /// Notifies the ability system that an ability specification failed its activation checks.
+        /// </summary>
+        public virtual void NotifyAbilityFailed(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbility gameplayAbility,
+            GameplayTagContainer failureReason)
+        {
+            if (gameplayAbility == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(gameplayAbility));
+            }
+
+            if (!logging)
+            {
+                return;
+            }
+
+            string failureDescription =
+                failureReason == null ||
+                failureReason.IsEmpty()
+                    ? "<none>"
+                    : string.Join(
+                        ", ",
+                        failureReason
+                            .GetGameplayTagArray()
+                            .Where(tag => tag != null)
+                            .Select(tag => tag.name));
+
+            Debug.Log(
+                $"GA Failed Activation: " +
+                $"{gameplayAbility.name} ({handle}) " +
+                $"[{failureDescription}]",
+                this);
+        }
+
+        /// <summary>
+        /// Notifies the ability system that an active gameplay ability has finished.
+        /// </summary>
+        public virtual void NotifyAbilityEnded(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbility gameplayAbility,
+            bool wasCancelled)
+        {
+            if (gameplayAbility == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(gameplayAbility));
+            }
+
+            if (!invokeEventsGA)
+            {
+                return;
+            }
+
+            m_AbilityEndedCallbacks.Invoke(
+                gameplayAbility);
+        }
+
+        /// <summary>
+        /// Registers a generic observer called whenever a gameplay ability activates.
+        /// </summary>
+        public IDisposable RegisterAbilityActivatedCallback(
+            Action<GameplayAbility> handler)
+        {
+            return m_AbilityActivatedCallbacks.Subscribe(
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a generic observer called whenever a gameplay ability finishes.
+        /// </summary>
+        public IDisposable RegisterAbilityEndedCallback(
+            Action<GameplayAbility> handler)
+        {
+            return m_AbilityEndedCallbacks.Subscribe(handler);
+        }
+
+        /// <summary>
+        /// Registers an observer notified whenever an active gameplay ability finishes.
+        /// </summary>
+        public IDisposable RegisterAbilityEnded(
+            Action<AbilityEndedData> handler)
+        {
+            return m_OnAbilityEnded.Subscribe(handler);
+        }
+
+        /// <summary>
+        /// Broadcasts completion data to registered gameplay ability observers.
+        /// </summary>
+        internal void BroadcastAbilityEnded(
+            AbilityEndedData abilityEndedData)
+        {
+            m_OnAbilityEnded.Invoke(
+                abilityEndedData);
         }
 
         /// <summary>
         /// Attempts to activate an ability specification and reports whether activation succeeded.
         /// </summary>
         public UniTask<bool> TryActivateAbility(
-            GameplayAbilitySpecHandle handle,
-            string activationGUID = null)
+            GameplayAbilitySpecHandle handle)
         {
             return InternalTryActivateAbility(
-                handle,
-                activationGUID);
+                handle);
         }
 
         /// <summary>
         /// Performs local validation and reports whether the requested ability entered its active state.
         /// </summary>
         private async UniTask<bool> InternalTryActivateAbility(
-            GameplayAbilitySpecHandle handle,
-            string activationGUID = null)
+            GameplayAbilitySpecHandle handle)
         {
             GameplayAbilitySpec abilitySpec = FindAbilitySpecFromHandle(
                 handle);
@@ -1802,46 +1956,50 @@ namespace GAS
 
             GameplayAbility gameplayAbility = abilitySpec.PrimaryInstance;
 
-            if (
-                string.IsNullOrEmpty(
-                    activationGUID))
-            {
-                activationGUID = Guid.NewGuid().ToString();
-            }
-
-            gameplayAbility.source = this;
-            gameplayAbility.ActivationGUID = activationGUID;
-
-            OnGameplayAbilityTryActivate?.Invoke(
-                gameplayAbility,
-                activationGUID);
+            gameplayAbility.source =
+                this;
 
             await InputBuffering(
                 gameplayAbility,
-                gameplayAbility.ActivationGUID);
+                handle,
+                AbilityActorInfo);
+
+            GameplayTagContainer failureReason =
+                new();
 
             if (
                 !gameplayAbility.CanActivateAbility(
-                    this,
-                    gameplayAbility.ActivationGUID,
-                    true))
+                    handle,
+                    AbilityActorInfo,
+                    null,
+                    null,
+                    failureReason))
             {
+                NotifyAbilityFailed(
+                    handle,
+                    gameplayAbility,
+                    failureReason);
+
                 return false;
             }
 
-            CallActivateAbility(
-                gameplayAbility,
-                gameplayAbility.ActivationGUID);
+            gameplayAbility.CallActivateAbility(
+                handle,
+                AbilityActorInfo,
+                gameplayAbility.CurrentActivationInfo,
+                null,
+                null);
 
             return true;
         }
 
         /// <summary>
-        /// Waits briefly for an ability to satisfy its activation requirements.
+        /// Waits briefly for an ability specification to satisfy its activation requirements.
         /// </summary>
         public async UniTask InputBuffering(
             GameplayAbility gameplayAbility,
-            string activationGUID = null)
+            GameplayAbilitySpecHandle handle,
+            GameplayAbilityActorInfo actorInfo)
         {
             float finalTime =
                 Time.realtimeSinceStartup +
@@ -1851,9 +2009,8 @@ namespace GAS
                 !gameplayAbility.IsActive &&
                 Time.realtimeSinceStartup < finalTime &&
                 !gameplayAbility.CanActivateAbility(
-                    this,
-                    activationGUID,
-                    false))
+                    handle,
+                    actorInfo))
             {
                 await UniTask.Delay(
                     10,
@@ -1884,6 +2041,16 @@ namespace GAS
                 out ActiveGameplayEffect activeEffect);
 
             return activeEffect;
+        }
+
+        /// <summary>
+        /// Returns the remaining times of active gameplay effects that satisfy a query.
+        /// </summary>
+        public List<float> GetActiveEffectsTimeRemaining(
+            GameplayEffectQuery query)
+        {
+            return ActiveGameplayEffects.GetActiveEffectsTimeRemaining(
+                query);
         }
 
         /// <summary>

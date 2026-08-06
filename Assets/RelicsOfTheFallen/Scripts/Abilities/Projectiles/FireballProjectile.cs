@@ -10,8 +10,16 @@ namespace RelicsOfTheFallen.Abilities
     public sealed class FireballProjectile :
         NetworkBehaviour
     {
+        [field: SerializeField]
+        private GameplayTag ImpactGameplayCue
+        {
+            get;
+            set;
+        }
+
         private Rigidbody m_Rigidbody;
         private GameObject m_SourceActor;
+        private AbilitySystemComponent m_SourceAbilitySystem;
         private GameplayEffectSpec m_DamageSpec;
         private Vector3 m_Direction;
         private float m_Speed;
@@ -26,7 +34,7 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Initializes authoritative movement and damage data before the projectile is spawned.
+        /// Initializes authoritative movement, source ability system, and damage data.
         /// </summary>
         public void Initialize(
             GameObject sourceActor,
@@ -70,8 +78,29 @@ namespace RelicsOfTheFallen.Abilities
                     nameof(damageSpec));
             }
 
-            m_SourceActor =
+            if (ImpactGameplayCue == null)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(FireballProjectile)} requires an impact gameplay cue.");
+            }
+
+            GameObject sourceActorRoot =
                 sourceActor.transform.root.gameObject;
+
+            if (
+                !AbilitySystemGlobals.TryGetAbilitySystemComponentFromActor(
+                    sourceActorRoot,
+                    out AbilitySystemComponent sourceAbilitySystem))
+            {
+                throw new InvalidOperationException(
+                    $"{sourceActorRoot.name} has no ability system component.");
+            }
+
+            m_SourceActor =
+                sourceActorRoot;
+
+            m_SourceAbilitySystem =
+                sourceAbilitySystem;
 
             m_Direction =
                 direction.normalized;
@@ -99,11 +128,9 @@ namespace RelicsOfTheFallen.Abilities
                 return;
             }
 
-            float deltaTime =
-                Time.fixedDeltaTime;
+            float deltaTime = Time.fixedDeltaTime;
 
-            m_RemainingLifetime -=
-                deltaTime;
+            m_RemainingLifetime -= deltaTime;
 
             if (m_RemainingLifetime <= 0f)
             {
@@ -122,7 +149,7 @@ namespace RelicsOfTheFallen.Abilities
 
         [ServerCallback]
         private void OnTriggerEnter(
-        Collider other)
+     Collider other)
         {
             if (
                 !m_IsInitialized ||
@@ -152,8 +179,7 @@ namespace RelicsOfTheFallen.Abilities
                 return;
             }
 
-            m_HasImpacted =
-                true;
+            m_HasImpacted = true;
 
             try
             {
@@ -162,11 +188,39 @@ namespace RelicsOfTheFallen.Abilities
                     targetAbilitySystem.ApplyGameplayEffectSpecToSelf(
                         m_DamageSpec);
                 }
+
+                ExecuteImpactGameplayCue(
+                    other);
             }
             finally
             {
                 DestroyProjectile();
             }
+        }
+
+        /// <summary>
+        /// Executes the fireball impact cue at the authoritative collision location.
+        /// </summary>
+        private void ExecuteImpactGameplayCue(
+            Collider hitCollider)
+        {
+            GameplayCueParameters parameters =
+                new(
+                    m_DamageSpec.EffectContext)
+                {
+                    NormalizedMagnitude = 1f,
+                    Location = hitCollider.ClosestPoint(
+                        m_Rigidbody.position),
+                    Normal = -m_Direction,
+                    GameplayEffectLevel = Mathf.RoundToInt(
+                        m_DamageSpec.Level),
+                    AbilityLevel =
+                        m_DamageSpec.EffectContext.GetAbilityLevel()
+                };
+
+            m_SourceAbilitySystem.ExecuteGameplayCue(
+                ImpactGameplayCue,
+                parameters);
         }
 
         private void DestroyProjectile()

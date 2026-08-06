@@ -10,7 +10,6 @@ namespace GAS.Mirror
         /// <summary>
         /// Serializes this value into the provided network writer.
         /// </summary>
-        void Serialize(
-            NetworkWriter writer);
+        void Serialize(NetworkWriter writer);
     }
 }

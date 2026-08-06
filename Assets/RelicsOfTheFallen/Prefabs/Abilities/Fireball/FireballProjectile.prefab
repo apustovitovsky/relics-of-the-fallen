@@ -151,6 +151,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  <ImpactGameplayCue>k__BackingField: {fileID: 11400000, guid: 2b7a8dcb3a3f7dd429f0a15123c2dbe6, type: 2}
 --- !u!1001 &439764395843799274
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -28,6 +28,9 @@ MonoBehaviour:
   - m_AssetName: DamageMax
     m_Asset: {fileID: 11400000, guid: 0c747f4b75f96d541a95f88c0491846b, type: 2}
     m_Id: 0c747f4b75f96d541a95f88c0491846b
+  - m_AssetName: GameplayCue.Fireball
+    m_Asset: {fileID: 11400000, guid: 11faaf61ee3b27f42a7c1803e1e85ee4, type: 2}
+    m_Id: 11faaf61ee3b27f42a7c1803e1e85ee4
   - m_AssetName: State
     m_Asset: {fileID: 11400000, guid: 142a42dd4e3484448b9edbebae7e0f5f, type: 2}
     m_Id: 142a42dd4e3484448b9edbebae7e0f5f
@@ -67,6 +70,9 @@ MonoBehaviour:
   - m_AssetName: GameplayCue.Effect.Potion
     m_Asset: {fileID: 11400000, guid: 29b5c1bd4c30de24eb544b16d7b551e8, type: 2}
     m_Id: 29b5c1bd4c30de24eb544b16d7b551e8
+  - m_AssetName: GameplayCue.Fireball.Impact
+    m_Asset: {fileID: 11400000, guid: 2b7a8dcb3a3f7dd429f0a15123c2dbe6, type: 2}
+    m_Id: 2b7a8dcb3a3f7dd429f0a15123c2dbe6
   - m_AssetName: GameplayCue
     m_Asset: {fileID: 11400000, guid: 2ea566f0b9779c0438be0317238af5d6, type: 2}
     m_Id: 2ea566f0b9779c0438be0317238af5d6
@@ -280,7 +286,7 @@ MonoBehaviour:
   - m_AssetName: State.Movement.Jumping
     m_Asset: {fileID: 11400000, guid: f01fd40d1a76d4047a5b5deaeb71a9c5, type: 2}
     m_Id: f01fd40d1a76d4047a5b5deaeb71a9c5
-  - m_AssetName: GE_DebugDamage10
+  - m_AssetName: GE_InstantDamage
     m_Asset: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
     m_Id: f15d001c76931ee4cb39b6bb47eb244f
   - m_AssetName: Ability.Cooldown.Dash

@@ -40,6 +40,63 @@ namespace GAS.Mirror
         }
 
         /// <summary>
+        /// Tries to create replicated context state from optional spawned gameplay objects.
+        /// </summary>
+        public static bool TryCreate(
+            GameObject instigator,
+            GameObject effectCauser,
+            out GameplayEffectContextReplicationState state)
+        {
+            if (
+                !TryGetSpawnedNetworkId(
+                    instigator,
+                    out uint instigatorNetworkId) ||
+                !TryGetSpawnedNetworkId(
+                    effectCauser,
+                    out uint effectCauserNetworkId))
+            {
+                state = default;
+                return false;
+            }
+
+            state =
+                new GameplayEffectContextReplicationState(
+                    instigatorNetworkId,
+                    effectCauserNetworkId);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the network identity of an optional spawned gameplay object root.
+        /// </summary>
+        private static bool TryGetSpawnedNetworkId(
+            GameObject gameplayObject,
+            out uint networkId)
+        {
+            networkId = 0;
+
+            if (gameplayObject == null)
+            {
+                return true;
+            }
+
+            GameObject gameplayObjectRoot =
+                gameplayObject.transform.root.gameObject;
+
+            if (
+                !gameplayObjectRoot.TryGetComponent(
+                    out NetworkIdentity identity) ||
+                identity.netId == 0)
+            {
+                return false;
+            }
+
+            networkId = identity.netId;
+            return true;
+        }
+
+        /// <summary>
         /// Creates gameplay effect context replication state from network data.
         /// </summary>
         internal GameplayEffectContextReplicationState(

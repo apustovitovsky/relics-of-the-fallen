@@ -59,8 +59,7 @@ namespace GAS.Mirror
         public static GameplayAbilitySpecHandle ReadGameplayAbilitySpecHandle(
             this NetworkReader reader)
         {
-            return new GameplayAbilitySpecHandle(
-                reader.ReadInt());
+            return new GameplayAbilitySpecHandle(reader.ReadInt());
         }
 
         /// <summary>
@@ -70,19 +69,16 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             GameplayAbilitySpecReplicationState value)
         {
-            value.Serialize(
-                writer);
+            value.Serialize(writer);
         }
 
         /// <summary>
         /// Reads the replication state of one granted gameplay ability specification.
         /// </summary>
         public static GameplayAbilitySpecReplicationState
-            ReadGameplayAbilitySpecReplicationState(
-                this NetworkReader reader)
+            ReadGameplayAbilitySpecReplicationState(this NetworkReader reader)
         {
-            return new GameplayAbilitySpecReplicationState(
-                reader);
+            return new GameplayAbilitySpecReplicationState(reader);
         }
 
         /// <summary>
@@ -92,8 +88,7 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             PredictionKey value)
         {
-            writer.WriteUInt(
-                value.Sequence);
+            writer.WriteUInt(value.Sequence);
         }
 
         /// <summary>
@@ -102,8 +97,7 @@ namespace GAS.Mirror
         public static PredictionKey ReadPredictionKey(
             this NetworkReader reader)
         {
-            return new PredictionKey(
-                reader.ReadUInt());
+            return new PredictionKey(reader.ReadUInt());
         }
 
         /// <summary>
@@ -113,8 +107,7 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             GameplayAbilityActivationInfo value)
         {
-            writer.WriteByte(
-                (byte)value.ActivationMode);
+            writer.WriteByte((byte)value.ActivationMode);
 
             writer.WritePredictionKey(
                 value.GetActivationPredictionKey());
@@ -130,8 +123,7 @@ namespace GAS.Mirror
             GameplayAbilityActivationMode activationMode =
                 (GameplayAbilityActivationMode)reader.ReadByte();
 
-            PredictionKey predictionKey =
-                reader.ReadPredictionKey();
+            PredictionKey predictionKey = reader.ReadPredictionKey();
 
             return new GameplayAbilityActivationInfo(
                 activationMode,
@@ -145,8 +137,7 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             GameplayAbilityRepAnimMontageReplicationState value)
         {
-            value.Serialize(
-                writer);
+            value.Serialize(writer);
         }
 
         /// <summary>
@@ -156,8 +147,7 @@ namespace GAS.Mirror
             ReadGameplayAbilityRepAnimMontageReplicationState(
                 this NetworkReader reader)
         {
-            return new GameplayAbilityRepAnimMontageReplicationState(
-                reader);
+            return new GameplayAbilityRepAnimMontageReplicationState(reader);
         }
 
         /// <summary>
@@ -167,8 +157,7 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             GameplayEffectContextReplicationState value)
         {
-            value.Serialize(
-                writer);
+            value.Serialize(writer);
         }
 
         /// <summary>
@@ -178,8 +167,27 @@ namespace GAS.Mirror
             ReadGameplayEffectContextReplicationState(
                 this NetworkReader reader)
         {
-            return new GameplayEffectContextReplicationState(
-                reader);
+            return new GameplayEffectContextReplicationState(reader);
+        }
+
+        /// <summary>
+        /// Writes the replicated parameters of one gameplay cue invocation.
+        /// </summary>
+        public static void WriteGameplayCueParametersReplicationState(
+            this NetworkWriter writer,
+            GameplayCueParametersReplicationState value)
+        {
+            value.Serialize(writer);
+        }
+
+        /// <summary>
+        /// Reads the replicated parameters of one gameplay cue invocation.
+        /// </summary>
+        public static GameplayCueParametersReplicationState
+            ReadGameplayCueParametersReplicationState(
+                this NetworkReader reader)
+        {
+            return new GameplayCueParametersReplicationState(reader);
         }
 
         /// <summary>
@@ -189,8 +197,7 @@ namespace GAS.Mirror
             this NetworkWriter writer,
             ActiveGameplayEffectReplicationState value)
         {
-            value.Serialize(
-                writer);
+            value.Serialize(writer);
         }
 
         /// <summary>
@@ -200,8 +207,7 @@ namespace GAS.Mirror
             ReadActiveGameplayEffectReplicationState(
                 this NetworkReader reader)
         {
-            return new ActiveGameplayEffectReplicationState(
-                reader);
+            return new ActiveGameplayEffectReplicationState(reader);
         }
 
         /// <summary>
@@ -213,8 +219,7 @@ namespace GAS.Mirror
         {
             if (value == null)
             {
-                throw new ArgumentNullException(
-                    nameof(value));
+                throw new ArgumentNullException(nameof(value));
             }
 
             int targetDataCount = value.Num();
@@ -225,8 +230,7 @@ namespace GAS.Mirror
                     $"Target data count exceeds {k_MaxTargetDataCount}.");
             }
 
-            writer.WriteUShort(
-                (ushort)targetDataCount);
+            writer.WriteUShort((ushort)targetDataCount);
 
             for (
                 int index = 0;
@@ -235,8 +239,7 @@ namespace GAS.Mirror
             {
                 WriteGameplayAbilityTargetData(
                     writer,
-                    value.Get(
-                        index));
+                    value.Get(index));
             }
         }
 
@@ -264,8 +267,7 @@ namespace GAS.Mirror
                 index++)
             {
                 targetDataHandle.Add(
-                    ReadGameplayAbilityTargetData(
-                        reader));
+                    ReadGameplayAbilityTargetData(reader));
             }
 
             return targetDataHandle;
@@ -282,8 +284,7 @@ namespace GAS.Mirror
                 targetData is
                     GameplayAbilityTargetData_ActorArray actorArray)
             {
-                writer.WriteByte(
-                    k_ActorArrayTargetDataTypeId);
+                writer.WriteByte(k_ActorArrayTargetDataTypeId);
 
                 WriteGameplayAbilityTargetDataActorArray(
                     writer,
@@ -307,8 +308,7 @@ namespace GAS.Mirror
 
             if (targetDataTypeId == k_ActorArrayTargetDataTypeId)
             {
-                return ReadGameplayAbilityTargetDataActorArray(
-                    reader);
+                return ReadGameplayAbilityTargetDataActorArray(reader);
             }
 
             throw new InvalidOperationException(
@@ -331,16 +331,14 @@ namespace GAS.Mirror
                     $"Target actor count exceeds {k_MaxTargetActorCount}.");
             }
 
-            writer.WriteUShort(
-                (ushort)targetActors.Count);
+            writer.WriteUShort((ushort)targetActors.Count);
 
             for (
                 int index = 0;
                 index < targetActors.Count;
                 index++)
             {
-                writer.WriteGameObject(
-                    targetActors[index]);
+                writer.WriteGameObject(targetActors[index]);
             }
         }
 
@@ -359,8 +357,7 @@ namespace GAS.Mirror
                     $"Target actor count exceeds {k_MaxTargetActorCount}.");
             }
 
-            GameplayAbilityTargetData_ActorArray targetData =
-                new();
+            GameplayAbilityTargetData_ActorArray targetData = new();
 
             for (
                 int index = 0;
@@ -375,8 +372,7 @@ namespace GAS.Mirror
                         "Target actor is not spawned on the receiving peer.");
                 }
 
-                targetData.AddActor(
-                    targetActor);
+                targetData.AddActor(targetActor);
             }
 
             return targetData;

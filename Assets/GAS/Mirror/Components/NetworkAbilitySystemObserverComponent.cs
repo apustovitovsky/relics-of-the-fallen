@@ -29,6 +29,8 @@ namespace GAS.Mirror
         [SerializeField]
         private AbilitySystemComponent m_AbilitySystem;
 
+        private IDisposable m_GameplayCueExecutedRegistration;
+
         /// <summary>
         /// Validates the serialized dependencies required by observer replication.
         /// </summary>
@@ -48,7 +50,7 @@ namespace GAS.Mirror
         }
 
         /// <summary>
-        /// Starts authoritative observable attribute replication on the server.
+        /// Starts authoritative observable state and gameplay cue replication.
         /// </summary>
         public override void OnStartServer()
         {
@@ -59,13 +61,93 @@ namespace GAS.Mirror
 
             m_AbilitySystem.OnAttributeChanged +=
                 SynchronizeAttribute;
+
+            m_GameplayCueExecutedRegistration =
+                AbilitySystemGlobals.Instance
+                    .GetGameplayCueManager()
+                    .RegisterGameplayCueExecuted(ReplicateGameplayCueExecuted);
         }
 
         /// <summary>
-        /// Stops authoritative observable attribute replication on the server.
+        /// Replicates an executed gameplay cue owned by this observed ability system.
+        /// </summary>
+        private void ReplicateGameplayCueExecuted(
+            AbilitySystemComponent owningComponent,
+            GameplayTag gameplayCueTag,
+            GameplayCueParameters parameters)
+        {
+            if (owningComponent != m_AbilitySystem)
+            {
+                return;
+            }
+
+            if (
+                !GameplayEffectContextReplicationState.TryCreate(
+                    parameters.GetInstigator(),
+                    parameters.GetEffectCauser(),
+                    out GameplayEffectContextReplicationState context))
+            {
+                Debug.LogWarning(
+                    $"{name} cannot replicate gameplay cue " +
+                    $"'{gameplayCueTag.name}' because its context objects " +
+                    "are not network-spawned.",
+                    this);
+
+                return;
+            }
+
+            AssetId gameplayCueTagId =
+                m_AssetRegistry.GetAssetId(gameplayCueTag);
+
+            GameplayCueParametersReplicationState parameterState =
+                new(
+                    context,
+                    parameters.NormalizedMagnitude,
+                    parameters.RawMagnitude,
+                    parameters.Location,
+                    parameters.Normal,
+                    parameters.GameplayEffectLevel,
+                    parameters.AbilityLevel,
+                    parameters.IsGameplayEffectActive);
+
+            RpcInvokeGameplayCueExecuted(
+                gameplayCueTagId,
+                parameterState);
+        }
+
+        /// <summary>
+        /// Invokes an authoritative executed gameplay cue on observing clients.
+        /// </summary>
+        [ClientRpc(channel = Channels.Unreliable)]
+        private void RpcInvokeGameplayCueExecuted(
+            AssetId gameplayCueTagId,
+            GameplayCueParametersReplicationState parameterState)
+        {
+            if (isServer)
+            {
+                return;
+            }
+
+            GameplayTag gameplayCueTag =
+                m_AssetRegistry.GetAsset<GameplayTag>(gameplayCueTagId);
+
+            GameplayCueParameters parameters =
+                parameterState.CreateGameplayCueParameters();
+
+            m_AbilitySystem.InvokeGameplayCueEvent(
+                gameplayCueTag,
+                GameplayCueEvent.Executed,
+                parameters);
+        }
+
+        /// <summary>
+        /// Stops authoritative observable state and gameplay cue replication.
         /// </summary>
         public override void OnStopServer()
         {
+            m_GameplayCueExecutedRegistration?.Dispose();
+            m_GameplayCueExecutedRegistration = null;
+
             m_AbilitySystem.OnAttributeChanged -=
                 SynchronizeAttribute;
 

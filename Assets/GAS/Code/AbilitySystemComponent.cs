@@ -81,8 +81,6 @@ namespace GAS
             ActiveGameplayEffectHandle>
             m_OnActiveGameplayEffectAddedDelegateToSelf = new();
 
-        private IDisposable m_GameplayCueRegistration;
-
         private readonly GameplayAbilityReplicatedDataContainer
             m_AbilityTargetDataMap = new();
 
@@ -130,6 +128,101 @@ namespace GAS
             return
                 AbilityActorInfo == null ||
                 AbilityActorInfo.IsNetAuthority();
+        }
+
+        /// <summary>
+        /// Initializes gameplay cue parameters with this ability system's owner and avatar.
+        /// </summary>
+        public virtual void InitDefaultGameplayCueParameters(
+            GameplayCueParameters parameters)
+        {
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(parameters));
+            }
+
+            if (AbilityActorInfo == null)
+            {
+                throw new InvalidOperationException(
+                    $"{name} has no initialized ability actor information.");
+            }
+
+            parameters.Instigator =
+                AbilityActorInfo.OwnerActor;
+
+            parameters.EffectCauser =
+                AbilityActorInfo.AvatarActor;
+        }
+
+        /// <summary>
+        /// Returns whether this ability system has an avatar ready to receive gameplay cues.
+        /// </summary>
+        public virtual bool IsReadyForGameplayCues()
+        {
+            return
+                AbilityActorInfo != null &&
+                AbilityActorInfo.AvatarActor != null;
+        }
+
+        /// <summary>
+        /// Executes an instant gameplay cue using the supplied effect context.
+        /// </summary>
+        public virtual void ExecuteGameplayCue(
+            GameplayTag gameplayCueTag,
+            GameplayEffectContextHandle effectContext = default)
+        {
+            GameplayCueParameters parameters =
+                new(
+                    effectContext)
+                {
+                    NormalizedMagnitude = 1f,
+                    RawMagnitude = 0f
+                };
+
+            InitDefaultGameplayCueParameters(
+                parameters);
+
+            ExecuteGameplayCue(
+                gameplayCueTag,
+                parameters);
+        }
+
+        /// <summary>
+        /// Executes an instant gameplay cue using the supplied parameters.
+        /// </summary>
+        public virtual void ExecuteGameplayCue(
+            GameplayTag gameplayCueTag,
+            GameplayCueParameters parameters)
+        {
+            AbilitySystemGlobals.Instance
+                .GetGameplayCueManager()
+                .InvokeGameplayCueExecuted(
+                    this,
+                    gameplayCueTag,
+                    parameters);
+        }
+
+        /// <summary>
+        /// Invokes a gameplay cue event on this ability system's current avatar.
+        /// </summary>
+        public virtual void InvokeGameplayCueEvent(
+            GameplayTag gameplayCueTag,
+            GameplayCueEvent eventType,
+            GameplayCueParameters parameters)
+        {
+            if (!IsReadyForGameplayCues())
+            {
+                return;
+            }
+
+            AbilitySystemGlobals.Instance
+                .GetGameplayCueManager()
+                .HandleGameplayCue(
+                    AbilityActorInfo.AvatarActor,
+                    gameplayCueTag,
+                    eventType,
+                    parameters);
         }
 
         /// <summary>
@@ -513,9 +606,6 @@ namespace GAS
 
         public float level = 1;
 
-        public List<GameplayCue> instancedCues =
-            new();
-
         public bool logging = false;
 
         [ReadOnly]
@@ -575,11 +665,7 @@ namespace GAS
                         attribute);
                 });
 
-            OnGameplayEffectApplied +=
-                TriggerOnTagsAdded;
-
-            m_GameplayCueRegistration =
-                GameplayCueManager.Register(this);
+            OnGameplayEffectApplied += TriggerOnTagsAdded;
         }
 
         /// <summary>
@@ -644,8 +730,6 @@ namespace GAS
                     false,
                     true);
             }
-
-            m_GameplayCueRegistration?.Dispose();
         }
 
         /// <summary>

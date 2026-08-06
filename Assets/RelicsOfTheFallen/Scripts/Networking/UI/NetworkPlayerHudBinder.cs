@@ -61,13 +61,13 @@ namespace RelicsOfTheFallen.Networking.UI
             }
 
             TargetingController targeting =
-                localPlayer.GetComponentInChildren<
-                    TargetingController>(
+                localPlayer.GetComponentInChildren<TargetingController>(
                     true);
 
             Camera targetCamera = Camera.main;
 
-            if (targeting == null ||
+            if (
+                targeting == null ||
                 targetCamera == null)
             {
                 Debug.LogError(
@@ -94,7 +94,10 @@ namespace RelicsOfTheFallen.Networking.UI
         {
             m_LocalPlayer = null;
 
-            AbilitySystemDebug?.Unbind();
+            if (AbilitySystemDebug != null)
+            {
+                AbilitySystemDebug.Unbind();
+            }
         }
     }
 }

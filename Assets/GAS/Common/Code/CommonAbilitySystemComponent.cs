@@ -11,6 +11,9 @@ namespace GAS.Common
     public class CommonAbilitySystemComponent :
         AbilitySystemComponent
     {
+        private readonly int[] m_ActivationGroupCounts =
+            new int[Enum.GetValues(typeof(GameplayAbilityActivationGroup)).Length];
+
         private readonly List<GameplayAbilitySpecHandle>
             m_InputPressedSpecHandles = new();
 
@@ -29,6 +32,225 @@ namespace GAS.Common
 
         private readonly List<GameplayAbilitySpecHandle>
             m_AbilitiesToActivate = new();
+
+        /// <summary>
+        /// Returns whether the requested activation group is blocked by an active blocking ability.
+        /// </summary>
+        public bool IsActivationGroupBlocked(
+            GameplayAbilityActivationGroup group)
+        {
+            switch (group)
+            {
+                case GameplayAbilityActivationGroup.Independent:
+                    return false;
+
+                case GameplayAbilityActivationGroup.ExclusiveReplaceable:
+                case GameplayAbilityActivationGroup.ExclusiveBlocking:
+                    int blockingGroupIndex =
+                        (int)GameplayAbilityActivationGroup.ExclusiveBlocking;
+
+                    return m_ActivationGroupCounts[blockingGroupIndex] > 0;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(group),
+                        group,
+                        "Unsupported gameplay ability activation group.");
+            }
+        }
+
+        /// <summary>
+        /// Registers an active ability in its activation group and resolves exclusive conflicts.
+        /// </summary>
+        public void AddAbilityToActivationGroup(
+            GameplayAbilityActivationGroup group,
+            CommonGameplayAbility ability)
+        {
+            if (ability == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(ability));
+            }
+
+            int groupIndex =
+                GetActivationGroupIndex(
+                    group);
+
+            if (m_ActivationGroupCounts[groupIndex] == int.MaxValue)
+            {
+                throw new InvalidOperationException(
+                    $"Activation group '{group}' has reached its maximum count.");
+            }
+
+            m_ActivationGroupCounts[groupIndex]++;
+
+            switch (group)
+            {
+                case GameplayAbilityActivationGroup.Independent:
+                    break;
+
+                case GameplayAbilityActivationGroup.ExclusiveReplaceable:
+                case GameplayAbilityActivationGroup.ExclusiveBlocking:
+                    CancelActivationGroupAbilities(
+                        GameplayAbilityActivationGroup.ExclusiveReplaceable,
+                        ability,
+                        false);
+
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(group),
+                        group,
+                        "Unsupported gameplay ability activation group.");
+            }
+
+            int replaceableGroupIndex =
+                (int)GameplayAbilityActivationGroup.ExclusiveReplaceable;
+
+            int blockingGroupIndex =
+                (int)GameplayAbilityActivationGroup.ExclusiveBlocking;
+
+            int exclusiveCount =
+                m_ActivationGroupCounts[replaceableGroupIndex] +
+                m_ActivationGroupCounts[blockingGroupIndex];
+
+            if (exclusiveCount > 1)
+            {
+                Debug.LogError(
+                    "Multiple exclusive gameplay abilities are active.",
+                    this);
+            }
+        }
+
+        /// <summary>
+        /// Removes a finished ability from its activation group.
+        /// </summary>
+        public void RemoveAbilityFromActivationGroup(
+            GameplayAbilityActivationGroup group,
+            CommonGameplayAbility ability)
+        {
+            if (ability == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(ability));
+            }
+
+            int groupIndex =
+                GetActivationGroupIndex(
+                    group);
+
+            if (m_ActivationGroupCounts[groupIndex] <= 0)
+            {
+                throw new InvalidOperationException(
+                    $"Activation group '{group}' contains no active abilities.");
+            }
+
+            m_ActivationGroupCounts[groupIndex]--;
+        }
+
+        /// <summary>
+        /// Cancels active common abilities belonging to the requested activation group.
+        /// </summary>
+        public void CancelActivationGroupAbilities(
+            GameplayAbilityActivationGroup group,
+            CommonGameplayAbility ignoreAbility,
+            bool replicateCancelAbility)
+        {
+            _ = GetActivationGroupIndex(
+                group);
+
+            IReadOnlyList<GameplayAbilitySpec> abilitySpecs =
+                ActivatableAbilities.Items;
+
+            for (
+                int index = 0;
+                index < abilitySpecs.Count;
+                index++)
+            {
+                GameplayAbilitySpec abilitySpec =
+                    abilitySpecs[index];
+
+                CommonGameplayAbility ability =
+                    GetCommonAbility(
+                        abilitySpec);
+
+                if (
+                    !ability.IsActive ||
+                    ReferenceEquals(
+                        ability,
+                        ignoreAbility) ||
+                    ability.GetActivationGroup() != group)
+                {
+                    continue;
+                }
+
+                ability.CancelAbility(
+                    abilitySpec.Handle,
+                    AbilityActorInfo,
+                    ability.CurrentActivationInfo,
+                    replicateCancelAbility);
+            }
+        }
+
+        private int GetActivationGroupIndex(
+            GameplayAbilityActivationGroup group)
+        {
+            int groupIndex =
+                (int)group;
+
+            if (
+                groupIndex < 0 ||
+                groupIndex >= m_ActivationGroupCounts.Length)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(group),
+                    group,
+                    "Unsupported gameplay ability activation group.");
+            }
+
+            return groupIndex;
+        }
+
+        /// <summary>
+        /// Registers a newly active common ability in its configured activation group.
+        /// </summary>
+        public override void NotifyAbilityActivated(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbility gameplayAbility)
+        {
+            base.NotifyAbilityActivated(
+                handle,
+                gameplayAbility);
+
+            CommonGameplayAbility commonAbility =
+                (CommonGameplayAbility)gameplayAbility;
+
+            AddAbilityToActivationGroup(
+                commonAbility.GetActivationGroup(),
+                commonAbility);
+        }
+
+        /// <summary>
+        /// Removes a finished common ability from its configured activation group.
+        /// </summary>
+        public override void NotifyAbilityEnded(
+            GameplayAbilitySpecHandle handle,
+            GameplayAbility gameplayAbility,
+            bool wasCancelled)
+        {
+            base.NotifyAbilityEnded(
+                handle,
+                gameplayAbility,
+                wasCancelled);
+
+            CommonGameplayAbility commonAbility =
+                (CommonGameplayAbility)gameplayAbility;
+
+            RemoveAbilityFromActivationGroup(
+                commonAbility.GetActivationGroup(),
+                commonAbility);
+        }
 
         /// <summary>
         /// Records ability specifications associated with a pressed input gameplay tag.

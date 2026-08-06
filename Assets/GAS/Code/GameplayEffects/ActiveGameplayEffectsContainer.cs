@@ -190,8 +190,6 @@ namespace GAS
 
                 ApplyModifiers(
                     activeEffect);
-
-                return activeEffect;
             }
             catch
             {
@@ -215,6 +213,11 @@ namespace GAS
 
                 throw;
             }
+
+            m_Owner.NotifyActiveGameplayEffectAdded(
+                activeEffect);
+
+            return activeEffect;
         }
 
         /// <summary>
@@ -229,7 +232,8 @@ namespace GAS
                     nameof(activeEffect));
             }
 
-            if (activeEffect.Authority !=
+            if (
+                activeEffect.Authority !=
                 ActiveEffectAuthority.Authoritative)
             {
                 throw new ArgumentException(
@@ -286,6 +290,9 @@ namespace GAS
             }
 
             AuthoritativeGameplayEffectAdded?.Invoke(
+                activeEffect);
+
+            m_Owner.NotifyActiveGameplayEffectAdded(
                 activeEffect);
 
             return activeEffect;
@@ -569,7 +576,51 @@ namespace GAS
 
             return timesRemaining;
         }
-        
+
+        /// <summary>
+        /// Returns the remaining time and total duration of active effects that satisfy a query.
+        /// </summary>
+        public List<(
+            float TimeRemaining,
+            float Duration)> GetActiveEffectsTimeRemainingAndDuration(
+                GameplayEffectQuery query)
+        {
+            if (query == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(query));
+            }
+
+            double currentWorldTime =
+                Time.timeAsDouble;
+
+            List<(
+                float TimeRemaining,
+                float Duration)> effectTimes =
+                    new();
+
+            foreach (
+                ActiveGameplayEffect activeEffect
+                in m_ActiveByHandle.Values)
+            {
+                if (
+                    !query.Matches(
+                        activeEffect))
+                {
+                    continue;
+                }
+
+                effectTimes.Add(
+                    (
+                        (float)activeEffect.GetTimeRemaining(
+                            currentWorldTime),
+                        activeEffect.Spec.Duration
+                    ));
+            }
+
+            return effectTimes;
+        }
+
         /// <summary>
         /// Modifies an active gameplay effect start time and refreshes its duration state.
         /// </summary>

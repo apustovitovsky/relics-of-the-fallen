@@ -4,6 +4,7 @@ using GAS;
 using RelicsOfTheFallen.Targeting;
 using TMPro;
 using UnityEngine;
+using RelicsOfTheFallen.UI.AbilitySystem;
 
 namespace RelicsOfTheFallen.UI.Debug
 {
@@ -47,6 +48,13 @@ namespace RelicsOfTheFallen.UI.Debug
         }
 
         [field: SerializeField]
+        private CastBarPresenter CastBar
+        {
+            get;
+            set;
+        }
+
+        [field: SerializeField]
         private List<AttributeName> StatAttributes
         {
             get;
@@ -73,34 +81,41 @@ namespace RelicsOfTheFallen.UI.Debug
                 StatAttributes.Count == 0 &&
                 ResourceAttributes.Count == 0;
 
-            if (FrameRoot == null ||
+            if (
+                FrameRoot == null ||
                 DebugText == null ||
+                CastBar == null ||
                 hasNoAttributes)
             {
                 UnityEngine.Debug.LogError(
                     $"{nameof(AbilitySystemDebugPresenter)} on '{name}' " +
-                    "requires a frame root, debug text, and debug attributes.",
+                    "requires a frame root, debug text, cast bar, and " +
+                    "debug attributes.",
                     this);
 
                 enabled = false;
                 return;
             }
 
-            SetFrameVisible(false);
+            SetFrameVisible(
+                false);
         }
 
         private void LateUpdate()
         {
-            if (m_Targeting == null ||
+            if (
+                m_Targeting == null ||
                 m_Camera == null)
             {
                 HideFrame();
                 return;
             }
 
-            ITargetable currentTarget = m_Targeting.CurrentTarget;
+            ITargetable currentTarget =
+                m_Targeting.CurrentTarget;
 
-            if (currentTarget == null ||
+            if (
+                currentTarget == null ||
                 currentTarget.TargetActor == null ||
                 currentTarget.UiAnchor == null)
             {
@@ -117,8 +132,9 @@ namespace RelicsOfTheFallen.UI.Debug
                 return;
             }
 
-            Vector3 screenPosition = m_Camera.WorldToScreenPoint(
-                currentTarget.UiAnchor.position);
+            Vector3 screenPosition =
+                m_Camera.WorldToScreenPoint(
+                    currentTarget.UiAnchor.position);
 
             if (screenPosition.z <= 0f)
             {
@@ -126,16 +142,30 @@ namespace RelicsOfTheFallen.UI.Debug
                 return;
             }
 
-            FrameRoot.transform.position = screenPosition;
+            FrameRoot.transform.position =
+                screenPosition;
 
-            bool targetChanged = !ReferenceEquals(
-                m_CurrentTarget,
-                currentTarget);
+            bool targetChanged =
+                !ReferenceEquals(
+                    m_CurrentTarget,
+                    currentTarget);
 
-            if (targetChanged ||
+            if (targetChanged)
+            {
+                m_CurrentTarget =
+                    currentTarget;
+
+                m_NextRefreshTime =
+                    0f;
+
+                CastBar.Bind(
+                    abilitySystem);
+            }
+
+            if (
+                targetChanged ||
                 Time.unscaledTime >= m_NextRefreshTime)
             {
-                m_CurrentTarget = currentTarget;
                 m_NextRefreshTime =
                     Time.unscaledTime +
                     k_RefreshIntervalSeconds;
@@ -145,7 +175,8 @@ namespace RelicsOfTheFallen.UI.Debug
                     abilitySystem);
             }
 
-            SetFrameVisible(true);
+            SetFrameVisible(
+                true);
         }
 
         private void OnDisable()
@@ -185,19 +216,21 @@ namespace RelicsOfTheFallen.UI.Debug
         /// </summary>
         public void Unbind()
         {
-            m_Targeting = null;
-            m_Camera = null;
-            m_CurrentTarget = null;
-            m_NextRefreshTime = 0f;
+            m_Targeting =
+                null;
+
+            m_Camera =
+                null;
+
+            m_NextRefreshTime =
+                0f;
+
+            HideFrame();
 
             if (DebugText != null)
             {
-                DebugText.SetText(string.Empty);
-            }
-
-            if (FrameRoot != null)
-            {
-                SetFrameVisible(false);
+                DebugText.SetText(
+                    string.Empty);
             }
         }
 
@@ -336,8 +369,16 @@ namespace RelicsOfTheFallen.UI.Debug
         /// </summary>
         private void HideFrame()
         {
-            m_CurrentTarget = null;
-            SetFrameVisible(false);
+            if (m_CurrentTarget != null)
+            {
+                CastBar.Unbind();
+
+                m_CurrentTarget =
+                    null;
+            }
+
+            SetFrameVisible(
+                false);
         }
 
         /// <summary>

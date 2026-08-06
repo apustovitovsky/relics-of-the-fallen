@@ -1,11 +1,10 @@
 {
-    "name": "RelicsOfTheFallen.UI.Debug",
-    "rootNamespace": "RelicsOfTheFallen.UI.Debug",
+    "name": "RelicsOfTheFallen.UI.AbilitySystem",
+    "rootNamespace": "RelicsOfTheFallen.UI.AbilitySystem",
     "references": [
         "GAS",
-        "RelicsOfTheFallen.Targeting",
-        "RelicsOfTheFallen.UI.AbilitySystem",
-        "Unity.TextMeshPro"
+        "GAS.Common",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

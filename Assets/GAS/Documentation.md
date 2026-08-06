@@ -251,6 +251,35 @@ TryActivateAbility
 → CommitAbility в выбранный ability момент
 ```
 
+##### GAS.Common: Activation Groups
+
+`GameplayAbilityActivationGroup` — reusable-расширение `GAS.Common`,
+основанное на activation groups Lyra. Группа задаёт отношение
+ability к другим активным abilities одного
+`CommonAbilitySystemComponent`:
+
+- `Independent` не участвует в exclusive-блокировке;
+- `ExclusiveReplaceable` может быть отменена другой exclusive ability;
+- `ExclusiveBlocking` отменяет active replaceable ability и блокирует
+  новые exclusive activations до своего завершения.
+
+ASC добавляет ability в группу внутри `NotifyAbilityActivated()` и
+удаляет внутри `NotifyAbilityEnded()`. Поэтому обычное завершение и
+cancel освобождают группу через один lifecycle. При отказе
+`CanActivateAbility()` добавляет причину
+`Ability.ActivateFail.ActivationGroup` из `CommonGameplayTags`.
+Asset этого тега принадлежит reusable-слою и хранится в
+`Assets/GAS/Common/Resources/GameplayTags`, а не в core-ресурсах `GAS`.
+
+```text
+ExclusiveReplaceable active
+→ activate ExclusiveBlocking
+→ cancel ExclusiveReplaceable
+→ reject new exclusive activations
+→ end ExclusiveBlocking
+→ allow exclusive activations again
+```
+
 #### 4.6.5 Canceling Abilities
 
 `CancelAbility()` отменяет активные `AbilityTask`, после чего вызывает `EndAbility()` с `wasCancelled: true`. Обычное и отменённое завершение используют одну cleanup-цепочку: очищают replicated data cache, снимают blocking и activation-owned tags, переводят ability в неактивное состояние и вызывают `NotifyAbilityEnded()`.
@@ -362,6 +391,18 @@ GameplayAbility.ApplyGameplayEffectSpecToTarget
 → GameplayAbilityTargetData.ApplyGameplayEffectSpec
 → AbilitySystemComponent.ApplyGameplayEffectSpecToSelf
 ```
+
+`RegisterActiveGameplayEffectAddedDelegateToSelf()` возвращает
+`IDisposable`-подписку и уведомляет наблюдателя после полной
+регистрации `ActiveGameplayEffect`. Callback получает target ASC,
+применённый `GameplayEffectSpec` и локальный
+`ActiveGameplayEffectHandle`. Уведомление вызывается для predicted,
+локального authoritative и восстановленного replicated effect.
+
+`GetActiveEffectsTimeRemainingAndDuration()` возвращает для каждого
+совпавшего effect именованную пару `(TimeRemaining, Duration)`.
+Это позволяет UI брать total duration и progress из того же
+evaluated spec, который хранит active effect.
 
 Базовый `GameplayAbility` не создаёт конкретный TargetData из готового целевого ASC. Цель получает `GameplayAbilityTargetActor`, а `AbilityTask_WaitTargetData` управляет ожиданием, подтверждением и отменой таргетинга:
 

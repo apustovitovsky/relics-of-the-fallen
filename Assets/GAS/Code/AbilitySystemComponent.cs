@@ -53,12 +53,16 @@ namespace GAS
             AbilityEndedData> m_OnAbilityEnded = new();
 
         private readonly DisposableEvent<
-            GameplayAbility> m_AbilityActivatedCallbacks =
-            new();
+            GameplayAbility> m_AbilityActivatedCallbacks = new();
 
         private readonly DisposableEvent<
-            GameplayAbility> m_AbilityEndedCallbacks =
-            new();
+            GameplayAbility> m_AbilityEndedCallbacks = new();
+
+        private readonly DisposableEvent<
+            AbilitySystemComponent,
+            GameplayEffectSpec,
+            ActiveGameplayEffectHandle>
+            m_OnActiveGameplayEffectAddedDelegateToSelf = new();
 
         private IDisposable m_GameplayCueRegistration;
 
@@ -2359,13 +2363,58 @@ namespace GAS
         }
 
         /// <summary>
+        /// Registers an observer notified whenever an active gameplay effect is applied to this component.
+        /// </summary>
+        public IDisposable RegisterActiveGameplayEffectAddedDelegateToSelf(
+            Action<
+                AbilitySystemComponent,
+                GameplayEffectSpec,
+                ActiveGameplayEffectHandle> handler)
+        {
+            return
+                m_OnActiveGameplayEffectAddedDelegateToSelf.Subscribe(
+                    handler);
+        }
+
+        /// <summary>
+        /// Broadcasts one fully registered active gameplay effect to this component's observers.
+        /// </summary>
+        internal void NotifyActiveGameplayEffectAdded(
+            ActiveGameplayEffect activeEffect)
+        {
+            if (activeEffect == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(activeEffect));
+            }
+
+            m_OnActiveGameplayEffectAddedDelegateToSelf.Invoke(
+                this,
+                activeEffect.Spec,
+                activeEffect.Handle);
+        }
+
+        /// <summary>
         /// Returns the remaining times of active gameplay effects that satisfy a query.
         /// </summary>
         public List<float> GetActiveEffectsTimeRemaining(
             GameplayEffectQuery query)
         {
-            return ActiveGameplayEffects.GetActiveEffectsTimeRemaining(
-                query);
+            return ActiveGameplayEffects.GetActiveEffectsTimeRemaining(query);
+        }
+
+        /// <summary>
+        /// Returns the remaining time and total duration of active effects that satisfy a query.
+        /// </summary>
+        public List<(
+            float TimeRemaining,
+            float Duration)> GetActiveEffectsTimeRemainingAndDuration(
+                GameplayEffectQuery query)
+        {
+            return
+                ActiveGameplayEffects
+                    .GetActiveEffectsTimeRemainingAndDuration(
+                        query);
         }
 
         /// <summary>
@@ -2374,8 +2423,7 @@ namespace GAS
         public void ExecutePeriodicEffect(
             ActiveGameplayEffectHandle handle)
         {
-            ActiveGameplayEffects.ExecutePeriodicGameplayEffect(
-                handle);
+            ActiveGameplayEffects.ExecutePeriodicGameplayEffect(handle);
         }
 
         /// <summary>
@@ -2385,8 +2433,7 @@ namespace GAS
             ActiveGameplayEffectHandle handle)
         {
             if (
-                !ActiveGameplayEffects.RemoveActiveGameplayEffect(
-                    handle))
+                !ActiveGameplayEffects.RemoveActiveGameplayEffect(handle))
             {
                 return false;
             }
@@ -2396,11 +2443,9 @@ namespace GAS
                     handle,
                     out GameplayEffect runtimeEffect))
             {
-                m_LegacyActiveEffectsByHandle.Remove(
-                    handle);
+                m_LegacyActiveEffectsByHandle.Remove(handle);
 
-                AppliedGameplayEffects.Remove(
-                    runtimeEffect);
+                AppliedGameplayEffects.Remove(runtimeEffect);
 
                 if (invokeEventsGE)
                 {

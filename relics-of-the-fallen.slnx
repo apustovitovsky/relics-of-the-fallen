@@ -9,6 +9,7 @@
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Mirror.csproj" />
   <Project Path="SimpleWebTransport.csproj" />
+  <Project Path="RelicsOfTheFallen.UI.AbilitySystem.csproj" />
   <Project Path="RelicsOfTheFallen.Targeting.csproj" />
   <Project Path="GAS.csproj" />
   <Project Path="Mirror.Authenticators.csproj" />
@@ -21,6 +22,7 @@
   <Project Path="GAS.Common.csproj" />
   <Project Path="GAS.Mirror.csproj" />
   <Project Path="Telepathy.csproj" />
+  <Project Path="GAS.Common.Tests.csproj" />
   <Project Path="GAS.Tests.csproj" />
   <Project Path="RelicsOfTheFallen.Application.Composition.csproj" />
   <Project Path="GAS.Mirror.Tests.csproj" />

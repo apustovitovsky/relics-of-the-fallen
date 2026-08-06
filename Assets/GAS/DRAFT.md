@@ -1,6 +1,6 @@
 ﻿Итог: Fireball можно реализовать на текущем GAS-пайплайне без очередной полной переделки. Базовые механизмы уже готовы, но перед самой ability нужно закрыть несколько точечных пробелов — главным образом cast state/UI, Lyra activation groups и границу server-side projectile spawn.
 
-Lyra не содержит готового projectile-примера: её ranged weapon сейчас явно работает как hitscan — `bProjectileWeapon = false` в [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:497). Поэтому здесь опираемся на vanilla GAS/tranek для spec/TargetData и на Mirror для projectile actor.
+Lyra не содержит готового projectile-примера: её ranged weapon сейчас явно работает как hitscan — `bProjectileWeapon = false` в [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:497). Поэтому здесь опираемся на vanilla GAS/tranek для spec/TargetData и на Mirror для projectile actor.
 
 ## Правильный pipeline
 
@@ -32,7 +32,7 @@ Projectile
    └─ оба случая      → NetworkServer.Destroy
 ```
 
-Ability после spawn может завершиться. Projectile хранит серверный `GameplayEffectSpec` и больше не зависит от runtime instance ability. Применение GE снарядом напрямую через ASC соответствует GAS-подходу: [tranek README](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:864).
+Ability после spawn может завершиться. Projectile хранит серверный `GameplayEffectSpec` и больше не зависит от runtime instance ability. Применение GE снарядом напрямую через ASC соответствует GAS-подходу: [tranek README](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:864).
 
 ## Что уже готово
 
@@ -62,7 +62,7 @@ Exclusive_Replaceable
 Exclusive_Blocking
 ```
 
-Они определены в [LyraGameplayAbility.h](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.h:50), а ASC добавляет и удаляет ability из группы вместе с activation lifecycle: [LyraAbilitySystemComponent.cpp](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/Source/LyraGame/AbilitySystem/LyraAbilitySystemComponent.cpp:318).
+Они определены в [LyraGameplayAbility.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.h:50), а ASC добавляет и удаляет ability из группы вместе с activation lifecycle: [LyraAbilitySystemComponent.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/LyraAbilitySystemComponent.cpp:318).
 
 Fireball разумно сделать `Exclusive_Replaceable`: другой exclusive action, stun или смерть сможет отменить текущий cast.
 
@@ -96,9 +96,9 @@ GetActiveEffectsTimeRemainingAndDuration
 - `OnActiveGameplayEffectAddedDelegateToSelf`;
 - `GetActiveEffectsTimeRemainingAndDuration`.
 
-Это реальный framework-пробел. Tranek использует именно эти API для duration UI: [добавление эффекта](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:866), [remaining time + duration](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:1517).
+Это реальный framework-пробел. Tranek использует именно эти API для duration UI: [добавление эффекта](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:866), [remaining time + duration](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:1517).
 
-Скрывать bar нужно по tag count, а не по удалению конкретного GE: при reconciliation predicted GE удаляется и заменяется серверным, хотя каст продолжается. Это тот же паттерн, что рекомендован для cooldown: [README.md](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:1554).
+Скрывать bar нужно по tag count, а не по удалению конкретного GE: при reconciliation predicted GE удаляется и заменяется серверным, хотя каст продолжается. Это тот же паттерн, что рекомендован для cooldown: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:1554).
 
 Owner уже получает active effects через [NetworkAbilitySystemComponent.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Mirror/Components/NetworkAbilitySystemComponent.cs:32).
 
@@ -106,7 +106,7 @@ Owner уже получает active effects через [NetworkAbilitySystemCom
 
 ### 3. Projectile spawn остаётся вне core GAS
 
-В оригинале `AbilityTask_SpawnActor` создаёт actor только на сервере. Предиктивный gameplay-projectile GAS автоматически не предоставляет: [README.md](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:2632).
+В оригинале `AbilityTask_SpawnActor` создаёт actor только на сервере. Предиктивный gameplay-projectile GAS автоматически не предоставляет: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:2632).
 
 В Mirror сервер должен:
 
@@ -175,7 +175,7 @@ Team/faction relationship пока отсутствует. Поэтому сей
 - Montage sections не обязательны: можно использовать отдельные `AM_FireballCast` и `AM_FireballRelease`.
 - `WaitNetSync` не нужен, пока после delay только authority создаёт projectile и выполняет gameplay.
 - Predicted projectile пока не нужен. Owner увидит server projectile с сетевой задержкой, но gameplay останется корректным.
-- `GameplayEffectContainer` для одного damage spec избыточен. Это рекомендованный QoL-паттерн, а не vanilla GAS: [README.md](C:/Users/NATALY/Documents/unity/lyra-starter-game-ue5/GASDocumentation-master/README.md:3108).
+- `GameplayEffectContainer` для одного damage spec избыточен. Это рекомендованный QoL-паттерн, а не vanilla GAS: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:3108).
 
 ## Рекомендуемый порядок
 

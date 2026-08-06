@@ -91,6 +91,9 @@ MonoBehaviour:
   - m_AssetName: GE_Damage
     m_Asset: {fileID: 11400000, guid: 45ff02dac42c8fb4bb77dd9ade0c5638, type: 2}
     m_Id: 45ff02dac42c8fb4bb77dd9ade0c5638
+  - m_AssetName: State.Casting
+    m_Asset: {fileID: 11400000, guid: 47a7c4ada14715a4c95b58d80cd5f938, type: 2}
+    m_Id: 47a7c4ada14715a4c95b58d80cd5f938
   - m_AssetName: GameplayCue.ManaFromHealth
     m_Asset: {fileID: 11400000, guid: 4bca9487af39f2e4792c14fc363ba779, type: 2}
     m_Id: 4bca9487af39f2e4792c14fc363ba779
@@ -148,6 +151,9 @@ MonoBehaviour:
   - m_AssetName: Damage.Type
     m_Asset: {fileID: 11400000, guid: 8450655664c46c346a68571eca59bc7e, type: 2}
     m_Id: 8450655664c46c346a68571eca59bc7e
+  - m_AssetName: GE_Casting
+    m_Asset: {fileID: 11400000, guid: 8a79d04cfacfc5946ad9bcd5b978ba01, type: 2}
+    m_Id: 8a79d04cfacfc5946ad9bcd5b978ba01
   - m_AssetName: GE_PoisonOverTime
     m_Asset: {fileID: 11400000, guid: 8c4661ccd6d094a4da55d5eb374944ca, type: 2}
     m_Id: 8c4661ccd6d094a4da55d5eb374944ca
@@ -214,6 +220,9 @@ MonoBehaviour:
   - m_AssetName: Effects
     m_Asset: {fileID: 11400000, guid: c794893ea3695c9409f41ffdfc8b7847, type: 2}
     m_Id: c794893ea3695c9409f41ffdfc8b7847
+  - m_AssetName: Ability.ActivateFail.ActivationGroup
+    m_Asset: {fileID: 11400000, guid: cb5cf2494871dcf479f0d58676879e70, type: 2}
+    m_Id: cb5cf2494871dcf479f0d58676879e70
   - m_AssetName: Toggle.Passive.Aura1
     m_Asset: {fileID: 11400000, guid: d38e9c1a7d85b1d419d871d185f57fdd, type: 2}
     m_Id: d38e9c1a7d85b1d419d871d185f57fdd

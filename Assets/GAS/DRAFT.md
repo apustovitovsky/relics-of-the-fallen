@@ -1,175 +1,128 @@
-﻿Итог: Fireball можно реализовать на текущем GAS-пайплайне без очередной полной переделки. Базовые механизмы уже готовы, но перед самой ability нужно закрыть несколько точечных пробелов — главным образом cast state/UI, Lyra activation groups и границу server-side projectile spawn.
+﻿Да, система Gameplay Cues у нас сейчас фактически не готова. Существующий [GameplayCue.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayCues/GameplayCue.cs:8) — legacy и архитектуре Unreal GAS не соответствует.
 
-Lyra не содержит готового projectile-примера: её ranged weapon сейчас явно работает как hitscan — `bProjectileWeapon = false` в [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:497). Поэтому здесь опираемся на vanilla GAS/tranek для spec/TargetData и на Mirror для projectile actor.
-
-## Правильный pipeline
+В оригинальном GAS impact устроен так:
 
 ```text
-Input tag
-→ CommonAbilitySystemComponent
-→ predicted FireballAbility activation
-→ зафиксировать выбранный TargetActor
-→ отправить ActorArray TargetData серверу
-→ применить владельцу Duration GE_Casting
-→ запустить cast montage и WaitDelay
-
-Authority после окончания cast
-→ повторно проверить target/range/state
-→ CommitAbility
-→ вычислить направление к текущей позиции TargetAnchor
-→ создать projectile
-→ создать GameplayEffectSpec урона
-   Instigator   = caster
-   EffectCauser = projectile
-→ NetworkServer.Spawn
-
-Projectile
-→ запоминает начальное направление один раз
-→ движется без ссылки на выбранную цель
-→ authoritative collision
-   ├─ противник с ASC → применить Instant damage spec
-   ├─ препятствие     → не применять effect
-   └─ оба случая      → NetworkServer.Destroy
+Authoritative projectile detects impact
+→ Source ASC.ExecuteGameplayCue(
+      GameplayCue.Fireball.Impact,
+      GameplayCueParameters)
+→ GameplayCue распространяется наблюдателям
+→ на каждом клиенте GameplayCueManager
+  локально создаёт VFX/SFX
 ```
 
-Ability после spawn может завершиться. Projectile хранит серверный `GameplayEffectSpec` и больше не зависит от runtime instance ability. Применение GE снарядом напрямую через ASC соответствует GAS-подходу: [tranek README](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:864).
+Для однократного impact используется событие `Executed` и аналог `GameplayCueNotify_Burst`/`GameplayCueNotify_Static`. Сам VFX не является сетевым объектом. `Executed` cues передаются ненадёжным multicast — они не должны содержать gameplay-логику. [Epic ASC API](https://dev.epicgames.com/documentation/unreal-engine/API/Plugins/GameplayAbilities/UAbilitySystemComponent?lang=en-US), [Mirror ClientRpc](https://mirror-networking.gitbook.io/docs/manual/guides/communications/remote-actions).
 
-## Что уже готово
+Важное уточнение к [DRAFT.md](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/DRAFT.md:139): полный `HitResult` для первого impact cue не обязателен. Оригинальный `FGameplayCueParameters` отдельно содержит `Location` и `Normal`. `HitResult` понадобится позже для bone, physical material и расширенной информации о попадании.
 
-- Активация по input tag и predicted activation в `GAS.Common`.
-- `CommitAbility`, cost и cooldown.
-- `AbilityTask_WaitDelay`: [AbilityTask_WaitDelay.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbilities/Tasks/AbilityTask_WaitDelay.cs:41).
-- Predicted/replicated montage pipeline.
-- Ручное создание `GameplayAbilityTargetData_ActorArray`, уже используемое channel ability: [ChannelDamageAbility.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/RelicsOfTheFallen/Scripts/Abilities/ChannelDamageAbility.cs:120).
-- Передача ActorArray через Mirror: [AbilitySystemNetworkSerializationExtensions.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Mirror/Serialization/AbilitySystemNetworkSerializationExtensions.cs:277).
-- Создание и применение Instant GameplayEffect.
-- `GameplayEffectContext` уже различает Instigator и EffectCauser.
-- Репликация Duration GE владельцу и расчёт оставшегося времени.
+Что реализуем:
 
-Для начального направления существующего ActorArray достаточно. Новые `SingleTargetHit` или `LocationInfo` передавать от клиента не нужно: клиент выбирает направление, но фактическое попадание определяет серверный projectile.
-
-## Что нужно подготовить
-
-### 1. Activation groups в `GAS.Common`
-
-Текущий `CommonGameplayAbility` содержит только activation policy: [CommonGameplayAbility.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Common/Code/GameplayAbilities/CommonGameplayAbility.cs:7).
-
-В Lyra дополнительно существуют:
+1. В core `GAS`:
 
 ```text
-Independent
-Exclusive_Replaceable
-Exclusive_Blocking
+GameplayCueEvent
+GameplayCueParameters
+GameplayCueNotify
+GameplayCueNotify_Burst
+GameplayCueSet
+GameplayCueManager
+ASC.ExecuteGameplayCue(...)
+ASC.InvokeGameplayCueEvent(...)
 ```
 
-Они определены в [LyraGameplayAbility.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.h:50), а ASC добавляет и удаляет ability из группы вместе с activation lifecycle: [LyraAbilitySystemComponent.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/LyraAbilitySystemComponent.cpp:318).
-
-Fireball разумно сделать `Exclusive_Replaceable`: другой exclusive action, stun или смерть сможет отменить текущий cast.
-
-### 2. GAS-совместимый источник данных для cast bar
-
-Cast bar не является встроенным типом GAS. Правильная GAS-модель:
+2. В `GAS.Mirror`:
 
 ```text
-GE_Casting
-├─ Duration
-└─ GrantedTag: State.Casting
+NetworkAbilitySystemObserverComponent
+→ ненадёжный ClientRpc
+→ tag + Location + Normal + необходимые context-поля
 ```
 
-Cast time должен браться из созданного `GameplayEffectSpec.Duration`, чтобы duration GE, `WaitDelay` и UI не хранили три разных числа.
+RPC получат только observers сетевого ASC, что соответствует Mirror и роли observer-компонента.
 
-UI должен наблюдать локальный ASC:
+3. В Fireball:
 
 ```text
-Active GE added
-→ получить Duration
-
-State.Casting NewOrRemoved
-→ показать/скрыть bar
-
-GetActiveEffectsTimeRemainingAndDuration
-→ вычислять progress
+столкновение
+→ применить damage GE, если найден target ASC
+→ source ASC.ExecuteGameplayCue(
+      GameplayCue.Fireball.Impact,
+      parameters)
+→ уничтожить projectile
 ```
 
-Сейчас есть только `GetActiveEffectsTimeRemaining()`: [AbilitySystemComponent.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/AbilitySystemComponent.cs:2361). Отсутствуют GAS-аналоги:
+Так impact проиграется и при попадании в персонажа, и при попадании в стену.
 
-- `OnActiveGameplayEffectAddedDelegateToSelf`;
-- `GetActiveEffectsTimeRemainingAndDuration`.
+Старые `GameplayCue`, `CuesLibrary`, `instancedCues` и автоматическую подписку на все abilities/effects будем удалять, а не адаптировать.
 
-Это реальный framework-пробел. Tranek использует именно эти API для duration UI: [добавление эффекта](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:866), [remaining time + duration](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:1517).
+Следующий шаг — добавить два фундаментальных core-типа: `GameplayCueEvent` и `GameplayCueParameters`.
 
-Скрывать bar нужно по tag count, а не по удалению конкретного GE: при reconciliation predicted GE удаляется и заменяется серверным, хотя каст продолжается. Это тот же паттерн, что рекомендован для cooldown: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:1554).
+Да, `CuesLibrary` нужно переписать, но не объединять с `AssetRegistry`.
 
-Owner уже получает active effects через [NetworkAbilitySystemComponent.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Mirror/Components/NetworkAbilitySystemComponent.cs:32).
+Это не чисто Unity-зона:
 
-Если cast bar должны видеть и другие игроки, это отдельное требование: observer-компонент сейчас реплицирует атрибуты и montage, но не active effects: [NetworkAbilitySystemObserverComponent.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Mirror/Components/NetworkAbilitySystemObserverComponent.cs:20).
+- семантика `GameplayTag → GameplayCueNotify` принадлежит GAS;
+- способ хранения и загрузки Unity-ассетов — Unity-адаптация.
 
-### 3. Generic actor spawn относится к core GAS
-
-В оригинале `AbilityTask_SpawnActor` проверяет authority, создаёт deferred actor и завершает его spawn. Поэтому GAS-совместимый generic task должен находиться в core `GAS`.
-
-Unity разделяет обычное создание объекта и его сетевой spawn:
+Правильное разделение:
 
 ```text
-Object.Instantiate
-→ заполнение runtime-данных actor
-→ NetworkServer.Spawn
+AssetRegistry
+→ AssetId ↔ ScriptableObject
+→ стабильная identity для сети и сохранений
 
-### 4. Валидация цели и понятие «противник»
+GameplayCueSet
+→ GameplayTag → GameplayCueNotify
+→ семантическая маршрутизация cues
 
-Текущий targeting проверяет только `IsTargetable` и исключает самого себя: [TargetableFilter.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/RelicsOfTheFallen/Scripts/Targeting/Runtime/TargetableFilter.cs:11), [TargetingSensor.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/RelicsOfTheFallen/Scripts/Targeting/Components/TargetingSensor.cs:71).
-
-Team/faction relationship пока отсутствует. Поэтому сейчас нельзя корректно отличить:
-
-```text
-противник
-союзник
-нейтральный объект
+GameplayCueManager
+→ принимает tag + event + parameters
+→ находит notify через GameplayCueSet
+→ выполняет его локально
 ```
 
-Это не задача GAS core. Нужен проектный relationship/team механизм, который используют и target selection, и projectile collision.
+В Unreal именно `UGameplayCueSet : UDataAsset` хранит `FGameplayCueNotifyData` и ускоренную map `GameplayTag → entry`: [GameplayCueSet.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/GameplayCueSet.h:16). Он также заранее строит fallback дочерних тегов на родительские notify: [GameplayCueSet.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/GameplayCueSet.cpp:397).
 
-Сервер обязан дважды проверить выбранную цель:
+Lyra не заменяет эту модель общим asset registry. Она расширяет `GameplayCueManager` главным образом политикой загрузки и preload: [LyraGameplayCueManager.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/LyraGameplayCueManager.cpp:95).
 
-1. До начала либо сразу после получения TargetData.
-2. Перед spawn после окончания cast.
+Почему текущий [CuesLibrary.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayCues/CuesLibrary.cs:16) лучше удалить после миграции:
 
-Проверяются существование, targetable state, range и при необходимости line of sight.
+- глобальная зависимость через `SingletonScriptableObject`;
+- LINQ и создание нескольких списков при каждом вызове;
+- копирование изменяемых `GameplayCue`;
+- нет `GameplayCueEvent`;
+- нет `GameplayCueParameters`;
+- нет parent-tag fallback;
+- библиотека одновременно хранит definitions и создаёт runtime state;
+- дублирующее поле `name` нужно только для оформления Inspector.
 
-### 5. EffectContext попадания пока неполный
+Что делать с [AssetRegistry.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/AssetRegistry/AssetRegistry.cs:11):
 
-Текущий context не содержит `HitResult`, world origin или TargetData, что уже зафиксировано в [Documentation.md](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Documentation.md:217).
+- оставить единым сгенерированным каталогом сетевых GAS-ассетов;
+- не добавлять в него маршрутизацию cues;
+- не передавать по сети `GameplayCueNotify` или prefab ID;
+- по сети передавать cue tag и `GameplayCueParameters`;
+- на каждом клиенте локальный `GameplayCueSet` разрешает tag в тот же notify.
 
-Для простого разового урона это не блокирует Fireball. Projectile может получить ASC столкнувшегося объекта и применить сохранённый spec.
+То есть `GameplayCueNotify` вообще не обязан иметь `AssetId`. Прямая ссылка из `GameplayCueSet` гарантирует включение notify и его prefab-зависимостей в build.
 
-Но для:
+Для текущего фиксированного контента прямые ссылки из `ScriptableObject` подходят. Unity рекомендует ScriptableObject как общий runtime-контейнер данных; Addressables нужны, когда требуется асинхронная загрузка, удалённый контент или выгрузка больших наборов ассетов. [Unity ScriptableObject](https://docs.unity3d.com/6000.1/Documentation/Manual/class-ScriptableObject.html), [Unity runtime asset management](https://docs.unity3d.com/ja/current/Manual/assets-managing-introduction.html).
 
-- impact GameplayCue в точке столкновения;
-- normal поверхности;
-- hit bone;
-- execution calculation, зависящего от попадания;
+Итоговая рекомендация:
 
-понадобится Unity-аналог `GameplayAbilityTargetData_SingleTargetHit`/`HitResult` и добавление TargetData в EffectContext. Сейчас `GameplayAbilityTargetData.ApplyGameplayEffectSpec()` просто применяет общий spec, не добавляя payload в его context: [GameplayAbilityTargetData.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbilities/Targeting/GameplayAbilityTargetData.cs:14).
+```text
+CuesLibrary
+→ удалить
 
-Это следующий уровень, не обязательный для первого рабочего damage projectile.
+GameplayTagsWithCue
+→ GameplayCueNotifyData
 
-## Что пока не нужно рефакторить
+_CuesLibrary.asset
+→ GameplayCueSet.asset
 
-- `WaitGameplayEvent` и расширенный `GameplayEventData` не нужны, если выпуск fireball определяется `WaitDelay`.
-- Montage sections не обязательны: можно использовать отдельные `AM_FireballCast` и `AM_FireballRelease`.
-- `WaitNetSync` не нужен, пока после delay только authority создаёт projectile и выполняет gameplay.
-- Predicted projectile пока не нужен. Owner увидит server projectile с сетевой задержкой, но gameplay останется корректным.
-- `GameplayEffectContainer` для одного damage spec избыточен. Это рекомендованный QoL-паттерн, а не vanilla GAS: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:3108).
+AssetRegistry
+→ оставить отдельным и общим
+```
 
-## Рекомендуемый порядок
-
-1. Добавить Lyra activation groups в `GAS.Common`.
-2. Добавить GAS-compatible observation API для active GE и `TimeRemaining + Duration`.
-3. Сделать `GE_Casting` и локальный cast-bar presenter.
-4. Реализовать FireballAbility с ActorArray TargetData и authority-only завершением cast.
-5. Добавить игровой projectile spawner и серверный `FireballProjectile`.
-6. Добавить team/relationship validation.
-7. Покрыть сценариями: успешный cast, cancel, obstacle, enemy hit, frozen direction.
-8. Затем расширять HitResult/context, GameplayCues и animation events.
-
-То есть ближайшая цель — не сам projectile, а небольшой точечный этап: **activation groups + корректно наблюдаемый Duration GE для cast bar**. После него ability и projectile можно собирать без временной параллельной архитектуры.
+`GameplayCueSet` будет GAS-аналогом, а его реализация через `ScriptableObject` и прямые Unity-ссылки — Unity-адаптацией.

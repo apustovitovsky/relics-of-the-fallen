@@ -2,9 +2,11 @@
     "name": "RelicsOfTheFallen.Abilities",
     "rootNamespace": "RelicsOfTheFallen.Abilities",
     "references": [
+        "Mirror",
         "GAS",
         "GAS.Common",
-        "RelicsOfTheFallen.Targeting"
+        "RelicsOfTheFallen.Targeting",
+        "RelicsOfTheFallen.Character"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

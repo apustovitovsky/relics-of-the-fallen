@@ -58,6 +58,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2e4e6600bb11b694d9198fd4bc6c5b74, type: 3}
+--- !u!4 &977031960805791228 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5202046047590032539, guid: 2e4e6600bb11b694d9198fd4bc6c5b74, type: 3}
+  m_PrefabInstance: {fileID: 5025590804989374823}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6551491220419734610 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2257973263913786677, guid: 2e4e6600bb11b694d9198fd4bc6c5b74, type: 3}
@@ -125,8 +130,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8398129167985096425, guid: ee650e054ac59804e80ea6101268c15f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6551491220419734610}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7098131655283669980, guid: ee650e054ac59804e80ea6101268c15f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 216964378923764545}
   m_SourcePrefab: {fileID: 100100000, guid: ee650e054ac59804e80ea6101268c15f, type: 3}
+--- !u!1 &2666179999015126778 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7098131655283669980, guid: ee650e054ac59804e80ea6101268c15f, type: 3}
+  m_PrefabInstance: {fileID: 5152555267127196966}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &216964378923764545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2666179999015126778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42d6fa9fa0653464a9c5c3061d373355, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Character::RelicsOfTheFallen.Character.CharacterSockets
+  <ProjectileOrigin>k__BackingField: {fileID: 977031960805791228}
 --- !u!4 &3678781518848068559 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8398129167985096425, guid: ee650e054ac59804e80ea6101268c15f, type: 3}

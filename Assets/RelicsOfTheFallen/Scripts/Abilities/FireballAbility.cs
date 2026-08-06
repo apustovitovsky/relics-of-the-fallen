@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GAS;
 using GAS.Common;
 using RelicsOfTheFallen.Targeting;
+using RelicsOfTheFallen.Character;
 using UnityEngine;
 
 namespace RelicsOfTheFallen.Abilities
@@ -22,6 +23,13 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         [field: SerializeField]
+        private GameplayEffectSO DamageGameplayEffect
+        {
+            get;
+            set;
+        }
+
+        [field: SerializeField]
         private GameplayAbilityMontage CastMontage
         {
             get;
@@ -35,19 +43,20 @@ namespace RelicsOfTheFallen.Abilities
             set;
         }
 
-        [field: SerializeField]
-        private HumanBodyBones ProjectileOriginBone
-        {
-            get;
-            set;
-        } = HumanBodyBones.RightHand;
 
         [field: SerializeField]
-        private Vector3 ProjectileOriginOffset
+        private float ProjectileSpeed
         {
             get;
             set;
-        }
+        } = 12f;
+
+        [field: SerializeField]
+        private float ProjectileLifetime
+        {
+            get;
+            set;
+        } = 5f;
 
         private IDisposable m_TargetDataSetSubscription;
         private IDisposable m_TargetDataCancelledSubscription;
@@ -65,10 +74,11 @@ namespace RelicsOfTheFallen.Abilities
                 (FireballAbility)base.Instantiate(owner);
 
             ability.CastingGameplayEffect = CastingGameplayEffect;
+            ability.DamageGameplayEffect = DamageGameplayEffect;
             ability.CastMontage = CastMontage;
             ability.ProjectilePrefab = ProjectilePrefab;
-            ability.ProjectileOriginBone = ProjectileOriginBone;
-            ability.ProjectileOriginOffset = ProjectileOriginOffset;
+            ability.ProjectileSpeed = ProjectileSpeed;
+            ability.ProjectileLifetime = ProjectileLifetime;
 
             return ability;
         }
@@ -386,7 +396,7 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Commits and completes the cast only on the authoritative ability instance.
+        /// Commits the completed cast and spawns its authoritative projectile.
         /// </summary>
         private void HandleCastDelayFinished()
         {
@@ -403,12 +413,245 @@ namespace RelicsOfTheFallen.Abilities
                     CurrentActorInfo,
                     CurrentActivationInfo);
 
+            bool wasSpawned =
+                wasCommitted &&
+                TrySpawnProjectile();
+
             EndAbility(
                 CurrentSpecHandle,
                 CurrentActorInfo,
                 CurrentActivationInfo,
                 true,
-                !wasCommitted);
+                !wasSpawned);
+        }
+
+        /// <summary>
+        /// Creates and initializes the server-authoritative fireball actor.
+        /// </summary>
+        private bool TrySpawnProjectile()
+        {
+            if (
+                ProjectilePrefab == null ||
+                DamageGameplayEffect == null)
+            {
+                Debug.LogError(
+                    $"{nameof(FireballAbility)} requires projectile and damage assets.");
+
+                return false;
+            }
+
+            if (
+                ProjectileSpeed <= 0f ||
+                ProjectileLifetime <= 0f)
+            {
+                Debug.LogError(
+                    $"{nameof(FireballAbility)} requires positive projectile settings.");
+
+                return false;
+            }
+
+            if (
+                !ProjectilePrefab.TryGetComponent(
+                    out FireballProjectile _))
+            {
+                Debug.LogError(
+                    $"{nameof(FireballAbility)} requires a projectile component on its prefab.");
+
+                return false;
+            }
+
+            if (
+                !TryGetProjectileSpawnPose(
+                    out Pose spawnPose,
+                    out Vector3 direction))
+            {
+                return false;
+            }
+
+            AbilitySystemComponent abilitySystem =
+                CurrentActorInfo.AbilitySystemComponent;
+
+            GameplayEffectContextHandle damageContext =
+                MakeEffectContext(
+                    CurrentSpecHandle,
+                    CurrentActorInfo);
+
+            int abilityLevel =
+                GetAbilityLevel(
+                    CurrentSpecHandle,
+                    CurrentActorInfo);
+
+            GameplayEffectSpec damageSpec =
+                abilitySystem.MakeOutgoingSpec(
+                    DamageGameplayEffect,
+                    abilityLevel,
+                    damageContext);
+
+            GameplayAbilityTargetingLocationInfo spawnLocation =
+                new(
+                    spawnPose);
+
+            GameplayAbilityTargetData_LocationInfo spawnData =
+                new(
+                    spawnLocation,
+                    spawnLocation);
+
+            GameplayAbilityTargetDataHandle spawnTargetData =
+                new(
+                    spawnData);
+
+            AbilityTask_SpawnActor spawnTask =
+                AbilityTask_SpawnActor.SpawnActor(
+                    this,
+                    spawnTargetData,
+                    ProjectilePrefab);
+
+            spawnTask.ReadyForActivation();
+
+            if (
+                !spawnTask.BeginSpawningActor(
+                    out GameObject spawnedActor))
+            {
+                return false;
+            }
+
+            damageContext.AddInstigator(
+                CurrentActorInfo.OwnerActor,
+                spawnedActor);
+
+            FireballProjectile projectile =
+                spawnedActor.GetComponent<FireballProjectile>();
+
+            projectile.Initialize(
+                CurrentActorInfo.AvatarActor,
+                direction,
+                ProjectileSpeed,
+                ProjectileLifetime,
+                damageSpec);
+
+            spawnTask.FinishSpawningActor(
+                spawnedActor);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the animated projectile socket and freezes its direction toward the target.
+        /// </summary>
+        private bool TryGetProjectileSpawnPose(
+            out Pose spawnPose,
+            out Vector3 direction)
+        {
+            spawnPose = Pose.identity;
+            direction = Vector3.zero;
+
+            GameObject targetActor = GetFirstTargetActor();
+
+            if (targetActor == null)
+            {
+                return false;
+            }
+
+            GameObject avatarActor = CurrentActorInfo.AvatarActor;
+
+            if (
+                targetActor.transform.root ==
+                avatarActor.transform.root)
+            {
+                return false;
+            }
+
+            TargetingComponent target =
+                targetActor.GetComponentInChildren<TargetingComponent>(true);
+
+            if (
+                target == null ||
+                !target.IsTargetable ||
+                target.TargetAnchor == null)
+            {
+                return false;
+            }
+
+            CharacterSockets sockets =
+                avatarActor.GetComponentInChildren<CharacterSockets>(true);
+
+            if (
+                sockets == null ||
+                sockets.ProjectileOrigin == null)
+            {
+                Debug.LogError(
+                    $"{nameof(FireballAbility)} requires a projectile origin socket.");
+
+                return false;
+            }
+
+            Vector3 originPosition =
+                sockets.ProjectileOrigin.position;
+
+            direction =
+                target.TargetAnchor.position -
+                originPosition;
+
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            direction.Normalize();
+
+            spawnPose =
+                new Pose(
+                    originPosition,
+                    Quaternion.LookRotation(
+                        direction,
+                        Vector3.up));
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the first live target actor retained by the current activation.
+        /// </summary>
+        private GameObject GetFirstTargetActor()
+        {
+            if (m_TargetData == null)
+            {
+                return null;
+            }
+
+            for (
+                int dataIndex = 0;
+                dataIndex < m_TargetData.Num();
+                dataIndex++)
+            {
+                GameplayAbilityTargetData targetData =
+                    m_TargetData.Get(
+                        dataIndex);
+
+                if (targetData == null)
+                {
+                    continue;
+                }
+
+                IReadOnlyList<GameObject> targetActors =
+                    targetData.GetActors();
+
+                for (
+                    int actorIndex = 0;
+                    actorIndex < targetActors.Count;
+                    actorIndex++)
+                {
+                    GameObject targetActor =
+                        targetActors[actorIndex];
+
+                    if (targetActor != null)
+                    {
+                        return targetActor;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

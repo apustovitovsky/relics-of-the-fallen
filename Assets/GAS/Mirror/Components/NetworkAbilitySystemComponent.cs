@@ -306,11 +306,18 @@ namespace GAS.Mirror
                 m_AssetRegistry.GetAsset<GameplayAbilitySO>(
                     state.AbilityId);
 
-            m_AbilitySystem.GiveAbility(
-                new GameplayAbilitySpec(
+            GameplayAbilitySpec abilitySpec =
+                new(
                     handle,
                     ability,
-                    state.Level));
+                    state.Level);
+
+            ApplyReplicatedDynamicAbilityTags(
+                abilitySpec,
+                state.DynamicAbilityTagIds);
+
+            m_AbilitySystem.GiveAbility(
+                abilitySpec);
         }
 
         /// <summary>
@@ -320,9 +327,48 @@ namespace GAS.Mirror
             GameplayAbilitySpecHandle handle,
             GameplayAbilitySpecReplicationState _)
         {
+            GameplayAbilitySpec abilitySpec =
+                m_AbilitySystem.FindAbilitySpecFromHandle(
+                    handle);
+
+            if (abilitySpec == null)
+            {
+                return;
+            }
+
+            GameplayAbilitySpecReplicationState state =
+                m_AbilitySpecs[handle];
+
             m_AbilitySystem.SetGameplayAbilitySpecLevel(
                 handle,
-                m_AbilitySpecs[handle].Level);
+                state.Level);
+
+            ApplyReplicatedDynamicAbilityTags(
+                abilitySpec,
+                state.DynamicAbilityTagIds);
+        }
+
+        /// <summary>
+        /// Replaces local dynamic ability tags with their replicated authoritative state.
+        /// </summary>
+        private void ApplyReplicatedDynamicAbilityTags(
+            GameplayAbilitySpec abilitySpec,
+            IReadOnlyList<AssetId> dynamicAbilityTagIds)
+        {
+            abilitySpec.DynamicAbilityTags.Reset();
+
+            for (
+                int index = 0;
+                index < dynamicAbilityTagIds.Count;
+                index++)
+            {
+                GameplayTag dynamicAbilityTag =
+                    m_AssetRegistry.GetAsset<GameplayTag>(
+                        dynamicAbilityTagIds[index]);
+
+                abilitySpec.DynamicAbilityTags.AddTag(
+                    dynamicAbilityTag);
+            }
         }
 
         /// <summary>
@@ -354,10 +400,30 @@ namespace GAS.Mirror
                 m_AssetRegistry.GetAssetId(
                     abilitySpec.Ability);
 
+            IReadOnlyList<GameplayTag> dynamicAbilityTags =
+                abilitySpec
+                    .DynamicAbilityTags
+                    .GetGameplayTagArray();
+
+            List<AssetId> dynamicAbilityTagIds =
+                new(
+                    dynamicAbilityTags.Count);
+
+            for (
+                int index = 0;
+                index < dynamicAbilityTags.Count;
+                index++)
+            {
+                dynamicAbilityTagIds.Add(
+                    m_AssetRegistry.GetAssetId(
+                        dynamicAbilityTags[index]));
+            }
+
             m_AbilitySpecs[abilitySpec.Handle] =
                 new GameplayAbilitySpecReplicationState(
                     abilityId,
-                    abilitySpec.Level);
+                    abilitySpec.Level,
+                    dynamicAbilityTagIds);
         }
 
         /// <summary>
@@ -733,80 +799,42 @@ namespace GAS.Mirror
         }
 
         /// <summary>
-        /// Starts a predicted ability activation for the owning client.
-        /// </summary>
-        public void TryActivateAbility(
-            GameplayAbilitySO ability)
-        {
-            InternalTryActivateAbility(
-                ability).Forget();
-        }
-
-        /// <summary>
-        /// Performs local prediction and forwards a successful activation request to the server.
-        /// </summary>
-        private async UniTask InternalTryActivateAbility(
-            GameplayAbilitySO ability)
-        {
-            if (!isOwned)
-            {
-                Debug.LogWarning(
-                    "Only the owning client can request an ability activation.",
-                    this);
-
-                return;
-            }
-
-            GameplayAbilitySpec abilitySpec = m_AbilitySystem.FindAbilitySpecFromClass(
-                ability);
-
-            if (abilitySpec == null)
-            {
-                Debug.LogWarning(
-                    $"Cannot activate ungranted ability '{ability}'.",
-                    this);
-
-                return;
-            }
-
-            PredictionKey predictionKey = m_AbilitySystem.CreateNewPredictionKey();
-
-            GameplayAbilityActivationInfo activationInfo =
-                new(
-                    GameplayAbilityActivationMode.Predicting,
-                    predictionKey);
-
-            m_AbilitySystem.SetGameplayAbilityActivationInfo(
-                abilitySpec.Handle,
-                activationInfo);
-
-            bool wasActivated = await m_AbilitySystem.TryActivateAbility(
-                abilitySpec.Handle);
-
-            if (!wasActivated)
-            {
-                m_AbilitySystem.RejectAbilityActivation(
-                    abilitySpec.Handle,
-                    predictionKey);
-
-                return;
-            }
-
-            CallServerTryActivateAbility(
-                abilitySpec.Handle,
-                predictionKey);
-        }
-
-        /// <summary>
         /// Sends an owning client's predicted ability activation request to the server.
         /// </summary>
-        private void CallServerTryActivateAbility(
-            GameplayAbilitySpecHandle handle,
+        public void CallServerTryActivateAbility(
+            GameplayAbilitySpecHandle abilityToActivate,
+            bool inputPressed,
             PredictionKey predictionKey)
         {
             ServerTryActivateAbility(
-                handle,
+                abilityToActivate,
+                inputPressed,
                 predictionKey);
+        }
+
+        /// <summary>
+        /// Receives one generic event for an authoritative ability activation.
+        /// </summary>
+        [Command]
+        public void ServerSetReplicatedEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            if (
+                !CanAcceptReplicatedAbilityData(
+                    abilityHandle,
+                    abilityOriginalPredictionKey))
+            {
+                return;
+            }
+
+            m_AbilitySystem.InvokeReplicatedEvent(
+                eventType,
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                currentPredictionKey);
         }
 
         /// <summary>
@@ -850,7 +878,7 @@ namespace GAS.Mirror
             PredictionKey currentPredictionKey)
         {
             if (
-                !CanAcceptReplicatedTargetData(
+                !CanAcceptReplicatedAbilityData(
                     abilityHandle,
                     abilityOriginalPredictionKey))
             {
@@ -886,7 +914,7 @@ namespace GAS.Mirror
             PredictionKey currentPredictionKey)
         {
             if (
-                !CanAcceptReplicatedTargetData(
+                !CanAcceptReplicatedAbilityData(
                     abilityHandle,
                     abilityOriginalPredictionKey))
             {
@@ -902,7 +930,7 @@ namespace GAS.Mirror
         /// <summary>
         /// Validates the ability activation addressed by incoming replicated target data.
         /// </summary>
-        private bool CanAcceptReplicatedTargetData(
+        private bool CanAcceptReplicatedAbilityData(
             GameplayAbilitySpecHandle abilityHandle,
             PredictionKey abilityOriginalPredictionKey)
         {
@@ -1064,78 +1092,45 @@ namespace GAS.Mirror
         /// </summary>
         [Command]
         private void ServerTryActivateAbility(
-            GameplayAbilitySpecHandle handle,
+            GameplayAbilitySpecHandle abilityToActivate,
+            bool inputPressed,
             PredictionKey predictionKey)
         {
-            InternalServerTryActivateAbility(
-                handle,
+            HandleServerTryActivateAbility(
+                abilityToActivate,
+                inputPressed,
                 predictionKey).Forget();
         }
 
         /// <summary>
-        /// Validates and executes one owner-predicted ability activation on the server.
+        /// Forwards authoritative activation results to the requesting owning client.
         /// </summary>
-        private async UniTask InternalServerTryActivateAbility(
-            GameplayAbilitySpecHandle handle,
+        private async UniTask HandleServerTryActivateAbility(
+            GameplayAbilitySpecHandle abilityToActivate,
+            bool inputPressed,
             PredictionKey predictionKey)
         {
-            if (!predictionKey.IsValid)
+            bool wasActivated =
+                await m_AbilitySystem.InternalServerTryActivateAbility(
+                    abilityToActivate,
+                    inputPressed,
+                    predictionKey);
+
+            if (!wasActivated)
             {
-                Debug.LogWarning(
-                    $"Cannot activate ability '{handle}': prediction key is invalid.",
-                    this);
-
-                return;
-            }
-
-            GameplayAbilitySpec abilitySpec =
-                m_AbilitySystem.FindAbilitySpecFromHandle(
-                    handle);
-
-            if (abilitySpec == null)
-            {
-                Debug.LogWarning(
-                    $"Cannot activate ability '{handle}': specification was not found.",
-                    this);
-
                 ClientActivateAbilityFailed(
-                    handle,
+                    abilityToActivate,
                     predictionKey);
 
                 return;
             }
 
-            GameplayAbilityActivationInfo activationInfo = new(
-                GameplayAbilityActivationMode.Authority,
+            ClientActivateAbilitySucceed(
+                abilityToActivate,
                 predictionKey);
 
-            m_AbilitySystem.SetGameplayAbilityActivationInfo(
-                handle,
-                activationInfo);
-
-            bool wasActivated = await m_AbilitySystem.TryActivateAbility(
-                handle);
-
-            if (wasActivated)
-            {
-                ClientActivateAbilitySucceed(
-                    handle,
-                    predictionKey);
-
-                ReplicatePredictionKey(
-                    predictionKey);
-
-                return;
-            }
-
-            ClientActivateAbilityFailed(
-                handle,
+            ReplicatePredictionKey(
                 predictionKey);
-
-            m_AbilitySystem.SetGameplayAbilityActivationInfo(
-                handle,
-                new GameplayAbilityActivationInfo(
-                    GameplayAbilityActivationMode.Authority));
         }
 
         /// <summary>

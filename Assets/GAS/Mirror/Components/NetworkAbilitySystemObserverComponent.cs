@@ -216,14 +216,23 @@ namespace GAS.Mirror
                 return;
             }
 
+            GameplayAttributeReplicationState currentReplicationState =
+                operation ==
+                SyncDictionary<
+                    AssetId,
+                    GameplayAttributeReplicationState>
+                    .Operation.OP_SET
+                    ? m_Attributes[attributeId]
+                    : replicationState;
+
             AttributeName attributeName =
                 m_AssetRegistry.GetAsset<AttributeName>(
                     attributeId);
 
             float replicatedValue =
                 isOwned
-                    ? replicationState.BaseValue
-                    : replicationState.CurrentValue;
+                    ? currentReplicationState.BaseValue
+                    : currentReplicationState.CurrentValue;
 
             m_AbilitySystem.SetBaseAttributeValueFromReplication(
                 attributeName,

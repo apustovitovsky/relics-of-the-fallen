@@ -3,6 +3,23 @@ namespace GAS
     public interface IAbilitySystemReplicationTransport
     {
         /// <summary>
+        /// Sends a predicted gameplay ability activation request to authoritative execution.
+        /// </summary>
+        void CallServerTryActivateAbility(
+            GameplayAbilitySpecHandle abilityToActivate,
+            bool inputPressed,
+            PredictionKey predictionKey);
+
+        /// <summary>
+        /// Sends a generic replicated ability event to authoritative execution.
+        /// </summary>
+        void ServerSetReplicatedEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey);
+
+        /// <summary>
         /// Sends confirmed target data to authoritative ability execution.
         /// </summary>
         void CallServerSetReplicatedTargetData(

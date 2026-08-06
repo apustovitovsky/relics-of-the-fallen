@@ -1,7 +1,7 @@
 using GAS;
+using GAS.Common;
 using RelicsOfTheFallen.Character;
 using UnityEngine;
-using GAS.Mirror;
 
 namespace RelicsOfTheFallen.Player
 {
@@ -10,20 +10,13 @@ namespace RelicsOfTheFallen.Player
         MonoBehaviour
     {
         [SerializeField]
-        private NetworkAbilitySystemComponent m_NetworkAbilitySystem;
-
-        [SerializeField]
         private LocalCharacterInput m_CharacterInput;
 
         [SerializeField]
-        private AbilitySystemComponent m_AbilitySystem;
+        private CommonAbilitySystemComponent m_AbilitySystem;
 
         [SerializeField]
-        private GameplayAbilitySO m_AttackAbility;
-
-        [Header("Debug")]
-        [SerializeField]
-        private bool m_LogDebugEvents = true;
+        private GameplayTag m_AttackInputTag;
 
         private void OnEnable()
         {
@@ -36,8 +29,15 @@ namespace RelicsOfTheFallen.Player
             m_CharacterInput.AttackPerformed +=
                 HandleAttackPerformed;
 
-            m_AbilitySystem.OnGameplayEvent +=
-                HandleGameplayEvent;
+            m_CharacterInput.AttackReleased +=
+                HandleAttackReleased;
+        }
+
+        private void Update()
+        {
+            m_AbilitySystem.ProcessAbilityInput(
+                Time.deltaTime,
+                false);
         }
 
         private void OnDisable()
@@ -46,49 +46,27 @@ namespace RelicsOfTheFallen.Player
             {
                 m_CharacterInput.AttackPerformed -=
                     HandleAttackPerformed;
+
+                m_CharacterInput.AttackReleased -=
+                    HandleAttackReleased;
             }
 
             if (m_AbilitySystem != null)
             {
-                m_AbilitySystem.OnGameplayEvent -=
-                    HandleGameplayEvent;
+                m_AbilitySystem.ClearAbilityInput();
             }
+        }
+
+        private void HandleAttackReleased()
+        {
+            m_AbilitySystem.AbilityInputTagReleased(
+                m_AttackInputTag);
         }
 
         private void HandleAttackPerformed()
         {
-            string abilityName =
-                m_AttackAbility.ga.name;
-
-            if (m_LogDebugEvents)
-            {
-                Debug.Log(
-                    $"[AbilityTest] Attack input requested " +
-                    $"'{abilityName}' at {Time.time:F3}.",
-                    this);
-            }
-
-            m_NetworkAbilitySystem.TryActivateAbility(
-                m_AttackAbility);
-        }
-
-        private void HandleGameplayEvent(
-         GameplayEventData gameplayEvent)
-        {
-            if (!m_LogDebugEvents)
-            {
-                return;
-            }
-
-            string tagName =
-                gameplayEvent.Tag != null
-                    ? gameplayEvent.Tag.name
-                    : "<null>";
-
-            Debug.Log(
-                $"[AbilityTest] Gameplay event " +
-                $"'{tagName}' at {Time.time:F3}.",
-                this);
+            m_AbilitySystem.AbilityInputTagPressed(
+                m_AttackInputTag);
         }
 
         private bool ValidateReferences()
@@ -109,29 +87,17 @@ namespace RelicsOfTheFallen.Player
                 Debug.LogError(
                     $"{nameof(LocalAbilityInput)} on " +
                     $"'{name}' requires " +
-                    $"{nameof(AbilitySystemComponent)}.",
+                    $"{nameof(CommonAbilitySystemComponent)}.",
                     this);
 
                 return false;
             }
 
-            if (m_NetworkAbilitySystem == null)
+            if (m_AttackInputTag == null)
             {
                 Debug.LogError(
                     $"{nameof(LocalAbilityInput)} on " +
-                    $"'{name}' requires " +
-                    $"{nameof(NetworkAbilitySystemComponent)}.",
-                    this);
-
-                return false;
-            }
-
-            if (m_AttackAbility == null ||
-                m_AttackAbility.ga == null)
-            {
-                Debug.LogError(
-                    $"{nameof(LocalAbilityInput)} on " +
-                    $"'{name}' requires an attack ability.",
+                    $"'{name}' requires an attack input tag.",
                     this);
 
                 return false;

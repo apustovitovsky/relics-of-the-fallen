@@ -4,7 +4,7 @@ using Cysharp.Threading.Tasks;
 
 namespace GAS
 {
-    public sealed class AbilityTaskPlayMontageAndWait : AbilityTask
+    public sealed class AbilityTask_PlayMontageAndWait : AbilityTask
     {
         private readonly GameplayAbilityMontage m_MontageToPlay;
         private readonly float m_Rate;
@@ -12,24 +12,32 @@ namespace GAS
         private readonly bool m_StopWhenAbilityEnds;
         private readonly float m_StartTimeSeconds;
 
+        private readonly DisposableEvent m_BlendedInDelegate =
+            new();
+
+        private readonly DisposableEvent m_BlendOutDelegate =
+            new();
+
+        private readonly DisposableEvent m_CompletedDelegate =
+            new();
+
+        private readonly DisposableEvent m_InterruptedDelegate =
+            new();
+
+        private readonly DisposableEvent m_CancelledDelegate =
+            new();
+
+        private readonly DisposableGroup m_Subscriptions =
+            new();
+
         private CancellationTokenSource m_MonitorCancellationSource;
-
-        public event Action OnBlendedIn;
-
-        public event Action OnBlendOut;
-
-        public event Action OnCompleted;
-
-        public event Action OnInterrupted;
-
-        public event Action OnCancelled;
 
         public string TaskInstanceName
         {
             get;
         }
 
-        private AbilityTaskPlayMontageAndWait(
+        private AbilityTask_PlayMontageAndWait(
             GameplayAbility owningAbility,
             string taskInstanceName,
             GameplayAbilityMontage montageToPlay,
@@ -71,7 +79,7 @@ namespace GAS
         /// <summary>
         /// Creates a task that plays an ability montage and waits for its termination.
         /// </summary>
-        public static AbilityTaskPlayMontageAndWait
+        public static AbilityTask_PlayMontageAndWait
             CreatePlayMontageAndWaitProxy(
                 GameplayAbility owningAbility,
                 string taskInstanceName,
@@ -81,7 +89,7 @@ namespace GAS
                 bool stopWhenAbilityEnds = true,
                 float startTimeSeconds = 0f)
         {
-            return new AbilityTaskPlayMontageAndWait(
+            return new AbilityTask_PlayMontageAndWait(
                 owningAbility,
                 taskInstanceName,
                 montageToPlay,
@@ -89,6 +97,61 @@ namespace GAS
                 startSectionName,
                 stopWhenAbilityEnds,
                 startTimeSeconds);
+        }
+
+        /// <summary>
+        /// Registers a callback invoked after montage playback starts successfully.
+        /// </summary>
+        public IDisposable RegisterBlendedInDelegate(
+            Action handler)
+        {
+            return RegisterDelegate(
+                m_BlendedInDelegate,
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a callback invoked when the montage begins blending out normally.
+        /// </summary>
+        public IDisposable RegisterBlendOutDelegate(
+            Action handler)
+        {
+            return RegisterDelegate(
+                m_BlendOutDelegate,
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a callback invoked when the montage reaches its natural end.
+        /// </summary>
+        public IDisposable RegisterCompletedDelegate(
+            Action handler)
+        {
+            return RegisterDelegate(
+                m_CompletedDelegate,
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a callback invoked when another montage replaces this playback.
+        /// </summary>
+        public IDisposable RegisterInterruptedDelegate(
+            Action handler)
+        {
+            return RegisterDelegate(
+                m_InterruptedDelegate,
+                handler);
+        }
+
+        /// <summary>
+        /// Registers a callback invoked when montage playback is cancelled.
+        /// </summary>
+        public IDisposable RegisterCancelledDelegate(
+            Action handler)
+        {
+            return RegisterDelegate(
+                m_CancelledDelegate,
+                handler);
         }
 
         /// <summary>
@@ -122,7 +185,7 @@ namespace GAS
                 CancellationTokenSource.CreateLinkedTokenSource(
                     AbilitySystemComponent.GetCancellationTokenOnDestroy());
 
-            OnBlendedIn?.Invoke();
+            m_BlendedInDelegate.Invoke();
 
             MonitorMontageAsync(
                 m_MonitorCancellationSource.Token).Forget();
@@ -149,13 +212,22 @@ namespace GAS
         protected override void OnDestroy(
             bool abilityEnded)
         {
-            if (abilityEnded &&
+            if (
+                abilityEnded &&
                 m_StopWhenAbilityEnds)
             {
                 StopPlayingMontage();
             }
 
             CancelMonitoring();
+
+            m_Subscriptions.Dispose();
+
+            m_BlendedInDelegate.Clear();
+            m_BlendOutDelegate.Clear();
+            m_CompletedDelegate.Clear();
+            m_InterruptedDelegate.Clear();
+            m_CancelledDelegate.Clear();
 
             base.OnDestroy(
                 abilityEnded);
@@ -243,24 +315,38 @@ namespace GAS
             AbilitySystemComponent.ClearAnimatingAbility(
                 Ability);
 
-            EndTask();
+            m_BlendOutDelegate.Invoke();
+            m_CompletedDelegate.Invoke();
 
-            OnBlendOut?.Invoke();
-            OnCompleted?.Invoke();
+            EndTask();
         }
 
         private void FinishInterrupted()
         {
-            EndTask();
+            m_InterruptedDelegate.Invoke();
 
-            OnInterrupted?.Invoke();
+            EndTask();
         }
 
         private void FinishCancelled()
         {
-            EndTask();
+            m_CancelledDelegate.Invoke();
 
-            OnCancelled?.Invoke();
+            EndTask();
+        }
+
+        private IDisposable RegisterDelegate(
+            DisposableEvent callbackEvent,
+            Action handler)
+        {
+            IDisposable subscription =
+                callbackEvent.Subscribe(
+                    handler);
+
+            m_Subscriptions.Add(
+                subscription);
+
+            return subscription;
         }
 
         private void CancelMonitoring()

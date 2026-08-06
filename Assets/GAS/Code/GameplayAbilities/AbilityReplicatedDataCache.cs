@@ -4,12 +4,38 @@ namespace GAS
 {
     public sealed class AbilityReplicatedDataCache
     {
+        private const int k_GenericEventCount =
+            (int)GameplayAbilityGenericReplicatedEvent.Max;
+
         private readonly DisposableEvent<
             GameplayAbilityTargetDataHandle,
             GameplayTag> m_TargetSetDelegate = new();
 
         private readonly DisposableEvent
             m_TargetCancelledDelegate = new();
+
+        private readonly DisposableEvent[]
+            m_GenericEventDelegates =
+                new DisposableEvent[k_GenericEventCount];
+
+        private readonly bool[]
+            m_GenericEventsTriggered =
+                new bool[k_GenericEventCount];
+
+        /// <summary>
+        /// Creates an empty activation cache with one delegate slot per generic replicated event.
+        /// </summary>
+        public AbilityReplicatedDataCache()
+        {
+            for (
+                int index = 0;
+                index < m_GenericEventDelegates.Length;
+                index++)
+            {
+                m_GenericEventDelegates[index] =
+                    new DisposableEvent();
+            }
+        }
 
         public GameplayAbilityTargetDataHandle TargetData
         {
@@ -52,6 +78,93 @@ namespace GAS
         }
 
         /// <summary>
+        /// Registers a callback for one generic replicated ability event.
+        /// </summary>
+        internal IDisposable RegisterGenericEventDelegate(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            Action handler)
+        {
+            int eventIndex =
+                GetGenericEventIndex(
+                    eventType);
+
+            return m_GenericEventDelegates[eventIndex].Subscribe(
+                handler);
+        }
+
+        /// <summary>
+        /// Stores one generic replicated ability event and notifies current listeners.
+        /// </summary>
+        internal void SetGenericEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            PredictionKey predictionKey)
+        {
+            int eventIndex =
+                GetGenericEventIndex(
+                    eventType);
+
+            m_GenericEventsTriggered[eventIndex] = true;
+            PredictionKey = predictionKey;
+
+            m_GenericEventDelegates[eventIndex].Invoke();
+        }
+
+        /// <summary>
+        /// Invokes a generic event delegate when the event arrived before registration.
+        /// </summary>
+        internal bool CallGenericEventDelegateIfSet(
+            GameplayAbilityGenericReplicatedEvent eventType)
+        {
+            int eventIndex =
+                GetGenericEventIndex(
+                    eventType);
+
+            if (!m_GenericEventsTriggered[eventIndex])
+            {
+                return false;
+            }
+
+            m_GenericEventDelegates[eventIndex].Invoke();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Consumes one cached generic replicated ability event while preserving its delegate.
+        /// </summary>
+        internal void ConsumeGenericEvent(
+            GameplayAbilityGenericReplicatedEvent eventType)
+        {
+            int eventIndex =
+                GetGenericEventIndex(
+                    eventType);
+
+            m_GenericEventsTriggered[eventIndex] = false;
+        }
+
+        /// <summary>
+        /// Returns the validated cache index for one generic replicated ability event.
+        /// </summary>
+        private static int GetGenericEventIndex(
+            GameplayAbilityGenericReplicatedEvent eventType)
+        {
+            int eventIndex =
+                (int)eventType;
+
+            if (
+                eventIndex < 0 ||
+                eventIndex >= k_GenericEventCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(eventType),
+                    eventType,
+                    "Generic replicated event type is outside the supported range.");
+            }
+
+            return eventIndex;
+        }
+
+        /// <summary>
         /// Registers a callback invoked when replicated targeting is cancelled.
         /// </summary>
         internal IDisposable RegisterTargetCancelledDelegate(
@@ -69,15 +182,11 @@ namespace GAS
             GameplayTag applicationTag,
             PredictionKey predictionKey)
         {
-            if (targetData == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(targetData));
-            }
-
             Reset();
 
-            TargetData = targetData;
+            TargetData = targetData ?? throw new ArgumentNullException(
+                    nameof(targetData));
+
             ApplicationTag = applicationTag;
             PredictionKey = predictionKey;
             TargetConfirmed = true;
@@ -137,6 +246,11 @@ namespace GAS
             TargetConfirmed = false;
             TargetCancelled = false;
             PredictionKey = default;
+
+            Array.Clear(
+                m_GenericEventsTriggered,
+                0,
+                m_GenericEventsTriggered.Length);
         }
 
         /// <summary>
@@ -148,6 +262,14 @@ namespace GAS
 
             m_TargetSetDelegate.Clear();
             m_TargetCancelledDelegate.Clear();
+
+            for (
+                int index = 0;
+                index < m_GenericEventDelegates.Length;
+                index++)
+            {
+                m_GenericEventDelegates[index].Clear();
+            }
         }
     }
 }

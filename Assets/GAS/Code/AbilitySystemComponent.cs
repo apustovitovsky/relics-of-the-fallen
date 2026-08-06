@@ -901,6 +901,85 @@ namespace GAS
                 ability);
         }
 
+
+        /// <summary>
+        /// Updates input state and invokes InputPressed for an already active ability specification.
+        /// </summary>
+        public void AbilitySpecInputPressed(
+            GameplayAbilitySpecHandle handle)
+        {
+            GameplayAbilitySpec abilitySpec =
+                FindAbilitySpecFromHandle(
+                    handle);
+
+            if (abilitySpec == null)
+            {
+                return;
+            }
+
+            abilitySpec.InputPressed = true;
+
+            GameplayAbility gameplayAbility =
+                abilitySpec.PrimaryInstance;
+
+            if (
+                gameplayAbility == null ||
+                !gameplayAbility.IsActive)
+            {
+                return;
+            }
+
+            PredictionKey activationPredictionKey =
+                abilitySpec
+                    .ActivationInfo
+                    .GetActivationPredictionKey();
+
+            InvokeReplicatedEvent(
+                GameplayAbilityGenericReplicatedEvent.InputPressed,
+                handle,
+                activationPredictionKey,
+                activationPredictionKey);
+        }
+
+        /// <summary>
+        /// Updates input state and invokes InputReleased for an already active ability specification.
+        /// </summary>
+        public void AbilitySpecInputReleased(
+            GameplayAbilitySpecHandle handle)
+        {
+            GameplayAbilitySpec abilitySpec =
+                FindAbilitySpecFromHandle(
+                    handle);
+
+            if (abilitySpec == null)
+            {
+                return;
+            }
+
+            abilitySpec.InputPressed = false;
+
+            GameplayAbility gameplayAbility =
+                abilitySpec.PrimaryInstance;
+
+            if (
+                gameplayAbility == null ||
+                !gameplayAbility.IsActive)
+            {
+                return;
+            }
+
+            PredictionKey activationPredictionKey =
+                abilitySpec
+                    .ActivationInfo
+                    .GetActivationPredictionKey();
+
+            InvokeReplicatedEvent(
+                GameplayAbilityGenericReplicatedEvent.InputReleased,
+                handle,
+                activationPredictionKey,
+                activationPredictionKey);
+        }
+
         /// <summary>
         /// Updates an ability specification level and marks it for replicated synchronization.
         /// </summary>
@@ -997,6 +1076,122 @@ namespace GAS
 
             return cache.RegisterTargetCancelledDelegate(
                 handler);
+        }
+
+        /// <summary>
+        /// Registers a callback for one generic replicated event belonging to an ability activation.
+        /// </summary>
+        public IDisposable AbilityReplicatedEventDelegate(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            Action handler)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            return cache.RegisterGenericEventDelegate(
+                eventType,
+                handler);
+        }
+
+        /// <summary>
+        /// Stores and invokes one generic replicated event for an ability activation.
+        /// </summary>
+        public bool InvokeReplicatedEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.FindOrAdd(
+                    key);
+
+            cache.SetGenericEvent(
+                eventType,
+                currentPredictionKey);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Invokes a generic event delegate when the event arrived before its listener was registered.
+        /// </summary>
+        public bool CallReplicatedEventDelegateIfSet(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.Find(
+                    key);
+
+            return
+                cache != null &&
+                cache.CallGenericEventDelegateIfSet(
+                    eventType);
+        }
+
+        /// <summary>
+        /// Consumes one cached generic replicated event while preserving its registered delegate.
+        /// </summary>
+        public void ConsumeGenericReplicatedEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey)
+        {
+            GameplayAbilitySpecHandleAndPredictionKey key =
+                new(
+                    abilityHandle,
+                    abilityOriginalPredictionKey);
+
+            AbilityReplicatedDataCache cache =
+                m_AbilityTargetDataMap.Find(
+                    key);
+
+            if (cache == null)
+            {
+                return;
+            }
+
+            cache.ConsumeGenericEvent(
+                eventType);
+        }
+
+        /// <summary>
+        /// Sends one generic ability event through the configured replication transport.
+        /// </summary>
+        public void ServerSetReplicatedEvent(
+            GameplayAbilityGenericReplicatedEvent eventType,
+            GameplayAbilitySpecHandle abilityHandle,
+            PredictionKey abilityOriginalPredictionKey,
+            PredictionKey currentPredictionKey)
+        {
+            IAbilitySystemReplicationTransport replicationTransport =
+                GetReplicationTransport();
+
+            replicationTransport.ServerSetReplicatedEvent(
+                eventType,
+                abilityHandle,
+                abilityOriginalPredictionKey,
+                currentPredictionKey);
         }
 
         /// <summary>
@@ -1927,13 +2122,120 @@ namespace GAS
         }
 
         /// <summary>
+        /// Processes a predicted client activation request through the authoritative ability system.
+        /// </summary>
+        public async UniTask<bool> InternalServerTryActivateAbility(
+            GameplayAbilitySpecHandle abilityToActivate,
+            bool inputPressed,
+            PredictionKey predictionKey)
+        {
+            if (!IsOwnerActorAuthoritative())
+            {
+                Debug.LogWarning(
+                    "Only an authoritative ability system component " +
+                    "can process a server activation request.",
+                    this);
+
+                return false;
+            }
+
+            if (!predictionKey.IsValid)
+            {
+                Debug.LogWarning(
+                    $"Cannot activate ability '{abilityToActivate}': " +
+                    "prediction key is invalid.",
+                    this);
+
+                return false;
+            }
+
+            GameplayAbilitySpec abilitySpec =
+                FindAbilitySpecFromHandle(
+                    abilityToActivate);
+
+            if (abilitySpec == null)
+            {
+                Debug.LogWarning(
+                    $"Cannot activate ability '{abilityToActivate}': " +
+                    "specification was not found.",
+                    this);
+
+                return false;
+            }
+
+            abilitySpec.InputPressed =
+                inputPressed;
+
+            GameplayAbilityActivationInfo activationInfo = new(
+                GameplayAbilityActivationMode.Authority,
+                predictionKey);
+
+            SetGameplayAbilityActivationInfo(
+                abilityToActivate,
+                activationInfo);
+
+            bool wasActivated = await TryActivateAbility(
+                abilityToActivate);
+
+            if (wasActivated)
+            {
+                return true;
+            }
+
+            SetGameplayAbilityActivationInfo(
+                abilityToActivate,
+                new GameplayAbilityActivationInfo(
+                    GameplayAbilityActivationMode.Authority));
+
+            return false;
+        }
+
+        /// <summary>
         /// Attempts to activate an ability specification and reports whether activation succeeded.
         /// </summary>
-        public UniTask<bool> TryActivateAbility(
+        public async UniTask<bool> TryActivateAbility(
             GameplayAbilitySpecHandle handle)
         {
-            return InternalTryActivateAbility(
+            if (IsOwnerActorAuthoritative())
+            {
+                return await InternalTryActivateAbility(
+                    handle);
+            }
+
+            if (!AbilityActorInfo.IsLocallyControlled())
+            {
+                Debug.LogWarning(
+                    "Only a locally controlled ability system component " +
+                    "can predict ability activation.",
+                    this);
+
+                return false;
+            }
+
+            PredictionKey predictionKey =
+                CreateNewPredictionKey();
+
+            GameplayAbilityActivationInfo activationInfo = new(
+                GameplayAbilityActivationMode.Predicting,
+                predictionKey);
+
+            SetGameplayAbilityActivationInfo(
+                handle,
+                activationInfo);
+
+            bool wasActivated = await InternalTryActivateAbility(
                 handle);
+
+            if (!wasActivated)
+            {
+                RejectAbilityActivation(
+                    handle,
+                    predictionKey);
+
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1981,6 +2283,19 @@ namespace GAS
                     failureReason);
 
                 return false;
+            }
+
+            if (!IsOwnerActorAuthoritative())
+            {
+                PredictionKey predictionKey =
+                    abilitySpec
+                        .ActivationInfo
+                        .GetActivationPredictionKey();
+
+                GetReplicationTransport().CallServerTryActivateAbility(
+                    handle,
+                    abilitySpec.InputPressed,
+                    predictionKey);
             }
 
             gameplayAbility.CallActivateAbility(

@@ -246,7 +246,14 @@ namespace GAS
             AnimationClip animation = m_MontagePlayable.GetAnimationClip();
             float position = (float)m_MontagePlayable.GetTime();
 
-            return Mathf.Min(
+            if (!animation.isLooping)
+            {
+                return Mathf.Min(
+                    position,
+                    animation.length);
+            }
+
+            return Mathf.Repeat(
                 position,
                 animation.length);
         }
@@ -276,7 +283,9 @@ namespace GAS
 
             AnimationClip animation = m_MontagePlayable.GetAnimationClip();
 
-            return m_MontagePlayable.GetTime() >=
+            return
+                !animation.isLooping &&
+                m_MontagePlayable.GetTime() >=
                 animation.length;
         }
 

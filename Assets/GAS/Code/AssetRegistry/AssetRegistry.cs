@@ -231,7 +231,7 @@ namespace GAS
         /// Rebuilds this registry from supported gameplay assets.
         /// </summary>
         [Button(
-            "REBUILD ASSETS",
+            "Rebuild Assets",
             Expanded = true,
             Spacing = ButtonSpacing.Before)]
         private void Rebuild()

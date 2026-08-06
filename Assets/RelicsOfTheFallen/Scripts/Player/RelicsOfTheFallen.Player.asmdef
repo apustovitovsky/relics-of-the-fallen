@@ -2,9 +2,9 @@
     "name": "RelicsOfTheFallen.Player",
     "rootNamespace": "RelicsOfTheFallen.Player",
     "references": [
-        "Mirror",
+        "UniTask",
         "GAS",
-        "GAS.Mirror",
+        "GAS.Common",
         "RelicsOfTheFallen.Character.Input"
     ],
     "includePlatforms": [],

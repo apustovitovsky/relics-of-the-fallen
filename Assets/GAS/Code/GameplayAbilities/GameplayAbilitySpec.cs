@@ -24,6 +24,16 @@ namespace GAS
             get; internal set;
         }
 
+        public GameplayTagContainer DynamicAbilityTags
+        {
+            get;
+        } = new();
+
+        public bool InputPressed
+        {
+            get; internal set;
+        }
+
         public GameplayAbilityActivationInfo ActivationInfo
         {
             get; internal set;
@@ -32,6 +42,16 @@ namespace GAS
         public GameplayAbility PrimaryInstance
         {
             get; private set;
+        }
+
+        /// <summary>
+        /// Returns whether this gameplay ability specification currently has an active instance.
+        /// </summary>
+        public bool IsActive()
+        {
+            return
+                PrimaryInstance != null &&
+                PrimaryInstance.IsActive;
         }
 
         /// <summary>

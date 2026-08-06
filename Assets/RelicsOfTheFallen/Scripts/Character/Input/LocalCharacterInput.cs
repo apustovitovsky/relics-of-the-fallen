@@ -11,37 +11,39 @@ namespace RelicsOfTheFallen.Character
     {
         [Header("Movement")]
         [SerializeField]
-        InputActionReference m_MoveAction;
+        private InputActionReference m_MoveAction;
 
         [SerializeField]
-        InputActionReference m_LookAction;
+        private InputActionReference m_LookAction;
 
         [SerializeField]
-        InputActionReference m_SprintAction;
+        private InputActionReference m_SprintAction;
 
         [SerializeField]
-        InputActionReference m_AimAction;
+        private InputActionReference m_AimAction;
 
         [SerializeField]
-        InputActionReference m_JumpAction;
+        private InputActionReference m_JumpAction;
 
         [Header("Abilities")]
         [SerializeField]
-        InputActionReference m_AttackAction;
+        private InputActionReference m_AttackAction;
 
         public CharacterInputState Current { get; private set; }
 
         public event Action AttackPerformed;
 
-        void OnEnable()
+        public event Action AttackReleased;
+
+        private void OnEnable()
         {
             if (!TryGetActions(
-                    out var moveAction,
-                    out var lookAction,
-                    out var sprintAction,
-                    out var aimAction,
-                    out var jumpAction,
-                    out var attackAction))
+                    out InputAction moveAction,
+                    out InputAction lookAction,
+                    out InputAction sprintAction,
+                    out InputAction aimAction,
+                    out InputAction jumpAction,
+                    out InputAction attackAction))
             {
                 enabled = false;
                 return;
@@ -49,6 +51,9 @@ namespace RelicsOfTheFallen.Character
 
             attackAction.performed +=
                 OnAttackPerformed;
+
+            attackAction.canceled +=
+                OnAttackCanceled;
 
             moveAction.Enable();
             lookAction.Enable();
@@ -58,14 +63,14 @@ namespace RelicsOfTheFallen.Character
             attackAction.Enable();
         }
 
-        void Update()
+        private void Update()
         {
             if (!TryGetActions(
-                    out var moveAction,
-                    out var lookAction,
-                    out var sprintAction,
-                    out var aimAction,
-                    out var jumpAction,
+                    out InputAction moveAction,
+                    out InputAction lookAction,
+                    out InputAction sprintAction,
+                    out InputAction aimAction,
+                    out InputAction jumpAction,
                     out _))
             {
                 return;
@@ -79,15 +84,15 @@ namespace RelicsOfTheFallen.Character
                 jumpAction.WasPressedThisFrame());
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             if (!TryGetActions(
-                    out var moveAction,
-                    out var lookAction,
-                    out var sprintAction,
-                    out var aimAction,
-                    out var jumpAction,
-                    out var attackAction))
+                    out InputAction moveAction,
+                    out InputAction lookAction,
+                    out InputAction sprintAction,
+                    out InputAction aimAction,
+                    out InputAction jumpAction,
+                    out InputAction attackAction))
             {
                 Current = default;
                 return;
@@ -95,6 +100,9 @@ namespace RelicsOfTheFallen.Character
 
             attackAction.performed -=
                 OnAttackPerformed;
+
+            attackAction.canceled -=
+                OnAttackCanceled;
 
             moveAction.Disable();
             lookAction.Disable();
@@ -106,13 +114,19 @@ namespace RelicsOfTheFallen.Character
             Current = default;
         }
 
-        void OnAttackPerformed(
-            InputAction.CallbackContext context)
+        private void OnAttackPerformed(
+            InputAction.CallbackContext _)
         {
             AttackPerformed?.Invoke();
         }
 
-        bool TryGetActions(
+        private void OnAttackCanceled(
+            InputAction.CallbackContext _)
+        {
+            AttackReleased?.Invoke();
+        }
+
+        private bool TryGetActions(
             out InputAction moveAction,
             out InputAction lookAction,
             out InputAction sprintAction,

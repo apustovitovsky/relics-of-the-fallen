@@ -16,84 +16,282 @@ MonoBehaviour:
   - m_AssetName: HealthPotion
     m_Asset: {fileID: 11400000, guid: 011145e8c47e8f7428de0d344f3994af, type: 2}
     m_Id: 011145e8c47e8f7428de0d344f3994af
+  - m_AssetName: Ability.Id
+    m_Asset: {fileID: 11400000, guid: 01dfb708840f7ad4e9cd062fe0972527, type: 2}
+    m_Id: 01dfb708840f7ad4e9cd062fe0972527
+  - m_AssetName: Ability.ActivateFail.Cooldown
+    m_Asset: {fileID: 11400000, guid: 05ec9169d60ee4e4ead324e67eba0c71, type: 2}
+    m_Id: 05ec9169d60ee4e4ead324e67eba0c71
+  - m_AssetName: GameplayCue.Ability.Projectile
+    m_Asset: {fileID: 11400000, guid: 07103b58d99d0c04c920be4a40c017b2, type: 2}
+    m_Id: 07103b58d99d0c04c920be4a40c017b2
   - m_AssetName: DamageMax
     m_Asset: {fileID: 11400000, guid: 0c747f4b75f96d541a95f88c0491846b, type: 2}
     m_Id: 0c747f4b75f96d541a95f88c0491846b
+  - m_AssetName: State
+    m_Asset: {fileID: 11400000, guid: 142a42dd4e3484448b9edbebae7e0f5f, type: 2}
+    m_Id: 142a42dd4e3484448b9edbebae7e0f5f
+  - m_AssetName: Damage.Type.Elemental.Ice
+    m_Asset: {fileID: 11400000, guid: 1562095f1517e6c40869c5883e7c0d81, type: 2}
+    m_Id: 1562095f1517e6c40869c5883e7c0d81
+  - m_AssetName: Effects.Buff.Healing
+    m_Asset: {fileID: 11400000, guid: 1575c1542d9f01d4d9c8422b1048d58b, type: 2}
+    m_Id: 1575c1542d9f01d4d9c8422b1048d58b
+  - m_AssetName: Damage.Type.Physical
+    m_Asset: {fileID: 11400000, guid: 1a3baa055948e4946947f6c6b8240331, type: 2}
+    m_Id: 1a3baa055948e4946947f6c6b8240331
+  - m_AssetName: Ability.ActivateFail.Cost
+    m_Asset: {fileID: 11400000, guid: 20821753d07fdb44aa3469fde2f8e29b, type: 2}
+    m_Id: 20821753d07fdb44aa3469fde2f8e29b
+  - m_AssetName: GameplayCue.Ability.PassiveAura1
+    m_Asset: {fileID: 11400000, guid: 209581e998296994393f2d8a40b0b203, type: 2}
+    m_Id: 209581e998296994393f2d8a40b0b203
   - m_AssetName: Health
     m_Asset: {fileID: 11400000, guid: 219553465e23cbb4cb54f849f6a78721, type: 2}
     m_Id: 219553465e23cbb4cb54f849f6a78721
+  - m_AssetName: Ability
+    m_Asset: {fileID: 11400000, guid: 228adff9dbe09a14ea951592c1d41582, type: 2}
+    m_Id: 228adff9dbe09a14ea951592c1d41582
+  - m_AssetName: Effects.Debuff.OnFire
+    m_Asset: {fileID: 11400000, guid: 229e117427cd78545820fa0f58a3b930, type: 2}
+    m_Id: 229e117427cd78545820fa0f58a3b930
   - m_AssetName: GE_ToggleableEffectPeriodic
     m_Asset: {fileID: 11400000, guid: 23907709290e9af4296ce7d7ce7d6820, type: 2}
     m_Id: 23907709290e9af4296ce7d7ce7d6820
+  - m_AssetName: Toggle.Passive
+    m_Asset: {fileID: 11400000, guid: 2755015c6e2167344a3316814ea50468, type: 2}
+    m_Id: 2755015c6e2167344a3316814ea50468
+  - m_AssetName: GameplayCue.Effect.Potion
+    m_Asset: {fileID: 11400000, guid: 29b5c1bd4c30de24eb544b16d7b551e8, type: 2}
+    m_Id: 29b5c1bd4c30de24eb544b16d7b551e8
+  - m_AssetName: GameplayCue
+    m_Asset: {fileID: 11400000, guid: 2ea566f0b9779c0438be0317238af5d6, type: 2}
+    m_Id: 2ea566f0b9779c0438be0317238af5d6
+  - m_AssetName: Effects.Debuff.Poisoned
+    m_Asset: {fileID: 11400000, guid: 3361378700bdba145860041b738e4938, type: 2}
+    m_Id: 3361378700bdba145860041b738e4938
+  - m_AssetName: InputTag
+    m_Asset: {fileID: 11400000, guid: 35650f7343ea6c447ae365d568a4f0b2, type: 2}
+    m_Id: 35650f7343ea6c447ae365d568a4f0b2
+  - m_AssetName: Event.CriticalHit
+    m_Asset: {fileID: 11400000, guid: 3df6d9765423aa14da23985f0bbc048d, type: 2}
+    m_Id: 3df6d9765423aa14da23985f0bbc048d
   - m_AssetName: GE_ToggleableEffect
     m_Asset: {fileID: 11400000, guid: 3fadc8e880590da4da8ad49872e7b236, type: 2}
     m_Id: 3fadc8e880590da4da8ad49872e7b236
   - m_AssetName: GE_FireDamageInstant
     m_Asset: {fileID: 11400000, guid: 4035cb6fcf62cf64a946c2601ac7f971, type: 2}
     m_Id: 4035cb6fcf62cf64a946c2601ac7f971
+  - m_AssetName: Ability.Cooldown.Jump
+    m_Asset: {fileID: 11400000, guid: 438238076a686744497295ee167ac4fe, type: 2}
+    m_Id: 438238076a686744497295ee167ac4fe
+  - m_AssetName: State.Movement
+    m_Asset: {fileID: 11400000, guid: 4522577da3f23e348a001ad0f2bcc568, type: 2}
+    m_Id: 4522577da3f23e348a001ad0f2bcc568
   - m_AssetName: GE_Damage
     m_Asset: {fileID: 11400000, guid: 45ff02dac42c8fb4bb77dd9ade0c5638, type: 2}
     m_Id: 45ff02dac42c8fb4bb77dd9ade0c5638
+  - m_AssetName: GameplayCue.ManaFromHealth
+    m_Asset: {fileID: 11400000, guid: 4bca9487af39f2e4792c14fc363ba779, type: 2}
+    m_Id: 4bca9487af39f2e4792c14fc363ba779
+  - m_AssetName: Ability.Cooldown.Global
+    m_Asset: {fileID: 11400000, guid: 4d99c9d2ac2518d4ab7e62f4a382ee12, type: 2}
+    m_Id: 4d99c9d2ac2518d4ab7e62f4a382ee12
   - m_AssetName: GE_Dash
     m_Asset: {fileID: 11400000, guid: 4ebd3f3b21c04f347aa372e27a58eeea, type: 2}
     m_Id: 4ebd3f3b21c04f347aa372e27a58eeea
+  - m_AssetName: State.Movement.Rolling
+    m_Asset: {fileID: 11400000, guid: 5167857f3b018114ab4e0ffe0d4d7f1b, type: 2}
+    m_Id: 5167857f3b018114ab4e0ffe0d4d7f1b
+  - m_AssetName: Ability.Cooldown.ItemMove
+    m_Asset: {fileID: 11400000, guid: 56dcaf77447a98b45995ae097d361f3b, type: 2}
+    m_Id: 56dcaf77447a98b45995ae097d361f3b
   - m_AssetName: AttackSpeed
     m_Asset: {fileID: 11400000, guid: 57e96ed5b9f9a274f8d538315ed47d4d, type: 2}
     m_Id: 57e96ed5b9f9a274f8d538315ed47d4d
+  - m_AssetName: InputTag.Ability.Primary
+    m_Asset: {fileID: 11400000, guid: 5a56128a261dbd043ad717355fa657e4, type: 2}
+    m_Id: 5a56128a261dbd043ad717355fa657e4
+  - m_AssetName: State.Movement.Sprinting
+    m_Asset: {fileID: 11400000, guid: 5a7c69c3b00eeba47b9cc11afbfcf5b9, type: 2}
+    m_Id: 5a7c69c3b00eeba47b9cc11afbfcf5b9
   - m_AssetName: GE_HealthRegenOverTime
     m_Asset: {fileID: 11400000, guid: 5ba8b7277b1505548b2ef437e586815b, type: 2}
     m_Id: 5ba8b7277b1505548b2ef437e586815b
+  - m_AssetName: GameplayCue.Ability.Damage
+    m_Asset: {fileID: 11400000, guid: 5e220e41bd2c92144b9c6091eec36099, type: 2}
+    m_Id: 5e220e41bd2c92144b9c6091eec36099
   - m_AssetName: GE_AntiPoison
     m_Asset: {fileID: 11400000, guid: 5e42a5bb83a606b44a4515d22f30c34c, type: 2}
     m_Id: 5e42a5bb83a606b44a4515d22f30c34c
   - m_AssetName: GE_AttackSpeed
     m_Asset: {fileID: 11400000, guid: 61fbc3a80a018a44bba765e246c3b2ea, type: 2}
     m_Id: 61fbc3a80a018a44bba765e246c3b2ea
+  - m_AssetName: GameplayCue.Ability.Potion
+    m_Asset: {fileID: 11400000, guid: 675becab89e7e594686b2ed51ce5da83, type: 2}
+    m_Id: 675becab89e7e594686b2ed51ce5da83
+  - m_AssetName: Event.Ability.Attack.End
+    m_Asset: {fileID: 11400000, guid: 67f06a42d096e80449bd6f884cbae1f0, type: 2}
+    m_Id: 67f06a42d096e80449bd6f884cbae1f0
+  - m_AssetName: Event.Ability.Attack.Impact
+    m_Asset: {fileID: 11400000, guid: 6edbe15574bc5a34fb573bda245bdbdc, type: 2}
+    m_Id: 6edbe15574bc5a34fb573bda245bdbdc
   - m_AssetName: Armor
     m_Asset: {fileID: 11400000, guid: 737280e4bb6d45b4ebc4ce8fea66fc4d, type: 2}
     m_Id: 737280e4bb6d45b4ebc4ce8fea66fc4d
   - m_AssetName: CriticalChance
     m_Asset: {fileID: 11400000, guid: 7a6848c218694424ca46f59ba4f3c4b2, type: 2}
     m_Id: 7a6848c218694424ca46f59ba4f3c4b2
+  - m_AssetName: GameplayCue.Ability.AntiPoison
+    m_Asset: {fileID: 11400000, guid: 80ccf2a06d22deb4093850fcfd580706, type: 2}
+    m_Id: 80ccf2a06d22deb4093850fcfd580706
+  - m_AssetName: Damage.Type
+    m_Asset: {fileID: 11400000, guid: 8450655664c46c346a68571eca59bc7e, type: 2}
+    m_Id: 8450655664c46c346a68571eca59bc7e
   - m_AssetName: GE_PoisonOverTime
     m_Asset: {fileID: 11400000, guid: 8c4661ccd6d094a4da55d5eb374944ca, type: 2}
     m_Id: 8c4661ccd6d094a4da55d5eb374944ca
+  - m_AssetName: GA_ChannelDamage
+    m_Asset: {fileID: 11400000, guid: 8fff4e230e721fe4d82b8de67e528c2b, type: 2}
+    m_Id: 8fff4e230e721fe4d82b8de67e528c2b
   - m_AssetName: ManaMax
     m_Asset: {fileID: 11400000, guid: 96060d461d34e5f4b9a20e1fb4800ab7, type: 2}
     m_Id: 96060d461d34e5f4b9a20e1fb4800ab7
   - m_AssetName: Mana
     m_Asset: {fileID: 11400000, guid: 96b68b16e05724e458a1c105f31002b1, type: 2}
     m_Id: 96b68b16e05724e458a1c105f31002b1
+  - m_AssetName: Effects.Buff
+    m_Asset: {fileID: 11400000, guid: 9e999f1f4a50abd4384606012cc801b2, type: 2}
+    m_Id: 9e999f1f4a50abd4384606012cc801b2
+  - m_AssetName: Ability.Movement
+    m_Asset: {fileID: 11400000, guid: a04bd24eda83df641a0481af1e87a2c2, type: 2}
+    m_Id: a04bd24eda83df641a0481af1e87a2c2
   - m_AssetName: GE_HealthRegenInstant
     m_Asset: {fileID: 11400000, guid: a1094ad3158dd7f46a1ed7eef5aed84c, type: 2}
     m_Id: a1094ad3158dd7f46a1ed7eef5aed84c
+  - m_AssetName: Damage.Type.Elemental.Poison
+    m_Asset: {fileID: 11400000, guid: a15652e935dbe00479ef4513ed4b710b, type: 2}
+    m_Id: a15652e935dbe00479ef4513ed4b710b
+  - m_AssetName: GameplayCue.Ability.ManaFromHealth
+    m_Asset: {fileID: 11400000, guid: a328de7ff7d83b34cadb345fee928eba, type: 2}
+    m_Id: a328de7ff7d83b34cadb345fee928eba
   - m_AssetName: GE_ManaRegenConstant
     m_Asset: {fileID: 11400000, guid: aaeabaaccd0d69046a58ad1299837aef, type: 2}
     m_Id: aaeabaaccd0d69046a58ad1299837aef
+  - m_AssetName: InputTag.Ability
+    m_Asset: {fileID: 11400000, guid: ae03055a9837f134e91cc5271685a5ab, type: 2}
+    m_Id: ae03055a9837f134e91cc5271685a5ab
+  - m_AssetName: Ability.Id.Damage
+    m_Asset: {fileID: 11400000, guid: b26425ee3543a694ea845fca0888277f, type: 2}
+    m_Id: b26425ee3543a694ea845fca0888277f
+  - m_AssetName: State.Movement.Airborn
+    m_Asset: {fileID: 11400000, guid: b4652202ae85a0a4fa918a801b1794c6, type: 2}
+    m_Id: b4652202ae85a0a4fa918a801b1794c6
+  - m_AssetName: Effects.Debuff.Frozen
+    m_Asset: {fileID: 11400000, guid: b679770ae87bf874793960f1eb258075, type: 2}
+    m_Id: b679770ae87bf874793960f1eb258075
   - m_AssetName: MovementSpeed
     m_Asset: {fileID: 11400000, guid: ba6d348032e5a69429761b72a5ccd6d9, type: 2}
     m_Id: ba6d348032e5a69429761b72a5ccd6d9
   - m_AssetName: CriticalBonus
     m_Asset: {fileID: 11400000, guid: bb0ffdaa2233d9447931e73574e56bb8, type: 2}
     m_Id: bb0ffdaa2233d9447931e73574e56bb8
+  - m_AssetName: Damage.Type.Physical.Bleed
+    m_Asset: {fileID: 11400000, guid: bc5f4915097fb3141a7ba79b62f4d19c, type: 2}
+    m_Id: bc5f4915097fb3141a7ba79b62f4d19c
+  - m_AssetName: GameplayCue.Ability.Melee
+    m_Asset: {fileID: 11400000, guid: bf531ee4da5d7014ea6f0a831cd87d49, type: 2}
+    m_Id: bf531ee4da5d7014ea6f0a831cd87d49
+  - m_AssetName: GameplayCue.Ability.Poison
+    m_Asset: {fileID: 11400000, guid: c0f28c4fd9ddbc74994c18afcb1567ac, type: 2}
+    m_Id: c0f28c4fd9ddbc74994c18afcb1567ac
+  - m_AssetName: Toggle
+    m_Asset: {fileID: 11400000, guid: c3849ad941238124fb49169d64ba4457, type: 2}
+    m_Id: c3849ad941238124fb49169d64ba4457
+  - m_AssetName: Ability.Dash
+    m_Asset: {fileID: 11400000, guid: c63151882e1be4e4bb89c7603cb8df64, type: 2}
+    m_Id: c63151882e1be4e4bb89c7603cb8df64
+  - m_AssetName: Effects
+    m_Asset: {fileID: 11400000, guid: c794893ea3695c9409f41ffdfc8b7847, type: 2}
+    m_Id: c794893ea3695c9409f41ffdfc8b7847
+  - m_AssetName: Toggle.Passive.Aura1
+    m_Asset: {fileID: 11400000, guid: d38e9c1a7d85b1d419d871d185f57fdd, type: 2}
+    m_Id: d38e9c1a7d85b1d419d871d185f57fdd
+  - m_AssetName: Damage.Type.Elemental
+    m_Asset: {fileID: 11400000, guid: d4e2ec7da9c69b24d84127b8cc9253c7, type: 2}
+    m_Id: d4e2ec7da9c69b24d84127b8cc9253c7
+  - m_AssetName: Effects.Debuff.Stun
+    m_Asset: {fileID: 11400000, guid: d57103cf6aa5e374aa2c3e15c7d14f56, type: 2}
+    m_Id: d57103cf6aa5e374aa2c3e15c7d14f56
   - m_AssetName: GE_Jump
     m_Asset: {fileID: 11400000, guid: dcd0fe51202642c4c994661ceb446307, type: 2}
     m_Id: dcd0fe51202642c4c994661ceb446307
+  - m_AssetName: Ability.Cost
+    m_Asset: {fileID: 11400000, guid: dcdfa83b1dae82b49824b38d49b75f31, type: 2}
+    m_Id: dcdfa83b1dae82b49824b38d49b75f31
+  - m_AssetName: AM_ChannelDamage
+    m_Asset: {fileID: 11400000, guid: e01b40f7f1a26ce418568a095056fdad, type: 2}
+    m_Id: e01b40f7f1a26ce418568a095056fdad
   - m_AssetName: GE_IceDamageInstant
     m_Asset: {fileID: 11400000, guid: e01eba94e20bec34ab2008ff57b72cc0, type: 2}
     m_Id: e01eba94e20bec34ab2008ff57b72cc0
   - m_AssetName: DamageMin
     m_Asset: {fileID: 11400000, guid: e320e2c7967b85545aa841a8115052d4, type: 2}
     m_Id: e320e2c7967b85545aa841a8115052d4
+  - m_AssetName: State.Movement.Blocking
+    m_Asset: {fileID: 11400000, guid: e3d748c36ab220548a3f2d2d831a882c, type: 2}
+    m_Id: e3d748c36ab220548a3f2d2d831a882c
+  - m_AssetName: Damage
+    m_Asset: {fileID: 11400000, guid: e565d6899352b464490c74b8faf8fcaa, type: 2}
+    m_Id: e565d6899352b464490c74b8faf8fcaa
+  - m_AssetName: Ability.Cooldown
+    m_Asset: {fileID: 11400000, guid: ea8e701d2dc5b29449768b16916808a9, type: 2}
+    m_Id: ea8e701d2dc5b29449768b16916808a9
+  - m_AssetName: GameplayCue.Effect.Dash
+    m_Asset: {fileID: 11400000, guid: eb60a90d6e7d50e49aaadfd059ff591b, type: 2}
+    m_Id: eb60a90d6e7d50e49aaadfd059ff591b
+  - m_AssetName: GameplayCue.Ability.Dash
+    m_Asset: {fileID: 11400000, guid: ed0061e6cb729d548b6ca03c9d61b311, type: 2}
+    m_Id: ed0061e6cb729d548b6ca03c9d61b311
   - m_AssetName: GE_IceMovementSlow
     m_Asset: {fileID: 11400000, guid: ef01d1a3b98f59e4daf9d2517efe7902, type: 2}
     m_Id: ef01d1a3b98f59e4daf9d2517efe7902
+  - m_AssetName: Event.FatalHit
+    m_Asset: {fileID: 11400000, guid: ef62709c02489a144bb061b729c0f2bb, type: 2}
+    m_Id: ef62709c02489a144bb061b729c0f2bb
   - m_AssetName: HealthMax
     m_Asset: {fileID: 11400000, guid: efcc22832d947f64385413f8b7981968, type: 2}
     m_Id: efcc22832d947f64385413f8b7981968
+  - m_AssetName: State.Movement.Jumping
+    m_Asset: {fileID: 11400000, guid: f01fd40d1a76d4047a5b5deaeb71a9c5, type: 2}
+    m_Id: f01fd40d1a76d4047a5b5deaeb71a9c5
   - m_AssetName: GE_DebugDamage10
     m_Asset: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
     m_Id: f15d001c76931ee4cb39b6bb47eb244f
+  - m_AssetName: Ability.Cooldown.Dash
+    m_Asset: {fileID: 11400000, guid: f49742d0fa6ec004398d784577367792, type: 2}
+    m_Id: f49742d0fa6ec004398d784577367792
+  - m_AssetName: Ability.Cooldown.Potion
+    m_Asset: {fileID: 11400000, guid: f546e221c7d4a9046aebfd0e8ee47339, type: 2}
+    m_Id: f546e221c7d4a9046aebfd0e8ee47339
   - m_AssetName: GE_FireDamageOvertime
     m_Asset: {fileID: 11400000, guid: f5d7bdb68c75a1348bb1c9ee9da242bb, type: 2}
     m_Id: f5d7bdb68c75a1348bb1c9ee9da242bb
+  - m_AssetName: Event
+    m_Asset: {fileID: 11400000, guid: f6a57924e5ba8c1449227e96ad2861a5, type: 2}
+    m_Id: f6a57924e5ba8c1449227e96ad2861a5
+  - m_AssetName: Damage.Type.Elemental.Fire
+    m_Asset: {fileID: 11400000, guid: f77bad024ddf5484292ce77371421c4f, type: 2}
+    m_Id: f77bad024ddf5484292ce77371421c4f
+  - m_AssetName: State.Movement.Dashing
+    m_Asset: {fileID: 11400000, guid: fcf9ea83d55988844b0119b3630f102c, type: 2}
+    m_Id: fcf9ea83d55988844b0119b3630f102c
+  - m_AssetName: Effects.Debuff
+    m_Asset: {fileID: 11400000, guid: fd76bbf4921d20942baaa39dd15bc1b6, type: 2}
+    m_Id: fd76bbf4921d20942baaa39dd15bc1b6
+  - m_AssetName: Damage.Type.Physical.Energy
+    m_Asset: {fileID: 11400000, guid: fe957b714cdfccc4f86861617bda81f4, type: 2}
+    m_Id: fe957b714cdfccc4f86861617bda81f4
+  - m_AssetName: Ability.ActivateFail
+    m_Asset: {fileID: 11400000, guid: ffaade3c833bd4b4292480322e941dc5, type: 2}
+    m_Id: ffaade3c833bd4b4292480322e941dc5

@@ -18,6 +18,7 @@
   <Project Path="RelicsOfTheFallen.Networking.Character.csproj" />
   <Project Path="RelicsOfTheFallen.Networking.csproj" />
   <Project Path="RelicsOfTheFallen.Character.csproj" />
+  <Project Path="GAS.Common.csproj" />
   <Project Path="GAS.Mirror.csproj" />
   <Project Path="Telepathy.csproj" />
   <Project Path="GAS.Tests.csproj" />
@@ -26,10 +27,11 @@
   <Project Path="RelicsOfTheFallen.Networking.UI.csproj" />
   <Project Path="Mirror.CompilerSymbols.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
+  <Project Path="RelicsOfTheFallen.Player.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="RelicsOfTheFallen.Abilities.csproj" />
   <Project Path="EasyButtons.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Input.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Movement.csproj" />
-  <Project Path="RelicsOfTheFallen.Player.csproj" />
   <Project Path="RelicsOfTheFallen.UI.Debug.csproj" />
 </Solution>

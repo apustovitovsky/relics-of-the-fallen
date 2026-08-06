@@ -1,0 +1,17 @@
+{
+    "name": "GAS.Common",
+    "rootNamespace": "GAS.Common",
+    "references": [
+        "UniTask",
+        "GAS"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

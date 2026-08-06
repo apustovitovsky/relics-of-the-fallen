@@ -41,25 +41,40 @@ NetworkAbilitySystemObserverComponent
 
 `GameplayAbilitySpec` относится к owner-only состоянию и реплицируется через `NetworkAbilitySystemComponent`. Публичные атрибуты, gameplay tags и Gameplay Cues относятся к observer-состоянию. Stateful-контейнеры используют Mirror `SyncDictionary`, чтобы автоматически получать начальное состояние и последующие дельты.
 
-Зависимость направлена только из networking-слоя в GAS. `AbilitySystemComponent` не проверяет Mirror authority, не хранит `netId` или `NetworkConnection` и не требует наличия сетевых адаптеров.
+Core GAS не зависит от Mirror: `AbilitySystemComponent` не хранит `netId` или
+`NetworkConnection` и не требует сетевых компонентов. Для исходящих сетевых
+операций ASC использует необязательный `IAbilitySystemReplicationTransport`,
+который реализует Mirror-адаптер. Роль локальной копии передаётся в
+`GameplayAbilityActorInfo`; без адаптера ASC работает как authoritative offline
+экземпляр.
 
 ### Сетевая активация Gameplay Ability
 
-Offline-код вызывает `AbilitySystemComponent.TryActivateAbility()` напрямую. Сетевой input вызывает `NetworkAbilitySystemComponent.TryActivateAbility()`, который явно управляет локальной prediction и запросом к authoritative server:
+Offline-, AI- и player-код используют одну gameplay-точку входа —
+`AbilitySystemComponent.TryActivateAbility()`. На locally controlled client ASC
+сам создаёт prediction key, выполняет локальную activation и после успеха
+передаёт готовый запрос transport-слою:
 
 ```text
-NetworkAbilitySystemComponent.TryActivateAbility
-→ создать PredictionKey
-→ установить activation mode Predicting
-→ дождаться локального AbilitySystemComponent.TryActivateAbility
-→ при успехе вызвать CallServerTryActivateAbility
-→ ServerTryActivateAbility
-→ InternalServerTryActivateAbility
-→ дождаться authoritative AbilitySystemComponent.TryActivateAbility
+Input
+→ AbilitySystemComponent.AbilitySpecInputPressed
+→ AbilitySystemComponent.TryActivateAbility
+→ создать PredictionKey и установить activation mode Predicting
+→ выполнить локальную predicted activation
+→ IAbilitySystemReplicationTransport.CallServerTryActivateAbility
+→ NetworkAbilitySystemComponent.ServerTryActivateAbility
+→ AbilitySystemComponent.InternalServerTryActivateAbility
+→ выполнить authoritative activation
 → ClientActivateAbilitySucceed или ClientActivateAbilityFailed
 ```
 
 Локально отклонённая activation не отправляется серверу. Её `PredictionKey` немедленно получает reject, что запускает откат связанных predicted effects и modifiers. Серверный результат передаётся owning client явным Target RPC. Активация идентифицируется только через `GameplayAbilitySpecHandle`, `GameplayAbilityActivationInfo` и `PredictionKey`; отдельная строковая identity не используется.
+
+`GameplayAbilitySpec.InputPressed` хранит owner-only состояние ввода конкретного
+выданного spec и не входит в его обычную репликацию. Клиентский ASC устанавливает
+значение, а Mirror передаёт его отдельным параметром activation RPC вместе с
+handle и prediction key. Серверный ASC устанавливает значение в собственной
+копии spec. Observer-клиенты это состояние не получают.
 
 Завершение с `replicateEndAbility: true` проходит по GAS-совместимой цепочке:
 

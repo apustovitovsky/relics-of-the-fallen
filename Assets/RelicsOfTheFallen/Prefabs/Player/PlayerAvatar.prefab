@@ -157,7 +157,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 1
   syncInterval: 0
-  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_AbilitySystem: {fileID: 1571765440681721248}
   m_AssetRegistry: {fileID: 11400000, guid: 5335b334a17c51f4db303c559b5f5702, type: 2}
 --- !u!114 &7063721524464621741
 MonoBehaviour:
@@ -175,7 +175,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   m_AssetRegistry: {fileID: 11400000, guid: 5335b334a17c51f4db303c559b5f5702, type: 2}
-  m_AbilitySystem: {fileID: 5720873888179496438}
+  m_AbilitySystem: {fileID: 1571765440681721248}
 --- !u!114 &6383863091348150553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -488,7 +488,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4878354982249804906}
-  - component: {fileID: 5720873888179496438}
+  - component: {fileID: 1571765440681721248}
   m_Layer: 0
   m_Name: AbilitySystem
   m_TagString: Untagged
@@ -511,7 +511,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1567290126784018872}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5720873888179496438
+--- !u!114 &1571765440681721248
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -520,9 +520,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 5661350738243022778}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f2d066833d971344aa3d8e806fa6294, type: 3}
+  m_Script: {fileID: 11500000, guid: 856b018739cdc0744b10ecaaca2db6d3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GAS::GAS.AbilitySystemComponent
+  m_EditorClassIdentifier: GAS.Common::GAS.Common.CommonAbilitySystemComponent
   InitialData: {fileID: 11400000, guid: 640a4be2651d9b742b07ef85c7c178a0, type: 2}
   attributes: []
   attributesProcessors: []
@@ -531,10 +531,11 @@ MonoBehaviour:
   tags: []
   level: 1
   instancedCues: []
-  logging: 0
+  logging: 1
   invokeEventsGA: 1
   invokeEventsGE: 1
   inputBuffering: 1
+  <AbilityInputBlockedTag>k__BackingField: {fileID: 0}
   references:
     version: 2
     RefIds: []
@@ -755,6 +756,7 @@ GameObject:
   - component: {fileID: 8923663413595500935}
   - component: {fileID: 6058243792797642424}
   - component: {fileID: 8671460832249107127}
+  - component: {fileID: 1504125889571166793}
   m_Layer: 0
   m_Name: Input
   m_TagString: Untagged
@@ -802,16 +804,29 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9084941172884424109}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5223fa763af736f4b86b58ee95caadfb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RelicsOfTheFallen.Player::RelicsOfTheFallen.Player.LocalAbilityInput
-  m_NetworkAbilitySystem: {fileID: 0}
   m_CharacterInput: {fileID: 6058243792797642424}
-  m_AbilitySystem: {fileID: 5720873888179496438}
-  m_AttackAbility: {fileID: 0}
-  m_LogDebugEvents: 1
+  m_AbilitySystem: {fileID: 1571765440681721248}
+  m_AttackInputTag: {fileID: 11400000, guid: 5a56128a261dbd043ad717355fa657e4, type: 2}
+--- !u!114 &1504125889571166793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9084941172884424109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f24bf82fcbadbb64baf9e8339a9e790b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RelicsOfTheFallen.Player::RelicsOfTheFallen.Player.PlayerAbilitySetInitializer
+  <AbilitySystem>k__BackingField: {fileID: 1571765440681721248}
+  <InitialAbilitySets>k__BackingField:
+  - {fileID: 11400000, guid: 40fc21f2f9ab6ee42a08dde8b65d8343, type: 2}
 --- !u!1001 &342296723559635928
 PrefabInstance:
   m_ObjectHideFlags: 0

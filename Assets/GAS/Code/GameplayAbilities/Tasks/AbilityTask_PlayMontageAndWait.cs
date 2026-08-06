@@ -294,12 +294,26 @@ namespace GAS
             }
         }
 
+        /// <summary>
+        /// Stops the montage playable while this task still owns its raw animation state.
+        /// </summary>
         private bool StopPlayingMontage()
         {
-            if (AbilitySystemComponent == null ||
+            if (
+                AbilitySystemComponent == null ||
                 AbilitySystemComponent.GetAnimatingAbility() !=
-                    Ability ||
-                AbilitySystemComponent.GetCurrentMontage() !=
+                    Ability)
+            {
+                return false;
+            }
+
+            GameplayAbilityActorInfo actorInfo =
+                AbilitySystemComponent.AbilityActorInfo;
+
+            if (
+                actorInfo == null ||
+                actorInfo.AnimInstance == null ||
+                actorInfo.AnimInstance.CurrentMontage !=
                     m_MontageToPlay)
             {
                 return false;
@@ -310,10 +324,12 @@ namespace GAS
             return true;
         }
 
+        /// <summary>
+        /// Restores base animation and broadcasts natural montage completion.
+        /// </summary>
         private void FinishCompleted()
         {
-            AbilitySystemComponent.ClearAnimatingAbility(
-                Ability);
+            AbilitySystemComponent.CurrentMontageStop();
 
             m_BlendOutDelegate.Invoke();
             m_CompletedDelegate.Invoke();

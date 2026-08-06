@@ -104,32 +104,16 @@ Owner уже получает active effects через [NetworkAbilitySystemCom
 
 Если cast bar должны видеть и другие игроки, это отдельное требование: observer-компонент сейчас реплицирует атрибуты и montage, но не active effects: [NetworkAbilitySystemObserverComponent.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Mirror/Components/NetworkAbilitySystemObserverComponent.cs:20).
 
-### 3. Projectile spawn остаётся вне core GAS
+### 3. Generic actor spawn относится к core GAS
 
-В оригинале `AbilityTask_SpawnActor` создаёт actor только на сервере. Предиктивный gameplay-projectile GAS автоматически не предоставляет: [README.md](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/README.md:2632).
+В оригинале `AbilityTask_SpawnActor` проверяет authority, создаёт deferred actor и завершает его spawn. Поэтому GAS-совместимый generic task должен находиться в core `GAS`.
 
-В Mirror сервер должен:
-
-- создать prefab с `NetworkIdentity`;
-- вызвать `NetworkServer.Spawn`;
-- после столкновения вызвать `NetworkServer.Destroy`;
-- зарегистрировать prefab в spawnable prefabs.
-
-Это подтверждается актуальной [документацией Mirror по NetworkIdentity](https://mirror-networking.gitbook.io/docs/manual/components/network-identity).
-
-Но помещать `NetworkServer.Spawn` в `GAS` или `GAS.Common` нельзя. Projectile является игровой сущностью. Рекомендуемая граница:
+Unity разделяет обычное создание объекта и его сетевой spawn:
 
 ```text
-RelicsOfTheFallen.Abilities
-└─ FireballAbility
-   └─ обращается к game-specific projectile spawner
-
-RelicsOfTheFallen.Networking
-├─ NetworkFireballProjectileSpawner
-└─ FireballProjectile : NetworkBehaviour
-```
-
-Generic `IProjectileSpawner` в core GAS не нужен. Если понадобится offline acceptance-тест, небольшой game-level spawner contract можно добавить между этими двумя игровыми assembly.
+Object.Instantiate
+→ заполнение runtime-данных actor
+→ NetworkServer.Spawn
 
 ### 4. Валидация цели и понятие «противник»
 

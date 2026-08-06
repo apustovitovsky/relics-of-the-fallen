@@ -47,6 +47,51 @@ namespace GAS
         }
 
         /// <summary>
+        /// Returns whether the actor array contains at least one valid endpoint.
+        /// </summary>
+        public override bool HasEndPoint()
+        {
+            for (
+                int index = 0;
+                index < m_TargetActorArray.Count;
+                index++)
+            {
+                if (m_TargetActorArray[index] != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the position of the first valid targeted actor.
+        /// </summary>
+        public override Pose GetEndPointTransform()
+        {
+            for (
+                int index = 0;
+                index < m_TargetActorArray.Count;
+                index++)
+            {
+                GameObject targetActor =
+                    m_TargetActorArray[index];
+
+                if (targetActor == null)
+                {
+                    continue;
+                }
+
+                return new Pose(
+                    targetActor.transform.position,
+                    Quaternion.identity);
+            }
+
+            return Pose.identity;
+        }
+
+        /// <summary>
         /// Returns the gameplay actors represented by this targeting payload.
         /// </summary>
         public override IReadOnlyList<GameObject> GetActors()

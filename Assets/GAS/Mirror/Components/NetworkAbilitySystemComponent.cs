@@ -7,12 +7,13 @@ using UnityEngine;
 namespace GAS.Mirror
 {
     /// <summary>
-    /// Replicates private ability-system state exclusively to the owning client.
+    /// Adapts owner replication and authoritative actor spawning to Mirror.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class NetworkAbilitySystemComponent :
         NetworkBehaviour,
-        IAbilitySystemReplicationTransport
+        IAbilitySystemReplicationTransport,
+        IAbilitySystemActorSpawner
     {
         [SerializeField]
         private AbilitySystemComponent m_AbilitySystem;
@@ -41,7 +42,7 @@ namespace GAS.Mirror
             PredictionKey> m_ReplicatedPredictionKeyMap = new();
 
         /// <summary>
-        /// Initializes ability actor information and installs the Mirror target-data transport.
+        /// Initializes ability actor information and installs the Mirror runtime services.
         /// </summary>
         private void Awake()
         {
@@ -51,6 +52,60 @@ namespace GAS.Mirror
 
             m_AbilitySystem.ReplicationTransport =
                 this;
+
+            m_AbilitySystem.SetActorSpawner(
+                this);
+        }
+
+        /// <summary>
+        /// Instantiates a network actor before its authoritative spawn is finalized.
+        /// </summary>
+        GameObject IAbilitySystemActorSpawner.InstantiateActor(
+            GameObject actorPrefab)
+        {
+            if (actorPrefab == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(actorPrefab));
+            }
+
+            if (!NetworkServer.active)
+            {
+                throw new InvalidOperationException(
+                    "Network actors can only be instantiated by an active Mirror server.");
+            }
+
+            if (!actorPrefab.TryGetComponent(
+                    out NetworkIdentity _))
+            {
+                throw new InvalidOperationException(
+                    "A network actor prefab must have a root NetworkIdentity.");
+            }
+
+            return Instantiate(
+                actorPrefab);
+        }
+
+        /// <summary>
+        /// Completes an authoritative actor spawn through the Mirror server.
+        /// </summary>
+        void IAbilitySystemActorSpawner.FinishSpawningActor(
+            GameObject spawnedActor)
+        {
+            if (spawnedActor == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(spawnedActor));
+            }
+
+            if (!NetworkServer.active)
+            {
+                throw new InvalidOperationException(
+                    "Network actors can only be spawned by an active Mirror server.");
+            }
+
+            NetworkServer.Spawn(
+                spawnedActor);
         }
 
         /// <summary>

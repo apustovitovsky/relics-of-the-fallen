@@ -39,6 +39,23 @@ namespace GAS
             set;
         }
 
+        internal IAbilitySystemActorSpawner ActorSpawner
+        {
+            get;
+            private set;
+        } = UnityAbilitySystemActorSpawner.Instance;
+
+        /// <summary>
+        /// Installs the platform actor spawner used by authority-only ability tasks.
+        /// </summary>
+        public void SetActorSpawner(
+            IAbilitySystemActorSpawner actorSpawner)
+        {
+            ActorSpawner = actorSpawner ??
+                throw new ArgumentNullException(
+                    nameof(actorSpawner));
+        }
+
         private readonly Dictionary<
             ActiveGameplayEffectHandle,
             GameplayEffect> m_LegacyActiveEffectsByHandle = new();

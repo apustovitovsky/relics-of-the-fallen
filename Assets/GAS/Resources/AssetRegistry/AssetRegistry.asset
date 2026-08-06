@@ -40,6 +40,9 @@ MonoBehaviour:
   - m_AssetName: Damage.Type.Physical
     m_Asset: {fileID: 11400000, guid: 1a3baa055948e4946947f6c6b8240331, type: 2}
     m_Id: 1a3baa055948e4946947f6c6b8240331
+  - m_AssetName: GA_Fireball
+    m_Asset: {fileID: 11400000, guid: 1cafc611ed77a4d4f88f615659bf943c, type: 2}
+    m_Id: 1cafc611ed77a4d4f88f615659bf943c
   - m_AssetName: Ability.ActivateFail.Cost
     m_Asset: {fileID: 11400000, guid: 20821753d07fdb44aa3469fde2f8e29b, type: 2}
     m_Id: 20821753d07fdb44aa3469fde2f8e29b
@@ -73,6 +76,9 @@ MonoBehaviour:
   - m_AssetName: InputTag
     m_Asset: {fileID: 11400000, guid: 35650f7343ea6c447ae365d568a4f0b2, type: 2}
     m_Id: 35650f7343ea6c447ae365d568a4f0b2
+  - m_AssetName: AM_FireballCast
+    m_Asset: {fileID: 11400000, guid: 37218a0488d099b4882543ea09cb2076, type: 2}
+    m_Id: 37218a0488d099b4882543ea09cb2076
   - m_AssetName: Event.CriticalHit
     m_Asset: {fileID: 11400000, guid: 3df6d9765423aa14da23985f0bbc048d, type: 2}
     m_Id: 3df6d9765423aa14da23985f0bbc048d

@@ -9,6 +9,38 @@ namespace GAS
         public abstract IReadOnlyList<GameObject> GetActors();
 
         /// <summary>
+        /// Returns whether this targeting payload provides a usable origin.
+        /// </summary>
+        public virtual bool HasOrigin()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the origin transform represented by this targeting payload.
+        /// </summary>
+        public virtual Pose GetOrigin()
+        {
+            return Pose.identity;
+        }
+
+        /// <summary>
+        /// Returns whether this targeting payload provides a usable endpoint.
+        /// </summary>
+        public virtual bool HasEndPoint()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the endpoint transform represented by this targeting payload.
+        /// </summary>
+        public virtual Pose GetEndPointTransform()
+        {
+            return Pose.identity;
+        }
+
+        /// <summary>
         /// Applies a prepared gameplay effect specification to every represented target.
         /// </summary>
         public virtual IReadOnlyList<ActiveGameplayEffectHandle>

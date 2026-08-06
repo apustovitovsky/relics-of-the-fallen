@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63a63878496a55c48b8acc6670d08054, type: 3}
+  m_Name: GA_Fireball
+  m_EditorClassIdentifier: RelicsOfTheFallen.Abilities::RelicsOfTheFallen.Abilities.FireballAbilitySO
+  ga:
+    rid: 6914737510856523980
+  references:
+    version: 2
+    RefIds:
+    - rid: 6914737510856523980
+      type: {class: FireballAbility, ns: RelicsOfTheFallen.Abilities, asm: RelicsOfTheFallen.Abilities}
+      data:
+        name: Fireball
+        m_CooldownGameplayEffect: {fileID: 0}
+        m_CostGameplayEffect: {fileID: 0}
+        effectsSO: []
+        effects: []
+        abilityTags:
+          rid: 6914737510856523981
+        source: {fileID: 0}
+        owner: {fileID: 0}
+        cuesTags: []
+        Guid: 
+        ClassName: 
+        Level: 1
+        IsActive: 0
+        <ActivationPolicy>k__BackingField: 0
+        <ActivationGroup>k__BackingField: 1
+        <CastingGameplayEffect>k__BackingField: {fileID: 11400000, guid: 8a79d04cfacfc5946ad9bcd5b978ba01, type: 2}
+        <CastMontage>k__BackingField: {fileID: 11400000, guid: 37218a0488d099b4882543ea09cb2076, type: 2}
+    - rid: 6914737510856523981
+      type: {class: AbilityTags, ns: GAS, asm: GAS}
+      data:
+        ActivationOwnedTags: []
+        DescriptionTags: []
+        CancelAbilitiesWithTags: []
+        BlockAbilitiesWithTags: []
+        SourceTagsRequired: []
+        SourceTagsForbidden: []
+        TargetTagsRequired: []
+        TargetTagsForbidden: []
+        initialized: 0
+        stringActivationOwnedTags: []
+        stringDescriptionTags: []
+        stringCancelAbilitiesWithTags: []
+        stringBlockAbilitiesWithTags: []
+        stringSourceTagsRequired: []
+        stringSourceTagsForbidden: []
+        stringTargetTagsRequired: []
+        stringTargetTagsForbidden: []
+        string_CueTags: []

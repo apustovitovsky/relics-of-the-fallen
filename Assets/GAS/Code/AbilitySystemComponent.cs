@@ -204,6 +204,59 @@ namespace GAS
         }
 
         /// <summary>
+        /// Dispatches all gameplay cues configured on a gameplay effect definition.
+        /// </summary>
+        public void InvokeGameplayCueEvent(
+            GameplayEffectSpec spec,
+            GameplayCueEvent eventType)
+        {
+            if (spec?.Definition?.cuesTags == null)
+            {
+                return;
+            }
+
+            for (
+                int index = 0;
+                index < spec.Definition.cuesTags.Count;
+                index++)
+            {
+                GameplayTag cueTag =
+                    spec.Definition.cuesTags[index];
+
+                if (cueTag == null)
+                {
+                    continue;
+                }
+
+                GameplayCueParameters parameters =
+                    new(
+                        spec.EffectContext)
+                    {
+                        GameplayEffectLevel = Mathf.RoundToInt(
+                            spec.Level),
+                        AbilityLevel =
+                            spec.EffectContext.GetAbilityLevel(),
+                        IsGameplayEffectActive =
+                            eventType != GameplayCueEvent.Removed
+                    };
+
+                if (eventType == GameplayCueEvent.Executed)
+                {
+                    ExecuteGameplayCue(
+                        cueTag,
+                        parameters);
+
+                    continue;
+                }
+
+                InvokeGameplayCueEvent(
+                    cueTag,
+                    eventType,
+                    parameters);
+            }
+        }
+
+        /// <summary>
         /// Invokes a gameplay cue event on this ability system's current avatar.
         /// </summary>
         public virtual void InvokeGameplayCueEvent(

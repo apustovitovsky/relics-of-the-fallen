@@ -2,12 +2,13 @@ using System;
 using GAS;
 using Mirror;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace RelicsOfTheFallen.Abilities
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class FireballProjectile :
+    public sealed class GameplayProjectile :
         NetworkBehaviour
     {
         [field: SerializeField]
@@ -17,10 +18,11 @@ namespace RelicsOfTheFallen.Abilities
             set;
         }
 
+        private readonly List<GameplayEffectSpec> m_GameplayEffectSpecs = new();
+
         private Rigidbody m_Rigidbody;
         private GameObject m_SourceActor;
         private AbilitySystemComponent m_SourceAbilitySystem;
-        private GameplayEffectSpec m_DamageSpec;
         private Vector3 m_Direction;
         private float m_Speed;
         private float m_RemainingLifetime;
@@ -34,14 +36,14 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Initializes authoritative movement, source ability system, and damage data.
+        /// Initializes authoritative movement, source ability system, and gameplay effect payload.
         /// </summary>
         public void Initialize(
             GameObject sourceActor,
             Vector3 direction,
             float speed,
             float lifetime,
-            GameplayEffectSpec damageSpec)
+            IReadOnlyList<GameplayEffectSpec> gameplayEffectSpecs)
         {
             if (sourceActor == null)
             {
@@ -72,16 +74,19 @@ namespace RelicsOfTheFallen.Abilities
                     "A projectile lifetime must be positive.");
             }
 
-            if (damageSpec == null)
+            if (
+                gameplayEffectSpecs == null ||
+                gameplayEffectSpecs.Count == 0)
             {
-                throw new ArgumentNullException(
-                    nameof(damageSpec));
+                throw new ArgumentException(
+                    "A projectile requires at least one gameplay effect spec.",
+                    nameof(gameplayEffectSpecs));
             }
 
             if (ImpactGameplayCue == null)
             {
                 throw new InvalidOperationException(
-                    $"{nameof(FireballProjectile)} requires an impact gameplay cue.");
+                    $"{nameof(GameplayProjectile)} requires an impact gameplay cue.");
             }
 
             GameObject sourceActorRoot =
@@ -94,6 +99,27 @@ namespace RelicsOfTheFallen.Abilities
             {
                 throw new InvalidOperationException(
                     $"{sourceActorRoot.name} has no ability system component.");
+            }
+
+            m_GameplayEffectSpecs.Clear();
+
+            for (
+                int index = 0;
+                index < gameplayEffectSpecs.Count;
+                index++)
+            {
+                GameplayEffectSpec gameplayEffectSpec =
+                    gameplayEffectSpecs[index];
+
+                if (gameplayEffectSpec == null)
+                {
+                    throw new ArgumentException(
+                        "A projectile gameplay effect spec cannot be null.",
+                        nameof(gameplayEffectSpecs));
+                }
+
+                m_GameplayEffectSpecs.Add(
+                    gameplayEffectSpec);
             }
 
             m_SourceActor =
@@ -110,9 +136,6 @@ namespace RelicsOfTheFallen.Abilities
 
             m_RemainingLifetime =
                 lifetime;
-
-            m_DamageSpec =
-                damageSpec;
 
             m_IsInitialized =
                 true;
@@ -185,8 +208,14 @@ namespace RelicsOfTheFallen.Abilities
             {
                 if (hasTargetAbilitySystem)
                 {
-                    targetAbilitySystem.ApplyGameplayEffectSpecToSelf(
-                        m_DamageSpec);
+                    for (
+                        int index = 0;
+                        index < m_GameplayEffectSpecs.Count;
+                        index++)
+                    {
+                        targetAbilitySystem.ApplyGameplayEffectSpecToSelf(
+                            m_GameplayEffectSpecs[index]);
+                    }
                 }
 
                 ExecuteImpactGameplayCue(
@@ -199,23 +228,26 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Executes the fireball impact cue at the authoritative collision location.
+        /// Executes the configured impact cue at the authoritative collision location.
         /// </summary>
         private void ExecuteImpactGameplayCue(
             Collider hitCollider)
         {
+            GameplayEffectSpec primaryGameplayEffectSpec =
+                m_GameplayEffectSpecs[0];
+
             GameplayCueParameters parameters =
                 new(
-                    m_DamageSpec.EffectContext)
+                    primaryGameplayEffectSpec.EffectContext)
                 {
                     NormalizedMagnitude = 1f,
                     Location = hitCollider.ClosestPoint(
                         m_Rigidbody.position),
                     Normal = -m_Direction,
                     GameplayEffectLevel = Mathf.RoundToInt(
-                        m_DamageSpec.Level),
+                        primaryGameplayEffectSpec.Level),
                     AbilityLevel =
-                        m_DamageSpec.EffectContext.GetAbilityLevel()
+                        primaryGameplayEffectSpec.EffectContext.GetAbilityLevel()
                 };
 
             m_SourceAbilitySystem.ExecuteGameplayCue(

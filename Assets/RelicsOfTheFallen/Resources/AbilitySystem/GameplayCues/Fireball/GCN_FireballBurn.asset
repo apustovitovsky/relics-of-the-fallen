@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0669e38097f127b42a3c3485a201a200, type: 3}
+  m_Name: GCN_FireballBurn
+  m_EditorClassIdentifier: GAS::GAS.GameplayCueNotify
+  <GameplayCueTag>k__BackingField: {fileID: 11400000, guid: b621972f0b9396e438a3f72b21179b35, type: 2}
+  <IsOverride>k__BackingField: 1
+  <OnActivePrefab>k__BackingField: {fileID: 7985769218060136036, guid: 3bb712ff82dd71c448bbffc3997b47e7, type: 3}
+  <WhileActivePrefab>k__BackingField: {fileID: 7120573654451629768, guid: a7422cc84b03c96488fd817acd43746d, type: 3}
+  <ExecutedPrefab>k__BackingField: {fileID: 0}
+  <RemovedPrefab>k__BackingField: {fileID: 7985769218060136036, guid: 3bb712ff82dd71c448bbffc3997b47e7, type: 3}
+  <AttachToTarget>k__BackingField: 1
+  <AllowMultipleOnActiveEvents>k__BackingField: 0
+  <UniqueInstancePerInstigator>k__BackingField: 0
+  <UniqueInstancePerSourceObject>k__BackingField: 0

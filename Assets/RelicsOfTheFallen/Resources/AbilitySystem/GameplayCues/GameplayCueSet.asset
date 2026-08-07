@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: GameplayCueSet
   m_EditorClassIdentifier: GAS::GAS.GameplayCueSet
   <GameplayCueData>k__BackingField:
-  - <GameplayCueNotify>k__BackingField: {fileID: 11400000, guid: a56d1dd23960a6b4dbaa785b95461c06, type: 2}
+  - <GameplayCueNotify>k__BackingField: {fileID: 11400000, guid: f68b3d7ae61775c439f5feb7319de799, type: 2}
+  - <GameplayCueNotify>k__BackingField: {fileID: 11400000, guid: c3fd45e196632fe4fb36df4c5c338e37, type: 2}

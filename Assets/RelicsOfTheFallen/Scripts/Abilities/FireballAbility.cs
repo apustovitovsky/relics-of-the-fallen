@@ -30,6 +30,13 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         [field: SerializeField]
+        private GameplayEffectSO BurnGameplayEffect
+        {
+            get;
+            set;
+        }
+
+        [field: SerializeField]
         private GameplayAbilityMontage CastMontage
         {
             get;
@@ -75,6 +82,7 @@ namespace RelicsOfTheFallen.Abilities
 
             ability.CastingGameplayEffect = CastingGameplayEffect;
             ability.DamageGameplayEffect = DamageGameplayEffect;
+            ability.BurnGameplayEffect = BurnGameplayEffect;
             ability.CastMontage = CastMontage;
             ability.ProjectilePrefab = ProjectilePrefab;
             ability.ProjectileSpeed = ProjectileSpeed;
@@ -432,10 +440,11 @@ namespace RelicsOfTheFallen.Abilities
         {
             if (
                 ProjectilePrefab == null ||
-                DamageGameplayEffect == null)
+                DamageGameplayEffect == null ||
+                BurnGameplayEffect == null)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires projectile and damage assets.");
+                    $"{nameof(FireballAbility)} requires projectile and gameplay effect assets.");
 
                 return false;
             }
@@ -452,7 +461,7 @@ namespace RelicsOfTheFallen.Abilities
 
             if (
                 !ProjectilePrefab.TryGetComponent(
-                    out FireballProjectile _))
+                    out GameplayProjectile _))
             {
                 Debug.LogError(
                     $"{nameof(FireballAbility)} requires a projectile component on its prefab.");
@@ -467,25 +476,6 @@ namespace RelicsOfTheFallen.Abilities
             {
                 return false;
             }
-
-            AbilitySystemComponent abilitySystem =
-                CurrentActorInfo.AbilitySystemComponent;
-
-            GameplayEffectContextHandle damageContext =
-                MakeEffectContext(
-                    CurrentSpecHandle,
-                    CurrentActorInfo);
-
-            int abilityLevel =
-                GetAbilityLevel(
-                    CurrentSpecHandle,
-                    CurrentActorInfo);
-
-            GameplayEffectSpec damageSpec =
-                abilitySystem.MakeOutgoingSpec(
-                    DamageGameplayEffect,
-                    abilityLevel,
-                    damageContext);
 
             GameplayAbilityTargetingLocationInfo spawnLocation =
                 new(
@@ -515,19 +505,50 @@ namespace RelicsOfTheFallen.Abilities
                 return false;
             }
 
-            damageContext.AddInstigator(
+            GameplayEffectContextHandle effectContext =
+                MakeEffectContext(
+                    CurrentSpecHandle,
+                    CurrentActorInfo);
+
+            effectContext.AddInstigator(
                 CurrentActorInfo.OwnerActor,
                 spawnedActor);
 
-            FireballProjectile projectile =
-                spawnedActor.GetComponent<FireballProjectile>();
+            int abilityLevel =
+                GetAbilityLevel(
+                    CurrentSpecHandle,
+                    CurrentActorInfo);
+
+            AbilitySystemComponent abilitySystem =
+                CurrentActorInfo.AbilitySystemComponent;
+
+            GameplayEffectSpec damageSpec =
+                abilitySystem.MakeOutgoingSpec(
+                    DamageGameplayEffect,
+                    abilityLevel,
+                    effectContext);
+
+            GameplayEffectSpec burnSpec =
+                abilitySystem.MakeOutgoingSpec(
+                    BurnGameplayEffect,
+                    abilityLevel,
+                    effectContext);
+
+            GameplayEffectSpec[] gameplayEffectSpecs =
+            {
+        damageSpec,
+        burnSpec
+    };
+
+            GameplayProjectile projectile =
+                spawnedActor.GetComponent<GameplayProjectile>();
 
             projectile.Initialize(
                 CurrentActorInfo.AvatarActor,
                 direction,
                 ProjectileSpeed,
                 ProjectileLifetime,
-                damageSpec);
+                gameplayEffectSpecs);
 
             spawnTask.FinishSpawningActor(
                 spawnedActor);

@@ -126,3 +126,48 @@ AssetRegistry
 ```
 
 `GameplayCueSet` будет GAS-аналогом, а его реализация через `ScriptableObject` и прямые Unity-ссылки — Unity-адаптацией.
+
+Annotation 1 Warning найден точно. Его вызывают два legacy-asset с потерянными scripts:
+
+- [GEC_AttackSpeedCalculation.asset](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Resources/Abilities&Effects/GEC_AttackSpeedCalculation.asset:12)
+- [GEC_DamageCalculation.asset](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Resources/Abilities&Effects/GEC_DamageCalculation.asset:12)
+
+А проявляются они из-за `Resources.LoadAll("")`, который загружает вообще всё содержимое `Resources`: [SingletonScriptableObject.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/Utils/SingletonScriptableObject.cs:20). К cues warning отношения не имеет. Эти legacy-хвосты потом удалим отдельно.
+
+Annotation 2 По projectile уточнение:
+
+- vanilla GAS не содержит универсального projectile-класса;
+- Lyra тоже не предоставляет готовый общий projectile — в ranged weapon даже оставлена незавершённая ветка `bProjectileWeapon = false`: [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:497);
+- GAS прямо предлагает игре реализовать собственный `SpawnProjectile` task/class: [AbilityTask_SpawnActor.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/Tasks/AbilityTask_SpawnActor.h:20);
+- общий projectile вы, вероятно, помните из GASDocumentation: `AGDProjectile` получает уже готовый `FGameplayEffectSpecHandle`: [GDProjectile.h](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/Source/GASDocumentation/Public/Characters/GDProjectile.h:19);
+- сам GAS также прямо описывает создание spec в ability с последующей передачей projectile: [GameplayAbility.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbility.h:205).
+
+Правильная наша модель:
+
+```text
+FireballAbility
+→ создаёт impact/burn specs
+→ передаёт их общему GameplayProjectile
+
+GameplayProjectile
+→ движение и collision
+→ применяет готовые specs
+→ вызывает impact cue
+
+Fireball prefab
+→ скорость, VFX, cue и физическая конфигурация
+```
+
+Первый небольшой шаг: в [FireballProjectile.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/RelicsOfTheFallen/Scripts/Abilities/Projectiles/FireballProjectile.cs:10) сделайте `Rename Symbol`:
+
+```text
+FireballProjectile → GameplayProjectile
+```
+
+После этого в Unity Project Window переименуйте сам файл:
+
+```text
+FireballProjectile.cs → GameplayProjectile.cs
+```
+
+Prefab пока оставьте `FireballProjectile.prefab`: это уже конкретно огненная конфигурация общего класса. После успешной компиляции следующим шагом уберём `DotGameplayEffect` и передадим projectile готовый набор specs.

@@ -3,9 +3,12 @@ using UnityEngine;
 namespace GAS
 {
     /// <summary>
-    /// Defines common tag routing and event handling for Unity gameplay cue notify assets.
+    /// Defines immutable authoring data for one routed gameplay cue.
     /// </summary>
-    public abstract class GameplayCueNotify :
+    [CreateAssetMenu(
+        menuName = "GAS/Gameplay Cue Notify",
+        fileName = "GCN_")]
+    public sealed class GameplayCueNotify :
         ScriptableObject
     {
         [field: SerializeField]
@@ -22,18 +25,60 @@ namespace GAS
             private set;
         } = true;
 
-        /// <summary>
-        /// Returns whether this notify handles the supplied gameplay cue event.
-        /// </summary>
-        public abstract bool HandlesEvent(
-            GameplayCueEvent eventType);
+        [field: SerializeField]
+        public GameObject OnActivePrefab
+        {
+            get;
+            private set;
+        }
 
-        /// <summary>
-        /// Handles one gameplay cue event for the supplied target and parameters.
-        /// </summary>
-        public abstract void HandleGameplayCue(
-            GameObject target,
-            GameplayCueEvent eventType,
-            GameplayCueParameters parameters);
+        [field: SerializeField]
+        public GameObject WhileActivePrefab
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public GameObject ExecutedPrefab
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public GameObject RemovedPrefab
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public bool AttachToTarget
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public bool AllowMultipleOnActiveEvents
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public bool UniqueInstancePerInstigator
+        {
+            get;
+            private set;
+        }
+
+        [field: SerializeField]
+        public bool UniqueInstancePerSourceObject
+        {
+            get;
+            private set;
+        }
     }
 }

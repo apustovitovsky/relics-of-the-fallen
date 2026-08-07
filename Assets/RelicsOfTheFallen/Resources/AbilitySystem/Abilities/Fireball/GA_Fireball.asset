@@ -38,10 +38,9 @@ MonoBehaviour:
         <ActivationGroup>k__BackingField: 1
         <CastingGameplayEffect>k__BackingField: {fileID: 11400000, guid: 8a79d04cfacfc5946ad9bcd5b978ba01, type: 2}
         <DamageGameplayEffect>k__BackingField: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
+        <BurnGameplayEffect>k__BackingField: {fileID: 11400000, guid: 166e4beb56926a7458ca9c2088e6d6f2, type: 2}
         <CastMontage>k__BackingField: {fileID: 11400000, guid: 37218a0488d099b4882543ea09cb2076, type: 2}
         <ProjectilePrefab>k__BackingField: {fileID: 7883263366049447357, guid: 7cb85d73b618613409771da9c994fbc6, type: 3}
-        <ProjectileOriginBone>k__BackingField: 18
-        <ProjectileOriginOffset>k__BackingField: {x: 0, y: 0, z: 0}
         <ProjectileSpeed>k__BackingField: 12
         <ProjectileLifetime>k__BackingField: 5
     - rid: 6914737510856523981

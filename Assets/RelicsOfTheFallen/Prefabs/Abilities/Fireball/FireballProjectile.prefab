@@ -152,6 +152,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   <ImpactGameplayCue>k__BackingField: {fileID: 11400000, guid: 2b7a8dcb3a3f7dd429f0a15123c2dbe6, type: 2}
+  <DotGameplayEffect>k__BackingField: {fileID: 11400000, guid: 166e4beb56926a7458ca9c2088e6d6f2, type: 2}
 --- !u!1001 &439764395843799274
 PrefabInstance:
   m_ObjectHideFlags: 0

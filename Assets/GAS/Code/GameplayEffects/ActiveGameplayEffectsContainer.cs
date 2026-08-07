@@ -289,6 +289,14 @@ namespace GAS
                 throw;
             }
 
+            m_Owner.InvokeGameplayCueEvent(
+                activeEffect.Spec,
+                GameplayCueEvent.OnActive);
+
+            m_Owner.InvokeGameplayCueEvent(
+                activeEffect.Spec,
+                GameplayCueEvent.WhileActive);
+
             AuthoritativeGameplayEffectAdded?.Invoke(
                 activeEffect);
 
@@ -522,6 +530,10 @@ namespace GAS
 
             if (wasAuthoritative)
             {
+                m_Owner.InvokeGameplayCueEvent(
+                    activeEffect.Spec,
+                    GameplayCueEvent.Removed);
+
                 AuthoritativeGameplayEffectRemoved?.Invoke(
                     activeEffect);
             }
@@ -675,7 +687,7 @@ namespace GAS
         }
 
         /// <summary>
-        /// Executes the evaluated modifiers of one active periodic gameplay effect.
+        /// Executes the evaluated modifiers and gameplay cues of one active periodic effect.
         /// </summary>
         internal void ExecutePeriodicGameplayEffect(
             ActiveGameplayEffectHandle handle)
@@ -704,6 +716,10 @@ namespace GAS
 
             m_Owner.ExecuteGameplayEffect(
                 activeEffect.Spec);
+
+            m_Owner.InvokeGameplayCueEvent(
+                activeEffect.Spec,
+                GameplayCueEvent.Executed);
         }
 
 

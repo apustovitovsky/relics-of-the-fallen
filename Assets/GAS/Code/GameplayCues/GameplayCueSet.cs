@@ -22,14 +22,21 @@ namespace GAS
             GameplayCueNotifyData> m_GameplayCueDataMap;
 
         /// <summary>
-        /// Routes a gameplay cue event through the matching notify hierarchy.
+        /// Routes a gameplay cue definition through the matching notify hierarchy.
         /// </summary>
         public bool HandleGameplayCue(
+            GameplayCueManager gameplayCueManager,
             GameObject target,
             GameplayTag gameplayCueTag,
             GameplayCueEvent eventType,
             GameplayCueParameters parameters)
         {
+            if (gameplayCueManager == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(gameplayCueManager));
+            }
+
             if (gameplayCueTag == null)
             {
                 throw new ArgumentNullException(
@@ -69,10 +76,7 @@ namespace GAS
                 GameplayCueNotify notify =
                     cueData.GameplayCueNotify;
 
-                if (
-                    notify == null ||
-                    !notify.HandlesEvent(
-                        eventType))
+                if (notify == null)
                 {
                     continue;
                 }
@@ -80,7 +84,8 @@ namespace GAS
                 parameters.MatchedTagName =
                     cueData.GameplayCueTag;
 
-                notify.HandleGameplayCue(
+                gameplayCueManager.HandleGameplayCueNotify(
+                    notify,
                     target,
                     eventType,
                     parameters);

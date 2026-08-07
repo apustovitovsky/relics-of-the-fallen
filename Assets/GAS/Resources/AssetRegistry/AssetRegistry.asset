@@ -40,6 +40,9 @@ MonoBehaviour:
   - m_AssetName: Effects.Buff.Healing
     m_Asset: {fileID: 11400000, guid: 1575c1542d9f01d4d9c8422b1048d58b, type: 2}
     m_Id: 1575c1542d9f01d4d9c8422b1048d58b
+  - m_AssetName: GE_FireballBurnDamage
+    m_Asset: {fileID: 11400000, guid: 166e4beb56926a7458ca9c2088e6d6f2, type: 2}
+    m_Id: 166e4beb56926a7458ca9c2088e6d6f2
   - m_AssetName: Damage.Type.Physical
     m_Asset: {fileID: 11400000, guid: 1a3baa055948e4946947f6c6b8240331, type: 2}
     m_Id: 1a3baa055948e4946947f6c6b8240331
@@ -148,6 +151,9 @@ MonoBehaviour:
   - m_AssetName: Event.Ability.Attack.End
     m_Asset: {fileID: 11400000, guid: 67f06a42d096e80449bd6f884cbae1f0, type: 2}
     m_Id: 67f06a42d096e80449bd6f884cbae1f0
+  - m_AssetName: GE_InstantDamage
+    m_Asset: {fileID: 11400000, guid: 6a90cce51579b7f498e1fd28e07a4b31, type: 2}
+    m_Id: 6a90cce51579b7f498e1fd28e07a4b31
   - m_AssetName: Event.Ability.Attack.Impact
     m_Asset: {fileID: 11400000, guid: 6edbe15574bc5a34fb573bda245bdbdc, type: 2}
     m_Id: 6edbe15574bc5a34fb573bda245bdbdc
@@ -205,6 +211,9 @@ MonoBehaviour:
   - m_AssetName: State.Movement.Airborn
     m_Asset: {fileID: 11400000, guid: b4652202ae85a0a4fa918a801b1794c6, type: 2}
     m_Id: b4652202ae85a0a4fa918a801b1794c6
+  - m_AssetName: GameplayCue.Fireball.Burn
+    m_Asset: {fileID: 11400000, guid: b621972f0b9396e438a3f72b21179b35, type: 2}
+    m_Id: b621972f0b9396e438a3f72b21179b35
   - m_AssetName: Effects.Debuff.Frozen
     m_Asset: {fileID: 11400000, guid: b679770ae87bf874793960f1eb258075, type: 2}
     m_Id: b679770ae87bf874793960f1eb258075
@@ -286,7 +295,7 @@ MonoBehaviour:
   - m_AssetName: State.Movement.Jumping
     m_Asset: {fileID: 11400000, guid: f01fd40d1a76d4047a5b5deaeb71a9c5, type: 2}
     m_Id: f01fd40d1a76d4047a5b5deaeb71a9c5
-  - m_AssetName: GE_InstantDamage
+  - m_AssetName: GE_FireballImpactDamage
     m_Asset: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
     m_Id: f15d001c76931ee4cb39b6bb47eb244f
   - m_AssetName: Ability.Cooldown.Dash

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8398129167985096425}
   - component: {fileID: 1610503327321493747}
   - component: {fileID: 6369780213251878401}
+  - component: {fileID: 4536782948306904931}
   m_Layer: 0
   m_Name: PlayerGraphics
   m_TagString: Untagged
@@ -68,3 +69,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GAS::GAS.AnimInstance
   <Animator>k__BackingField: {fileID: 1610503327321493747}
+--- !u!114 &4536782948306904931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7098131655283669980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a69cbdbc18f2bf444b2f0e957b6c70e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GAS::GAS.GameplayEventAnimationEventHandler

@@ -1,173 +1,280 @@
-﻿Да, система Gameplay Cues у нас сейчас фактически не готова. Существующий [GameplayCue.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayCues/GameplayCue.cs:8) — legacy и архитектуре Unreal GAS не соответствует.
+﻿В целом lifecycle уже узнаваемо соответствует `UGameplayAbility`, но класс всё ещё примерно наполовину состоит из legacy definition/runtime-смешения. Главная следующая работа — не добавление новых способностей, а нормализация самой модели ability.
 
-В оригинальном GAS impact устроен так:
+Что уже соответствует GAS:
 
-```text
-Authoritative projectile detects impact
-→ Source ASC.ExecuteGameplayCue(
-      GameplayCue.Fireball.Impact,
-      GameplayCueParameters)
-→ GameplayCue распространяется наблюдателям
-→ на каждом клиенте GameplayCueManager
-  локально создаёт VFX/SFX
-```
+- `CurrentSpecHandle`, `CurrentActorInfo`, `CurrentActivationInfo`;
+- `MakeEffectContext()` и `GetSourceObject()`;
+- `ApplyGameplayEffectSpecToOwner/Target()` с извлечением `PredictionKey`;
+- `CommitAbility → CommitCheck → CommitExecute`;
+- отдельные `Check/Apply Cost` и `Cooldown`;
+- регистрация `AbilityTask` и завершение задач;
+- `CancelAbility()` и `EndAbility()`;
+- `ActivationOwnedTags`, block/cancel семантика — пока через legacy-контейнер.
 
-Для однократного impact используется событие `Executed` и аналог `GameplayCueNotify_Burst`/`GameplayCueNotify_Static`. Сам VFX не является сетевым объектом. `Executed` cues передаются ненадёжным multicast — они не должны содержать gameplay-логику. [Epic ASC API](https://dev.epicgames.com/documentation/unreal-engine/API/Plugins/GameplayAbilities/UAbilitySystemComponent?lang=en-US), [Mirror ClientRpc](https://mirror-networking.gitbook.io/docs/manual/guides/communications/remote-actions).
+Это совпадает с основным API оригинала: [GameplayAbility.h:127](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbility.h:127>).
 
-Важное уточнение к [DRAFT.md](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/DRAFT.md:139): полный `HitResult` для первого impact cue не обязателен. Оригинальный `FGameplayCueParameters` отдельно содержит `Location` и `Normal`. `HitResult` понадобится позже для bone, physical material и расширенной информации о попадании.
+## 1. Убрать legacy-поля из базового GameplayAbility
 
-Что реализуем:
+Наиболее проблемный участок сейчас: [GameplayAbility.cs:233](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:233).
 
-1. В core `GAS`:
-
-```text
-GameplayCueEvent
-GameplayCueParameters
-GameplayCueNotify
-GameplayCueNotify_Burst
-GameplayCueSet
-GameplayCueManager
-ASC.ExecuteGameplayCue(...)
-ASC.InvokeGameplayCueEvent(...)
-```
-
-2. В `GAS.Mirror`:
+Из базового класса должны уйти:
 
 ```text
-NetworkAbilitySystemObserverComponent
-→ ненадёжный ClientRpc
-→ tag + Location + Normal + необходимые context-поля
+effectsSO
+effects
+source
+owner
+cuesTags
+Guid
+ClassName
+Level
+SerializeAdditionalData
+DeserializeAdditionalData
 ```
 
-RPC получат только observers сетевого ASC, что соответствует Mirror и роли observer-компонента.
+Причины:
 
-3. В Fireball:
+- В оригинальном `UGameplayAbility` нет универсального списка применяемых эффектов. Конкретная ability сама решает, какие specs создавать и куда применять.
+- `Level` принадлежит `GameplayAbilitySpec`, а не runtime ability.
+- `source/owner` дублируют `CurrentActorInfo.AbilitySystemComponent`.
+- `Guid` и `ClassName` не участвуют в GAS identity. Для этого существуют `GameplayAbilitySpecHandle`, definition asset и prediction key.
+- Gameplay Cues не являются произвольным списком внутри базовой ability.
+- Методы сериализации без writer/reader не соответствуют ни GAS, ни нормальной Mirror-сериализации.
+
+Например, [AbilityTask.cs:7](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbilities/Tasks/AbilityTask.cs:7) должен получать ASC через:
 
 ```text
-столкновение
-→ применить damage GE, если найден target ASC
-→ source ASC.ExecuteGameplayCue(
-      GameplayCue.Fireball.Impact,
-      parameters)
-→ уничтожить projectile
+Ability.CurrentActorInfo.AbilitySystemComponent
 ```
 
-Так impact проиграется и при попадании в персонажа, и при попадании в стену.
+а не через `Ability.owner`.
 
-Старые `GameplayCue`, `CuesLibrary`, `instancedCues` и автоматическую подписку на все abilities/effects будем удалять, а не адаптировать.
+Особенно важно убрать дублирование `Level`: сейчас [GetAbilityLevel():139](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:139) возвращает локальное поле, хотя правильным источником уже является [GameplayAbilitySpec.Level:22](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbilities/GameplayAbilitySpec.cs:22).
 
-Следующий шаг — добавить два фундаментальных core-типа: `GameplayCueEvent` и `GameplayCueParameters`.
+## 2. Полностью заменить AbilityTags
 
-Да, `CuesLibrary` нужно переписать, но не объединять с `AssetRegistry`.
+Текущий [AbilityTags:1218](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:1218) — legacy-контейнер:
 
-Это не чисто Unity-зона:
+- использует `List<GameplayTag>`;
+- содержит дублирующие string-списки;
+- требует `FillTags/ClearStrings`;
+- смешивает разные категории;
+- часть полей вообще не используется.
 
-- семантика `GameplayTag → GameplayCueNotify` принадлежит GAS;
-- способ хранения и загрузки Unity-ассетов — Unity-адаптация.
-
-Правильное разделение:
+Вместо него на `GameplayAbility` должны находиться отдельные `GameplayTagContainer` с GAS-совместимыми именами:
 
 ```text
-AssetRegistry
-→ AssetId ↔ ScriptableObject
-→ стабильная identity для сети и сохранений
-
-GameplayCueSet
-→ GameplayTag → GameplayCueNotify
-→ семантическая маршрутизация cues
-
-GameplayCueManager
-→ принимает tag + event + parameters
-→ находит notify через GameplayCueSet
-→ выполняет его локально
+AssetTags
+CancelAbilitiesWithTag
+BlockAbilitiesWithTag
+ActivationOwnedTags
+ActivationRequiredTags
+ActivationBlockedTags
+SourceRequiredTags
+SourceBlockedTags
+TargetRequiredTags
+TargetBlockedTags
 ```
 
-В Unreal именно `UGameplayCueSet : UDataAsset` хранит `FGameplayCueNotifyData` и ускоренную map `GameplayTag → entry`: [GameplayCueSet.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/GameplayCueSet.h:16). Он также заранее строит fallback дочерних тегов на родительские notify: [GameplayCueSet.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/GameplayCueSet.cpp:397).
-
-Lyra не заменяет эту модель общим asset registry. Она расширяет `GameplayCueManager` главным образом политикой загрузки и preload: [LyraGameplayCueManager.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/LyraGameplayCueManager.cpp:95).
-
-Почему текущий [CuesLibrary.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayCues/CuesLibrary.cs:16) лучше удалить после миграции:
-
-- глобальная зависимость через `SingletonScriptableObject`;
-- LINQ и создание нескольких списков при каждом вызове;
-- копирование изменяемых `GameplayCue`;
-- нет `GameplayCueEvent`;
-- нет `GameplayCueParameters`;
-- нет parent-tag fallback;
-- библиотека одновременно хранит definitions и создаёт runtime state;
-- дублирующее поле `name` нужно только для оформления Inspector.
-
-Что делать с [AssetRegistry.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/AssetRegistry/AssetRegistry.cs:11):
-
-- оставить единым сгенерированным каталогом сетевых GAS-ассетов;
-- не добавлять в него маршрутизацию cues;
-- не передавать по сети `GameplayCueNotify` или prefab ID;
-- по сети передавать cue tag и `GameplayCueParameters`;
-- на каждом клиенте локальный `GameplayCueSet` разрешает tag в тот же notify.
-
-То есть `GameplayCueNotify` вообще не обязан иметь `AssetId`. Прямая ссылка из `GameplayCueSet` гарантирует включение notify и его prefab-зависимостей в build.
-
-Для текущего фиксированного контента прямые ссылки из `ScriptableObject` подходят. Unity рекомендует ScriptableObject как общий runtime-контейнер данных; Addressables нужны, когда требуется асинхронная загрузка, удалённый контент или выгрузка больших наборов ассетов. [Unity ScriptableObject](https://docs.unity3d.com/6000.1/Documentation/Manual/class-ScriptableObject.html), [Unity runtime asset management](https://docs.unity3d.com/ja/current/Manual/assets-managing-introduction.html).
-
-Итоговая рекомендация:
+И метод:
 
 ```text
-CuesLibrary
-→ удалить
-
-GameplayTagsWithCue
-→ GameplayCueNotifyData
-
-_CuesLibrary.asset
-→ GameplayCueSet.asset
-
-AssetRegistry
-→ оставить отдельным и общим
+DoesAbilitySatisfyTagRequirements
 ```
 
-`GameplayCueSet` будет GAS-аналогом, а его реализация через `ScriptableObject` и прямые Unity-ссылки — Unity-адаптацией.
-
-Annotation 1 Warning найден точно. Его вызывают два legacy-asset с потерянными scripts:
-
-- [GEC_AttackSpeedCalculation.asset](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Resources/Abilities&Effects/GEC_AttackSpeedCalculation.asset:12)
-- [GEC_DamageCalculation.asset](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Resources/Abilities&Effects/GEC_DamageCalculation.asset:12)
-
-А проявляются они из-за `Resources.LoadAll("")`, который загружает вообще всё содержимое `Resources`: [SingletonScriptableObject.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/Utils/SingletonScriptableObject.cs:20). К cues warning отношения не имеет. Эти legacy-хвосты потом удалим отдельно.
-
-Annotation 2 По projectile уточнение:
-
-- vanilla GAS не содержит универсального projectile-класса;
-- Lyra тоже не предоставляет готовый общий projectile — в ranged weapon даже оставлена незавершённая ветка `bProjectileWeapon = false`: [LyraGameplayAbility_RangedWeapon.cpp](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/Weapons/LyraGameplayAbility_RangedWeapon.cpp:497);
-- GAS прямо предлагает игре реализовать собственный `SpawnProjectile` task/class: [AbilityTask_SpawnActor.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/Tasks/AbilityTask_SpawnActor.h:20);
-- общий projectile вы, вероятно, помните из GASDocumentation: `AGDProjectile` получает уже готовый `FGameplayEffectSpecHandle`: [GDProjectile.h](C:/Users/NATALY/Documents/unity/ue5-docs/GASDocumentation-master/Source/GASDocumentation/Public/Characters/GDProjectile.h:19);
-- сам GAS также прямо описывает создание spec в ability с последующей передачей projectile: [GameplayAbility.h](C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbility.h:205).
-
-Правильная наша модель:
+Оригинальная реализация проверяет четыре группы:
 
 ```text
-FireballAbility
-→ создаёт impact/burn specs
-→ передаёт их общему GameplayProjectile
-
-GameplayProjectile
-→ движение и collision
-→ применяет готовые specs
-→ вызывает impact cue
-
-Fireball prefab
-→ скорость, VFX, cue и физическая конфигурация
+AssetTags против заблокированных ability tags ASC
+OwnedTags против ActivationRequired/Blocked
+SourceTags против SourceRequired/Blocked
+TargetTags против TargetRequired/Blocked
 ```
 
-Первый небольшой шаг: в [FireballProjectile.cs](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/RelicsOfTheFallen/Scripts/Abilities/Projectiles/FireballProjectile.cs:10) сделайте `Rename Symbol`:
+Референс: [GameplayAbility.cpp:349](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/Abilities/GameplayAbility.cpp:349>).
+
+Сейчас [CanActivateAbility():1039](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:1039) проверяет только блокировку description tags, cooldown и cost. Существующие `SourceTagsRequired/Forbidden` и `TargetTagsRequired/Forbidden` фактически мёртвые.
+
+Это наиболее важная функциональная недостача.
+
+## 3. Добавить core-политики GameplayAbility
+
+Сейчас любая выданная ability сразу получает один `PrimaryInstance`, поэтому архитектура жёстко соответствует только:
 
 ```text
-FireballProjectile → GameplayProjectile
+InstancedPerActor
 ```
 
-После этого в Unity Project Window переименуйте сам файл:
+В оригинале существуют:
+
+```csharp
+GameplayAbilityInstancingPolicy
+{
+    NonInstanced,
+    InstancedPerActor,
+    InstancedPerExecution
+}
+
+GameplayAbilityNetExecutionPolicy
+{
+    LocalPredicted,
+    LocalOnly,
+    ServerInitiated,
+    ServerOnly
+}
+
+GameplayAbilityNetSecurityPolicy
+{
+    ClientOrServer,
+    ServerOnlyExecution,
+    ServerOnlyTermination,
+    ServerOnly
+}
+
+GameplayAbilityReplicationPolicy
+{
+    ReplicateNo,
+    ReplicateYes
+}
+```
+
+Референс: [GameplayAbilityTypes.h:37](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbilityTypes.h:37>).
+
+Особенно нужен `NetExecutionPolicy`. Сейчас ASC практически любую клиентскую активацию рассматривает как predicted и отправляет серверу: [AbilitySystemComponent.cs:2584](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/AbilitySystemComponent.cs:2584). Поэтому невозможно корректно выразить `ServerOnly`, `LocalOnly` и `ServerInitiated`.
+
+В Lyra базовые настройки такие:
 
 ```text
-FireballProjectile.cs → GameplayProjectile.cs
+ReplicationPolicy = ReplicateNo
+InstancingPolicy = InstancedPerActor
+NetExecutionPolicy = LocalPredicted
+NetSecurityPolicy = ClientOrServer
 ```
 
-Prefab пока оставьте `FireballProjectile.prefab`: это уже конкретно огненная конфигурация общего класса. После успешной компиляции следующим шагом уберём `DotGameplayEffect` и передадим projectile готовый набор specs.
+Референс: [LyraGameplayAbility.cpp:39](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Samples/Games/Lyra/Source/LyraGame/AbilitySystem/Abilities/LyraGameplayAbility.cpp:39>).
+
+Именно эти значения логично установить в `CommonGameplayAbility`, тогда как сами enum и их lifecycle принадлежат core GAS.
+
+## 4. Исправить активность и повторную активацию
+
+Сейчас [CanActivateAbility():1049](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:1049) безусловно запрещает активацию, если `IsActive == true`.
+
+В оригинале `CanActivateAbility()` такого универсального запрета не содержит: [GameplayAbility.cpp:457](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/Abilities/GameplayAbility.cpp:457>).
+
+Поведение зависит от:
+
+- `InstancingPolicy`;
+- активных instances в `GameplayAbilitySpec`;
+- `bRetriggerInstancedAbility`;
+- возможности нескольких `InstancedPerExecution`.
+
+Поэтому нужны:
+
+```text
+GameplayAbilitySpec.ActiveCount
+GameplayAbilitySpec.Instances
+RetriggerInstancedAbility
+```
+
+А `PrimaryInstance` должен оставаться только удобным доступом к основной `InstancedPerActor` копии.
+
+## 5. Добавить управляемое runtime-состояние ability
+
+В оригинале ability во время выполнения хранит:
+
+```text
+IsActive
+IsAbilityEnding
+CanBeCanceled
+IsBlockingOtherAbilities
+RemoteInstanceEnded
+CurrentEventData
+TrackedGameplayCues
+```
+
+Референсы:
+
+- поля: [GameplayAbility.h:697](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbility.h:697>);
+- end lifecycle: [GameplayAbility.cpp:802](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/Abilities/GameplayAbility.cpp:802>).
+
+Для нас наиболее полезны:
+
+```csharp
+public bool CanBeCanceled();
+public void SetCanBeCanceled(bool canBeCanceled);
+
+public bool IsBlockingOtherAbilities();
+public void SetShouldBlockOtherAbilities(bool shouldBlockAbilities);
+```
+
+Это позволит channel/cast abilities запрещать отмену на определённой фазе, а `CommonGameplayAbility` — корректно управлять `ExclusiveReplaceable`.
+
+`IsActive` при этом должен иметь закрытый setter, а не быть публичным изменяемым полем.
+
+## 6. Добавить стандартное создание GameplayEffectSpec через ability
+
+Сейчас `ApplyGameplayEffectToOwner/Target()` непосредственно вызывает `ASC.MakeOutgoingSpec()`: [GameplayAbility.cs:564](C:/Users/NATALY/Documents/unity/relics-of-the-fallen/Assets/GAS/Code/GameplayAbility.cs:564).
+
+В оригинале между ними существует:
+
+```text
+GameplayAbility.MakeOutgoingGameplayEffectSpec
+→ ASC.MakeOutgoingSpec
+→ ApplyAbilityTagsToGameplayEffectSpec
+→ перенести SetByCaller из AbilitySpec
+```
+
+Референс: [GameplayAbility.cpp:1365](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/Abilities/GameplayAbility.cpp:1365>).
+
+Это нужно, чтобы GameplayEffectSpec получил:
+
+- asset tags ability;
+- dynamic spec source tags;
+- теги `SourceObject`;
+- `SetByCaller` magnitudes, сохранённые в ability spec.
+
+Пока наши specs эту часть происхождения ability теряют.
+
+## 7. Ability triggers — позже
+
+В оригинале ability может автоматически активироваться:
+
+```text
+GameplayEvent
+OwnedTagAdded
+OwnedTagPresent
+```
+
+Через `AbilityTriggers`: [GameplayAbilityTriggerType.h:9](<C:/Users/NATALY/Documents/unity/ue5-docs/UnrealEngine/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Public/Abilities/GameplayAbilityTriggerType.h:9>).
+
+С ними связаны:
+
+```text
+AbilityTriggerData
+ShouldAbilityRespondToEvent
+CurrentEventData
+```
+
+Это понадобится для пассивных способностей, реакций на попадание, смерть, получение тега и подобных сценариев. Для текущих Fireball/Frostbolt это не блокирует разработку.
+
+## Что не следует переносить сейчас
+
+Не нужно буквально копировать:
+
+- `K2_*` Blueprint-обёртки;
+- `bReplicateInputDirectly` — мы уже используем более правильные generic replicated events;
+- UObject RPC/replicated-property infrastructure;
+- `NonInstanced`, пока для него нет реального сценария;
+- task management по `InstanceName`;
+- все animation montage convenience wrappers.
+
+## Рекомендуемый порядок
+
+1. Заменить `AbilityTags` на прямые `GameplayTagContainer` и реализовать `DoesAbilitySatisfyTagRequirements`.
+2. Убрать `Level`, `owner/source`, GUID/ClassName и остальные legacy-поля.
+3. Добавить `InstancingPolicy`, `NetExecutionPolicy`, `NetSecurityPolicy` и перенести решения об активации в ASC.
+4. Добавить `CanBeCanceled`, blocking state, active count и retrigger.
+5. Добавить `MakeOutgoingGameplayEffectSpec`.
+6. Затем реализовать event/tag triggers.
+
+Итог: эффектный, commit-, task- и prediction-pipeline уже имеют правильный каркас. Главные расхождения сейчас находятся в полях definition/runtime, теговых требованиях и отсутствии execution/instancing policies. Следующей целью лучше сделать именно `AbilityTags → GameplayTagContainer + DoesAbilitySatisfyTagRequirements`, потому что это закрывает уже существующую, но сейчас неработающую часть публичного API.

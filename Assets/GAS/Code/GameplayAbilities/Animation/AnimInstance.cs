@@ -10,6 +10,17 @@ namespace GAS
     public sealed class AnimInstance
         : MonoBehaviour
     {
+        private readonly DisposableEvent<GameplayAbilityMontage>
+            m_MontageBlendedInDelegate = new();
+
+        private readonly DisposableEvent<
+            GameplayAbilityMontage,
+            bool> m_MontageBlendingOutDelegate = new();
+
+        private readonly DisposableEvent<
+            GameplayAbilityMontage,
+            bool> m_MontageEndedDelegate = new();
+        private bool m_IsBlendedInPending;
         private PlayableGraph m_PlayableGraph;
 
         private AnimationLayerMixerPlayable m_LayerMixer;
@@ -40,8 +51,37 @@ namespace GAS
             InitializeGraph();
         }
 
+        private void Update()
+        {
+            if (!m_MontagePlayable.IsValid())
+            {
+                return;
+            }
+
+            if (m_IsBlendedInPending)
+            {
+                m_IsBlendedInPending = false;
+
+                m_MontageBlendedInDelegate.Invoke(
+                    CurrentMontage);
+            }
+
+            if (m_MontagePlayable.IsValid() &&
+                MontageGetIsStopped())
+            {
+                FinishCurrentMontage(
+                    false);
+            }
+        }
+
         private void OnDisable()
         {
+            if (m_MontagePlayable.IsValid())
+            {
+                FinishCurrentMontage(
+                    true);
+            }
+
             if (m_PlayableGraph.IsValid())
             {
                 m_PlayableGraph.Destroy();
@@ -49,6 +89,7 @@ namespace GAS
 
             m_MontagePlayable = default;
             CurrentMontage = null;
+            m_IsBlendedInPending = false;
         }
 
         /// <summary>
@@ -92,11 +133,8 @@ namespace GAS
 
             if (m_MontagePlayable.IsValid())
             {
-                m_LayerMixer.DisconnectInput(
-                    1);
-
-                m_PlayableGraph.DestroyPlayable(
-                    m_MontagePlayable);
+                FinishCurrentMontage(
+                    true);
             }
 
             m_MontagePlayable = AnimationClipPlayable.Create(
@@ -119,12 +157,116 @@ namespace GAS
                 1,
                 1f);
 
-            CurrentMontage =
-                animMontage;
+            CurrentMontage = animMontage;
+            m_IsBlendedInPending = true;
 
-            float remainingDuration = animation.length - startTimeSeconds;
+            float remainingDuration =
+                animation.length - startTimeSeconds;
 
             return remainingDuration / playRate;
+        }
+
+        /// <summary>
+        /// Registers a callback for successful blending into the selected montage.
+        /// </summary>
+        public IDisposable MontageSetBlendedInDelegate(
+            Action<GameplayAbilityMontage> handler,
+            GameplayAbilityMontage montage)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(handler));
+            }
+
+            if (montage == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(montage));
+            }
+
+            return m_MontageBlendedInDelegate.Subscribe(
+                HandleMontageBlendedIn);
+
+            void HandleMontageBlendedIn(
+                GameplayAbilityMontage blendedInMontage)
+            {
+                if (blendedInMontage == montage)
+                {
+                    handler(
+                        blendedInMontage);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Registers a callback for blending out of the selected montage.
+        /// </summary>
+        public IDisposable MontageSetBlendingOutDelegate(
+            Action<GameplayAbilityMontage, bool> handler,
+            GameplayAbilityMontage montage)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(handler));
+            }
+
+            if (montage == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(montage));
+            }
+
+            return m_MontageBlendingOutDelegate.Subscribe(
+                HandleMontageBlendingOut);
+
+            void HandleMontageBlendingOut(
+                GameplayAbilityMontage blendingOutMontage,
+                bool wasInterrupted)
+            {
+                if (blendingOutMontage == montage)
+                {
+                    handler(
+                        blendingOutMontage,
+                        wasInterrupted);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Registers a callback for termination of the selected montage.
+        /// </summary>
+        public IDisposable MontageSetEndDelegate(
+            Action<GameplayAbilityMontage, bool> handler,
+            GameplayAbilityMontage montage)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(handler));
+            }
+
+            if (montage == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(montage));
+            }
+
+            return m_MontageEndedDelegate.Subscribe(
+                HandleMontageEnded);
+
+            void HandleMontageEnded(
+                GameplayAbilityMontage endedMontage,
+                bool wasInterrupted)
+            {
+                if (endedMontage == montage)
+                {
+                    handler(
+                        endedMontage,
+                        wasInterrupted);
+                }
+            }
         }
 
         /// <summary>
@@ -215,22 +357,13 @@ namespace GAS
             if (!m_MontagePlayable.IsValid())
             {
                 CurrentMontage = null;
+                m_IsBlendedInPending = false;
 
                 return;
             }
 
-            m_LayerMixer.SetInputWeight(
-                1,
-                0f);
-
-            m_LayerMixer.DisconnectInput(
-                1);
-
-            m_PlayableGraph.DestroyPlayable(
-                m_MontagePlayable);
-
-            m_MontagePlayable = default;
-            CurrentMontage = null;
+            FinishCurrentMontage(
+                true);
         }
 
         /// <summary>
@@ -290,6 +423,48 @@ namespace GAS
         }
 
         /// <summary>
+        /// Terminates the current montage and broadcasts its lifecycle delegates.
+        /// </summary>
+        private void FinishCurrentMontage(
+            bool wasInterrupted)
+        {
+            GameplayAbilityMontage finishedMontage =
+                CurrentMontage;
+
+            m_IsBlendedInPending = false;
+
+            if (finishedMontage != null)
+            {
+                m_MontageBlendingOutDelegate.Invoke(
+                    finishedMontage,
+                    wasInterrupted);
+            }
+
+            if (m_MontagePlayable.IsValid())
+            {
+                m_LayerMixer.SetInputWeight(
+                    1,
+                    0f);
+
+                m_LayerMixer.DisconnectInput(
+                    1);
+
+                m_PlayableGraph.DestroyPlayable(
+                    m_MontagePlayable);
+            }
+
+            m_MontagePlayable = default;
+            CurrentMontage = null;
+
+            if (finishedMontage != null)
+            {
+                m_MontageEndedDelegate.Invoke(
+                    finishedMontage,
+                    wasInterrupted);
+            }
+        }
+
+        /// <summary>
         /// Creates the animation graph containing the base controller and montage layer.
         /// </summary>
         private void InitializeGraph()
@@ -314,15 +489,17 @@ namespace GAS
                 m_PlayableGraph,
                 2);
 
-            AnimationPlayableOutput output = AnimationPlayableOutput.Create(
-                m_PlayableGraph,
-                "Animation",
-                Animator);
+            AnimationPlayableOutput output =
+                AnimationPlayableOutput.Create(
+                    m_PlayableGraph,
+                    "Animation",
+                    Animator);
 
             output.SetSourcePlayable(
                 m_LayerMixer);
 
-            RuntimeAnimatorController controller = Animator.runtimeAnimatorController;
+            RuntimeAnimatorController controller =
+                Animator.runtimeAnimatorController;
 
             if (controller != null)
             {

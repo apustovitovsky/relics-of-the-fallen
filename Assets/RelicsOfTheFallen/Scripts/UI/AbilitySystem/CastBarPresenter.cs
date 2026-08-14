@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+
 using GAS;
 using GAS.Common;
 using UnityEngine;
@@ -26,9 +26,6 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
         }
 
         private AbilitySystemComponent m_AbilitySystem;
-        private GameplayEffectQuery m_CastingQuery;
-
-        private IDisposable m_ActiveEffectAddedSubscription;
         private IDisposable m_CastingTagSubscription;
 
         private void Awake()
@@ -84,21 +81,6 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
             m_AbilitySystem =
                 abilitySystem;
 
-            GameplayTagContainer castingTags =
-                new();
-
-            castingTags.AddTag(
-                CommonGameplayTags.StateCastingTag);
-
-            m_CastingQuery =
-                GameplayEffectQuery.MakeQuery_MatchAnyOwningTags(
-                    castingTags);
-
-            m_ActiveEffectAddedSubscription =
-                abilitySystem
-                    .RegisterActiveGameplayEffectAddedDelegateToSelf(
-                        HandleActiveGameplayEffectAdded);
-
             m_CastingTagSubscription =
                 abilitySystem.RegisterGameplayTagEvent(
                     CommonGameplayTags.StateCastingTag,
@@ -123,19 +105,12 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
         /// </summary>
         public void Unbind()
         {
-            m_ActiveEffectAddedSubscription?.Dispose();
             m_CastingTagSubscription?.Dispose();
-
-            m_ActiveEffectAddedSubscription =
-                null;
 
             m_CastingTagSubscription =
                 null;
 
             m_AbilitySystem =
-                null;
-
-            m_CastingQuery =
                 null;
 
             if (FrameRoot != null)
@@ -145,42 +120,7 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
             }
         }
 
-        /// <summary>
-        /// Refreshes the cast bar when a matching active gameplay effect is registered.
-        /// </summary>
-        private void HandleActiveGameplayEffectAdded(
-            AbilitySystemComponent target,
-            GameplayEffectSpec appliedSpec,
-            ActiveGameplayEffectHandle activeHandle)
-        {
-            if (
-                !ReferenceEquals(
-                    target,
-                    m_AbilitySystem))
-            {
-                return;
-            }
 
-            ActiveGameplayEffect activeEffect =
-                target.GetActiveGameplayEffect(
-                    activeHandle);
-
-            if (
-                activeEffect == null ||
-                !ReferenceEquals(
-                    activeEffect.Spec,
-                    appliedSpec) ||
-                !m_CastingQuery.Matches(
-                    activeEffect))
-            {
-                return;
-            }
-
-            SetFrameVisible(
-                true);
-
-            RefreshProgress();
-        }
 
         /// <summary>
         /// Shows or hides the cast bar when the reusable casting tag count changes.
@@ -207,20 +147,16 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
                 RefreshProgress();
             }
         }
-
         /// <summary>
-        /// Updates the cast progress from the longest matching active gameplay effect.
+        /// Updates cast progress from the currently playing replicated ability montage.
         /// </summary>
         private void RefreshProgress()
         {
-            List<(
-                float TimeRemaining,
-                float Duration)> effectTimes =
-                    m_AbilitySystem
-                        .GetActiveEffectsTimeRemainingAndDuration(
-                            m_CastingQuery);
+            float sectionLength =
+                m_AbilitySystem
+                    .GetCurrentMontageSectionLength();
 
-            if (effectTimes.Count == 0)
+            if (sectionLength <= 0f)
             {
                 SetProgress(
                     0f);
@@ -228,37 +164,14 @@ namespace RelicsOfTheFallen.UI.AbilitySystem
                 return;
             }
 
-            (
-                float TimeRemaining,
-                float Duration) selectedTime =
-                    effectTimes[0];
-
-            for (
-                int index = 1;
-                index < effectTimes.Count;
-                index++)
-            {
-                if (
-                    effectTimes[index].TimeRemaining >
-                    selectedTime.TimeRemaining)
-                {
-                    selectedTime =
-                        effectTimes[index];
-                }
-            }
-
-            if (selectedTime.Duration <= 0f)
-            {
-                SetProgress(
-                    0f);
-
-                return;
-            }
+            float timeLeft =
+                m_AbilitySystem
+                    .GetCurrentMontageSectionTimeLeft();
 
             float progress =
                 1f -
-                selectedTime.TimeRemaining /
-                selectedTime.Duration;
+                timeLeft /
+                sectionLength;
 
             SetProgress(
                 progress);

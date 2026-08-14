@@ -6,23 +6,6 @@ using System;
 
 namespace GAS
 {
-    public readonly struct GameplayEventData
-    {
-        /// <summary>
-        /// Creates gameplay event data for the supplied event tag.
-        /// </summary>
-        public GameplayEventData(
-            GameplayTag tag)
-        {
-            Tag = tag;
-        }
-
-        public GameplayTag Tag
-        {
-            get;
-        }
-    }
-
     [Serializable]
     public class AbilitySystemComponent : MonoBehaviour
     {
@@ -426,6 +409,51 @@ namespace GAS
         }
 
         /// <summary>
+        /// Returns the duration of the current montage section represented by the Unity animation clip.
+        /// </summary>
+        public float GetCurrentMontageSectionLength()
+        {
+            GameplayAbilityMontage montage =
+                GetCurrentMontage();
+
+            if (
+                montage == null ||
+                montage.Animation == null)
+            {
+                return 0f;
+            }
+
+            return montage.Animation.length;
+        }
+
+        /// <summary>
+        /// Returns the remaining animation time in the current montage section.
+        /// </summary>
+        public float GetCurrentMontageSectionTimeLeft()
+        {
+            GameplayAbilityMontage montage =
+                GetCurrentMontage();
+
+            if (
+                montage == null ||
+                montage.Animation == null ||
+                AbilityActorInfo == null ||
+                AbilityActorInfo.AnimInstance == null)
+            {
+                return 0f;
+            }
+
+            float position =
+                AbilityActorInfo
+                    .AnimInstance
+                    .MontageGetPosition();
+
+            return Mathf.Max(
+                0f,
+                montage.Animation.length - position);
+        }
+
+        /// <summary>
         /// Clears the animating ability when it still owns the current local montage state.
         /// </summary>
         public virtual void ClearAnimatingAbility(
@@ -624,6 +652,15 @@ namespace GAS
         public List<AttributeProcessor> attributesProcessors =
             new();
 
+        private readonly Dictionary<
+            GameplayTag,
+            DisposableEvent<GameplayEventData>>
+            m_GenericGameplayEventCallbacks = new();
+
+        private readonly List<
+            GameplayEventTagContainerDelegateRegistration>
+            m_GameplayEventTagContainerDelegates = new();
+
         private readonly GameplayAbilitySpecContainer
             m_ActivatableAbilities = new();
 
@@ -760,7 +797,7 @@ namespace GAS
                     {
                         Debug.Log(
                             $"[GAMEPLAY EVENT] " +
-                            $"{gameplayEvent.Tag.name}");
+                            $"{gameplayEvent.EventTag.name}");
                     };
             }
         }
@@ -786,24 +823,126 @@ namespace GAS
         }
 
         /// <summary>
-        /// Broadcasts a gameplay event payload for the supplied event tag.
+        /// Registers an exact-tag gameplay event callback for an ability task.
         /// </summary>
-        public void SendGameplayEvent(
-            GameplayTag tag)
+        internal IDisposable AddGenericGameplayEventCallback(
+            GameplayTag eventTag,
+            Action<GameplayEventData> handler)
         {
-            if (tag == null)
+            if (eventTag == null)
             {
-                Debug.LogWarning(
-                    $"ASC {name} ignored a gameplay event " +
-                    "without a tag.",
-                    this);
-
-                return;
+                throw new ArgumentNullException(
+                    nameof(eventTag));
             }
 
+            if (handler == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(handler));
+            }
+
+            if (!m_GenericGameplayEventCallbacks.TryGetValue(
+                    eventTag,
+                    out DisposableEvent<GameplayEventData>
+                        gameplayEventCallbacks))
+            {
+                gameplayEventCallbacks = new DisposableEvent<
+                    GameplayEventData>();
+
+                m_GenericGameplayEventCallbacks.Add(
+                    eventTag,
+                    gameplayEventCallbacks);
+            }
+
+            return gameplayEventCallbacks.Subscribe(
+                handler);
+        }
+
+        /// <summary>
+        /// Adds a gameplay event delegate filtered by a hierarchical tag container.
+        /// </summary>
+        public IDisposable AddGameplayEventTagContainerDelegate(
+            GameplayTagContainer tagFilter,
+            Action<GameplayTag, GameplayEventData> handler)
+        {
+            GameplayEventTagContainerDelegateRegistration registration =
+                new(
+                    tagFilter,
+                    handler);
+
+            m_GameplayEventTagContainerDelegates.Add(
+                registration);
+
+            return new DisposableSubscription(() =>
+                m_GameplayEventTagContainerDelegates.Remove(
+                    registration));
+        }
+
+        /// <summary>
+        /// Handles a gameplay event and dispatches its normalized payload.
+        /// </summary>
+        public virtual int HandleGameplayEvent(
+            GameplayTag eventTag,
+            GameplayEventData payload)
+        {
+            if (eventTag == null)
+            {
+                Debug.LogWarning(
+                    $"ASC {name} ignored a gameplay event without a tag.",
+                    this);
+
+                return 0;
+            }
+
+            payload.EventTag = eventTag;
+
             OnGameplayEvent?.Invoke(
-                new GameplayEventData(
-                    tag));
+                payload);
+
+            if (m_GenericGameplayEventCallbacks.TryGetValue(
+                    eventTag,
+                    out DisposableEvent<GameplayEventData>
+                        exactCallbacks))
+            {
+                exactCallbacks.Invoke(
+                    payload);
+            }
+
+            List<GameplayEventTagContainerDelegateRegistration>
+                containerDelegates = new(
+                    m_GameplayEventTagContainerDelegates);
+
+            for (
+                int index = 0;
+                index < containerDelegates.Count;
+                index++)
+            {
+                GameplayEventTagContainerDelegateRegistration registration =
+                    containerDelegates[index];
+
+                if (!registration.Matches(
+                        eventTag))
+                {
+                    continue;
+                }
+
+                registration.Invoke(
+                    eventTag,
+                    payload);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Creates and handles a gameplay event payload for the supplied event tag.
+        /// </summary>
+        public void SendGameplayEvent(
+            GameplayTag eventTag)
+        {
+            HandleGameplayEvent(
+                eventTag,
+                new GameplayEventData(eventTag));
         }
 
         public void TriggerOnTagsAdded(
@@ -816,7 +955,6 @@ namespace GAS
                     .GrantedTags
                     .Count == 0)
             {
-
                 return;
             }
 

@@ -9,35 +9,35 @@ using UnityEngine;
 namespace RelicsOfTheFallen.Abilities
 {
     /// <summary>
-    /// Casts toward the target selected when the fireball ability begins.
+    /// Casts a configurable projectile toward the target selected during activation.
     /// </summary>
     [Serializable]
-    public sealed class FireballAbility :
+    public sealed class ProjectileAbility :
         CommonGameplayAbility
     {
         [field: SerializeField]
-        private GameplayEffectSO CastingGameplayEffect
+        private ScalableFloat CastTime
         {
             get;
             set;
-        }
+        } = new(1.5f);
 
         [field: SerializeField]
-        private GameplayEffectSO DamageGameplayEffect
+        private List<GameplayEffectSO> HitGameplayEffects
         {
             get;
             set;
-        }
-
-        [field: SerializeField]
-        private GameplayEffectSO BurnGameplayEffect
-        {
-            get;
-            set;
-        }
+        } = new();
 
         [field: SerializeField]
         private GameplayAbilityMontage CastMontage
+        {
+            get;
+            set;
+        }
+
+        [field: SerializeField]
+        private GameplayTag CastReleaseEventTag
         {
             get;
             set;
@@ -68,22 +68,26 @@ namespace RelicsOfTheFallen.Abilities
         private IDisposable m_TargetDataSetSubscription;
         private IDisposable m_TargetDataCancelledSubscription;
 
-        private ActiveGameplayEffectHandle m_CastingEffectHandle;
         private GameplayAbilityTargetDataHandle m_TargetData;
 
         /// <summary>
-        /// Creates a runtime fireball ability instance preserving its configured gameplay data.
+        /// Creates a runtime projectile ability instance preserving its configured gameplay data.
         /// </summary>
         public override GameplayAbility Instantiate(
             AbilitySystemComponent owner)
         {
-            FireballAbility ability =
-                (FireballAbility)base.Instantiate(owner);
+            ProjectileAbility ability =
+                (ProjectileAbility)base.Instantiate(
+                    owner);
 
-            ability.CastingGameplayEffect = CastingGameplayEffect;
-            ability.DamageGameplayEffect = DamageGameplayEffect;
-            ability.BurnGameplayEffect = BurnGameplayEffect;
+            ability.CastTime = CastTime;
+
+            ability.HitGameplayEffects =
+                new List<GameplayEffectSO>(
+                    HitGameplayEffects);
+
             ability.CastMontage = CastMontage;
+            ability.CastReleaseEventTag = CastReleaseEventTag;
             ability.ProjectilePrefab = ProjectilePrefab;
             ability.ProjectileSpeed = ProjectileSpeed;
             ability.ProjectileLifetime = ProjectileLifetime;
@@ -134,7 +138,7 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Releases casting state and target-data callbacks before ending the activation.
+        /// Releases target-data callbacks before ending the current activation.
         /// </summary>
         public override void EndAbility(
             GameplayAbilitySpecHandle handle,
@@ -144,9 +148,6 @@ namespace RelicsOfTheFallen.Abilities
             bool wasCancelled)
         {
             DisposeTargetDataSubscriptions();
-
-            RemoveCastingGameplayEffect(
-                actorInfo.AbilitySystemComponent);
 
             m_TargetData =
                 null;
@@ -290,91 +291,79 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Applies casting state and starts the synchronized delay and montage tasks.
+        /// Starts an interruptible montage and waits for its configured cast release event.
         /// </summary>
         private bool TryStartCasting()
         {
-            if (CastingGameplayEffect == null)
+            if (CastMontage == null ||
+                CastMontage.Animation == null)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires a casting gameplay effect.");
+                    $"{nameof(ProjectileAbility)} requires a casting montage.");
 
                 return false;
             }
 
-            AbilitySystemComponent abilitySystem =
-                CurrentActorInfo.AbilitySystemComponent;
-
-            GameplayEffectContextHandle effectContext =
-                MakeEffectContext(
-                    CurrentSpecHandle,
-                    CurrentActorInfo);
-
-            int abilityLevel =
-                GetAbilityLevel(
-                    CurrentSpecHandle,
-                    CurrentActorInfo);
-
-            GameplayEffectSpec castingSpec =
-                abilitySystem.MakeOutgoingSpec(
-                    CastingGameplayEffect,
-                    abilityLevel,
-                    effectContext);
-
-            if (castingSpec.Duration <= 0f)
+            if (CastReleaseEventTag == null)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires a positive casting duration.");
+                    $"{nameof(ProjectileAbility)} requires a cast release event tag.");
 
                 return false;
             }
 
-            m_CastingEffectHandle =
-                ApplyGameplayEffectSpecToOwner(
-                    CurrentSpecHandle,
-                    CurrentActorInfo,
-                    CurrentActivationInfo,
-                    castingSpec);
+            int abilityLevel = GetAbilityLevel(
+                CurrentSpecHandle,
+                CurrentActorInfo);
 
-            if (!m_CastingEffectHandle.WasSuccessfullyApplied)
+            float castDuration = CastTime.GetValueAtLevel(
+                abilityLevel);
+
+            if (castDuration <= 0f)
             {
+                Debug.LogError(
+                    $"{nameof(ProjectileAbility)} requires a positive cast duration.");
+
                 return false;
             }
 
-            AbilityTask_WaitDelay castDelayTask =
-                AbilityTask_WaitDelay.WaitDelay(
-                    this,
-                    castingSpec.Duration);
+            if (!TryGetCastReleaseTime(
+                    out float castReleaseTime))
+            {
+                Debug.LogError(
+                    $"{nameof(ProjectileAbility)} montage " +
+                    $"'{CastMontage.name}' has no animation event for " +
+                    $"'{CastReleaseEventTag.name}'.");
 
-            castDelayTask.RegisterFinishDelegate(
-                HandleCastDelayFinished);
+                return false;
+            }
 
-            castDelayTask.ReadyForActivation();
-
-            StartCastMontage(
-                castingSpec.Duration);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Plays the casting montage at a rate synchronized with the gameplay cast duration.
-        /// </summary>
-        private void StartCastMontage(
-            float castDuration)
-        {
             float montageRate =
-                CastMontage.Animation.length /
+                castReleaseTime /
                 castDuration;
+
+            AbilityTask_WaitGameplayEvent castReleaseTask =
+                AbilityTask_WaitGameplayEvent.WaitGameplayEvent(
+                    this,
+                    CastReleaseEventTag,
+                    onlyTriggerOnce: true);
+
+            castReleaseTask.RegisterEventReceivedDelegate(
+                HandleCastReleased);
+
+            castReleaseTask.ReadyForActivation();
 
             AbilityTask_PlayMontageAndWait montageTask =
                 AbilityTask_PlayMontageAndWait
                     .CreatePlayMontageAndWaitProxy(
                         this,
-                        nameof(FireballAbility),
+                        nameof(ProjectileAbility),
                         CastMontage,
                         rate: montageRate,
-                        stopWhenAbilityEnds: true);
+                        stopWhenAbilityEnds: false);
+
+            montageTask.RegisterCompletedDelegate(
+                HandleCastMontageCancelled);
 
             montageTask.RegisterInterruptedDelegate(
                 HandleCastMontageCancelled);
@@ -383,6 +372,46 @@ namespace RelicsOfTheFallen.Abilities
                 HandleCastMontageCancelled);
 
             montageTask.ReadyForActivation();
+
+            return IsActive;
+        }
+
+        /// <summary>
+        /// Finds the animation time associated with the configured cast release event.
+        /// </summary>
+        private bool TryGetCastReleaseTime(
+            out float castReleaseTime)
+        {
+            AnimationEvent[] animationEvents =
+                CastMontage.Animation.events;
+
+            for (
+                int index = 0;
+                index < animationEvents.Length;
+                index++)
+            {
+                AnimationEvent animationEvent =
+                    animationEvents[index];
+
+                if (animationEvent.functionName !=
+                        nameof(
+                            GameplayEventAnimationEventHandler
+                                .HandleGameplayEvent) ||
+                    animationEvent.objectReferenceParameter !=
+                        CastReleaseEventTag)
+                {
+                    continue;
+                }
+
+                castReleaseTime =
+                    animationEvent.time;
+
+                return castReleaseTime > 0f;
+            }
+
+            castReleaseTime = 0f;
+
+            return false;
         }
 
         /// <summary>
@@ -404,22 +433,21 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Commits the completed cast and spawns its authoritative projectile.
+        /// Commits the released cast and spawns its authoritative projectile.
         /// </summary>
-        private void HandleCastDelayFinished()
+        private void HandleCastReleased(
+            GameplayEventData payload)
         {
-            if (
-                !IsActive ||
+            if (!IsActive ||
                 !CurrentActorInfo.IsNetAuthority())
             {
                 return;
             }
 
-            bool wasCommitted =
-                CommitAbility(
-                    CurrentSpecHandle,
-                    CurrentActorInfo,
-                    CurrentActivationInfo);
+            bool wasCommitted = CommitAbility(
+                CurrentSpecHandle,
+                CurrentActorInfo,
+                CurrentActivationInfo);
 
             bool wasSpawned =
                 wasCommitted &&
@@ -434,17 +462,33 @@ namespace RelicsOfTheFallen.Abilities
         }
 
         /// <summary>
-        /// Creates and initializes the server-authoritative fireball actor.
+        /// Creates and initializes the server-authoritative projectile actor.
         /// </summary>
         private bool TrySpawnProjectile()
         {
             if (
                 ProjectilePrefab == null ||
-                DamageGameplayEffect == null ||
-                BurnGameplayEffect == null)
+                HitGameplayEffects == null ||
+                HitGameplayEffects.Count == 0)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires projectile and gameplay effect assets.");
+                    $"{nameof(ProjectileAbility)} requires a projectile prefab and hit effects.");
+
+                return false;
+            }
+
+            for (
+                int index = 0;
+                index < HitGameplayEffects.Count;
+                index++)
+            {
+                if (HitGameplayEffects[index] != null)
+                {
+                    continue;
+                }
+
+                Debug.LogError(
+                    $"{nameof(ProjectileAbility)} contains an empty hit effect.");
 
                 return false;
             }
@@ -454,7 +498,7 @@ namespace RelicsOfTheFallen.Abilities
                 ProjectileLifetime <= 0f)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires positive projectile settings.");
+                    $"{nameof(ProjectileAbility)} requires positive projectile settings.");
 
                 return false;
             }
@@ -464,7 +508,7 @@ namespace RelicsOfTheFallen.Abilities
                     out GameplayProjectile _))
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires a projectile component on its prefab.");
+                    $"{nameof(ProjectileAbility)} requires a projectile component on its prefab.");
 
                 return false;
             }
@@ -522,23 +566,24 @@ namespace RelicsOfTheFallen.Abilities
             AbilitySystemComponent abilitySystem =
                 CurrentActorInfo.AbilitySystemComponent;
 
-            GameplayEffectSpec damageSpec =
-                abilitySystem.MakeOutgoingSpec(
-                    DamageGameplayEffect,
-                    abilityLevel,
-                    effectContext);
+            List<GameplayEffectSpec> gameplayEffectSpecs =
+                new(
+                    HitGameplayEffects.Count);
 
-            GameplayEffectSpec burnSpec =
-                abilitySystem.MakeOutgoingSpec(
-                    BurnGameplayEffect,
-                    abilityLevel,
-                    effectContext);
-
-            GameplayEffectSpec[] gameplayEffectSpecs =
+            for (
+                int index = 0;
+                index < HitGameplayEffects.Count;
+                index++)
             {
-        damageSpec,
-        burnSpec
-    };
+                GameplayEffectSpec gameplayEffectSpec =
+                    abilitySystem.MakeOutgoingSpec(
+                        HitGameplayEffects[index],
+                        abilityLevel,
+                        effectContext);
+
+                gameplayEffectSpecs.Add(
+                    gameplayEffectSpec);
+            }
 
             GameplayProjectile projectile =
                 spawnedActor.GetComponent<GameplayProjectile>();
@@ -601,7 +646,7 @@ namespace RelicsOfTheFallen.Abilities
                 sockets.ProjectileOrigin == null)
             {
                 Debug.LogError(
-                    $"{nameof(FireballAbility)} requires a projectile origin socket.");
+                    $"{nameof(ProjectileAbility)} requires a projectile origin socket.");
 
                 return false;
             }
@@ -779,24 +824,6 @@ namespace RelicsOfTheFallen.Abilities
                 !actorInfo.IsNetAuthority() &&
                 actorInfo.IsLocallyControlled() &&
                 predictionKey.IsValid;
-        }
-
-        /// <summary>
-        /// Removes the casting gameplay effect owned by the current activation.
-        /// </summary>
-        private void RemoveCastingGameplayEffect(
-            AbilitySystemComponent abilitySystem)
-        {
-            if (!m_CastingEffectHandle.IsValid)
-            {
-                return;
-            }
-
-            abilitySystem.RemoveActiveGameplayEffect(
-                m_CastingEffectHandle);
-
-            m_CastingEffectHandle =
-                default;
         }
 
         /// <summary>

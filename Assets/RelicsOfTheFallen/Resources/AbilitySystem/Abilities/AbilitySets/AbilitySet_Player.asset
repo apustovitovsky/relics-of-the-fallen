@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: AbilitySet_Player
   m_EditorClassIdentifier: GAS.Common::GAS.Common.GameplayAbilitySet
   <GrantedGameplayAbilities>k__BackingField:
-  - <Ability>k__BackingField: {fileID: 11400000, guid: 1cafc611ed77a4d4f88f615659bf943c, type: 2}
+  - <Ability>k__BackingField: {fileID: 11400000, guid: 7cf98cbe1dc134443b65c2928df6d26b, type: 2}
     <AbilityLevel>k__BackingField: 1
     <InputTag>k__BackingField: {fileID: 11400000, guid: 5a56128a261dbd043ad717355fa657e4, type: 2}

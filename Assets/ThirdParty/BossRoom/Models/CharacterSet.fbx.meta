@@ -3725,7 +3725,14 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.5
+        functionName: HandleGameplayEvent
+        data: 
+        objectReferenceParameter: {fileID: 11400000, guid: b6529c7b3b28856449376ea094b0b9a1, type: 2}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}

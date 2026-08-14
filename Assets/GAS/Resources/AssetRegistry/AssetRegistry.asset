@@ -46,9 +46,6 @@ MonoBehaviour:
   - m_AssetName: Damage.Type.Physical
     m_Asset: {fileID: 11400000, guid: 1a3baa055948e4946947f6c6b8240331, type: 2}
     m_Id: 1a3baa055948e4946947f6c6b8240331
-  - m_AssetName: GA_Fireball
-    m_Asset: {fileID: 11400000, guid: 1cafc611ed77a4d4f88f615659bf943c, type: 2}
-    m_Id: 1cafc611ed77a4d4f88f615659bf943c
   - m_AssetName: Ability.ActivateFail.Cost
     m_Asset: {fileID: 11400000, guid: 20821753d07fdb44aa3469fde2f8e29b, type: 2}
     m_Id: 20821753d07fdb44aa3469fde2f8e29b
@@ -85,7 +82,7 @@ MonoBehaviour:
   - m_AssetName: InputTag
     m_Asset: {fileID: 11400000, guid: 35650f7343ea6c447ae365d568a4f0b2, type: 2}
     m_Id: 35650f7343ea6c447ae365d568a4f0b2
-  - m_AssetName: AM_FireballCast
+  - m_AssetName: AM_SpellCast
     m_Asset: {fileID: 11400000, guid: 37218a0488d099b4882543ea09cb2076, type: 2}
     m_Id: 37218a0488d099b4882543ea09cb2076
   - m_AssetName: Event.CriticalHit
@@ -163,6 +160,9 @@ MonoBehaviour:
   - m_AssetName: CriticalChance
     m_Asset: {fileID: 11400000, guid: 7a6848c218694424ca46f59ba4f3c4b2, type: 2}
     m_Id: 7a6848c218694424ca46f59ba4f3c4b2
+  - m_AssetName: GA_Fireball
+    m_Asset: {fileID: 11400000, guid: 7cf98cbe1dc134443b65c2928df6d26b, type: 2}
+    m_Id: 7cf98cbe1dc134443b65c2928df6d26b
   - m_AssetName: GameplayCue.Ability.AntiPoison
     m_Asset: {fileID: 11400000, guid: 80ccf2a06d22deb4093850fcfd580706, type: 2}
     m_Id: 80ccf2a06d22deb4093850fcfd580706
@@ -175,12 +175,18 @@ MonoBehaviour:
   - m_AssetName: GE_PoisonOverTime
     m_Asset: {fileID: 11400000, guid: 8c4661ccd6d094a4da55d5eb374944ca, type: 2}
     m_Id: 8c4661ccd6d094a4da55d5eb374944ca
+  - m_AssetName: Event.Cast
+    m_Asset: {fileID: 11400000, guid: 8fa86f4baca1e1f4db1d888e91cbfac4, type: 2}
+    m_Id: 8fa86f4baca1e1f4db1d888e91cbfac4
   - m_AssetName: GA_ChannelDamage
     m_Asset: {fileID: 11400000, guid: 8fff4e230e721fe4d82b8de67e528c2b, type: 2}
     m_Id: 8fff4e230e721fe4d82b8de67e528c2b
   - m_AssetName: ManaMax
     m_Asset: {fileID: 11400000, guid: 96060d461d34e5f4b9a20e1fb4800ab7, type: 2}
     m_Id: 96060d461d34e5f4b9a20e1fb4800ab7
+  - m_AssetName: GA_Frostbolt
+    m_Asset: {fileID: 11400000, guid: 9677d43ec63e8424688526588ce84a2f, type: 2}
+    m_Id: 9677d43ec63e8424688526588ce84a2f
   - m_AssetName: Mana
     m_Asset: {fileID: 11400000, guid: 96b68b16e05724e458a1c105f31002b1, type: 2}
     m_Id: 96b68b16e05724e458a1c105f31002b1
@@ -214,6 +220,9 @@ MonoBehaviour:
   - m_AssetName: GameplayCue.Fireball.Burn
     m_Asset: {fileID: 11400000, guid: b621972f0b9396e438a3f72b21179b35, type: 2}
     m_Id: b621972f0b9396e438a3f72b21179b35
+  - m_AssetName: Event.Cast.Release
+    m_Asset: {fileID: 11400000, guid: b6529c7b3b28856449376ea094b0b9a1, type: 2}
+    m_Id: b6529c7b3b28856449376ea094b0b9a1
   - m_AssetName: Effects.Debuff.Frozen
     m_Asset: {fileID: 11400000, guid: b679770ae87bf874793960f1eb258075, type: 2}
     m_Id: b679770ae87bf874793960f1eb258075

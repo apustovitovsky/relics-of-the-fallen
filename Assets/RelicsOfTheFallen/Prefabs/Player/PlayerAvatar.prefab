@@ -530,7 +530,6 @@ MonoBehaviour:
   AppliedGameplayEffects: []
   tags: []
   level: 1
-  instancedCues: []
   logging: 1
   invokeEventsGA: 1
   invokeEventsGE: 1
@@ -888,7 +887,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2666179999015126778, guid: b7c2e4b9312e41342ba700faa4341b68, type: 3}
-      insertIndex: -1
+      insertIndex: 4
       addedObject: {fileID: 3448934472241374471}
   m_SourcePrefab: {fileID: 100100000, guid: b7c2e4b9312e41342ba700faa4341b68, type: 3}
 --- !u!1 &2432007137518492962 stripped

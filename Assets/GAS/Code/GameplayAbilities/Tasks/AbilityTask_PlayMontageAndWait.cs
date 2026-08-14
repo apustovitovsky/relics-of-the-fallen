@@ -1,6 +1,5 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
+
 
 namespace GAS
 {
@@ -29,8 +28,6 @@ namespace GAS
 
         private readonly DisposableGroup m_Subscriptions =
             new();
-
-        private CancellationTokenSource m_MonitorCancellationSource;
 
         public string TaskInstanceName
         {
@@ -155,16 +152,39 @@ namespace GAS
         }
 
         /// <summary>
-        /// Starts montage playback and begins monitoring its lifecycle.
+        /// Starts montage playback and binds to its animation lifecycle delegates.
         /// </summary>
         protected override void Activate()
         {
-            if (AbilitySystemComponent == null)
+            GameplayAbilityActorInfo actorInfo =
+                AbilitySystemComponent?.AbilityActorInfo;
+
+            if (AbilitySystemComponent == null ||
+                actorInfo == null ||
+                actorInfo.AnimInstance == null)
             {
                 FinishCancelled();
 
                 return;
             }
+
+            AnimInstance animInstance =
+                actorInfo.AnimInstance;
+
+            m_Subscriptions.Add(
+                animInstance.MontageSetBlendedInDelegate(
+                    HandleMontageBlendedIn,
+                    m_MontageToPlay));
+
+            m_Subscriptions.Add(
+                animInstance.MontageSetBlendingOutDelegate(
+                    HandleMontageBlendingOut,
+                    m_MontageToPlay));
+
+            m_Subscriptions.Add(
+                animInstance.MontageSetEndDelegate(
+                    HandleMontageEnded,
+                    m_MontageToPlay));
 
             float duration = AbilitySystemComponent.PlayMontage(
                 Ability,
@@ -177,18 +197,7 @@ namespace GAS
             if (duration <= 0f)
             {
                 FinishCancelled();
-
-                return;
             }
-
-            m_MonitorCancellationSource =
-                CancellationTokenSource.CreateLinkedTokenSource(
-                    AbilitySystemComponent.GetCancellationTokenOnDestroy());
-
-            m_BlendedInDelegate.Invoke();
-
-            MonitorMontageAsync(
-                m_MonitorCancellationSource.Token).Forget();
         }
 
         /// <summary>
@@ -201,26 +210,19 @@ namespace GAS
                 return;
             }
 
-            StopPlayingMontage();
+            m_CancelledDelegate.Invoke();
 
-            FinishCancelled();
+            EndTask();
+
+            StopPlayingMontage();
         }
 
         /// <summary>
-        /// Stops owner-bound playback and releases asynchronous monitoring resources.
+        /// Releases montage delegates and optionally stops owner-bound playback.
         /// </summary>
         protected override void OnDestroy(
             bool abilityEnded)
         {
-            if (
-                abilityEnded &&
-                m_StopWhenAbilityEnds)
-            {
-                StopPlayingMontage();
-            }
-
-            CancelMonitoring();
-
             m_Subscriptions.Dispose();
 
             m_BlendedInDelegate.Clear();
@@ -229,69 +231,14 @@ namespace GAS
             m_InterruptedDelegate.Clear();
             m_CancelledDelegate.Clear();
 
+            if (abilityEnded &&
+                m_StopWhenAbilityEnds)
+            {
+                StopPlayingMontage();
+            }
+
             base.OnDestroy(
                 abilityEnded);
-        }
-
-        private async UniTask MonitorMontageAsync(
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                while (!IsEnded)
-                {
-                    await UniTask.Yield(
-                        PlayerLoopTiming.Update,
-                        cancellationToken);
-
-                    if (IsEnded)
-                    {
-                        return;
-                    }
-
-                    GameplayAbilityActorInfo actorInfo =
-                        AbilitySystemComponent.AbilityActorInfo;
-
-                    if (actorInfo == null ||
-                        actorInfo.AnimInstance == null)
-                    {
-                        FinishInterrupted();
-
-                        return;
-                    }
-
-                    AnimInstance animInstance =
-                        actorInfo.AnimInstance;
-
-                    if (animInstance.MontageGetIsStopped())
-                    {
-                        if (animInstance.CurrentMontage ==
-                            m_MontageToPlay)
-                        {
-                            FinishCompleted();
-                        }
-                        else
-                        {
-                            FinishInterrupted();
-                        }
-
-                        return;
-                    }
-
-                    if (animInstance.CurrentMontage !=
-                            m_MontageToPlay ||
-                        AbilitySystemComponent.GetAnimatingAbility() !=
-                            Ability)
-                    {
-                        FinishInterrupted();
-
-                        return;
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
         }
 
         /// <summary>
@@ -325,13 +272,10 @@ namespace GAS
         }
 
         /// <summary>
-        /// Restores base animation and broadcasts natural montage completion.
+        /// Broadcasts successful natural montage completion.
         /// </summary>
         private void FinishCompleted()
         {
-            AbilitySystemComponent.CurrentMontageStop();
-
-            m_BlendOutDelegate.Invoke();
             m_CompletedDelegate.Invoke();
 
             EndTask();
@@ -365,20 +309,56 @@ namespace GAS
             return subscription;
         }
 
-        private void CancelMonitoring()
+        private void HandleMontageBlendedIn(
+            GameplayAbilityMontage montage)
         {
-            CancellationTokenSource cancellationSource =
-                m_MonitorCancellationSource;
-
-            m_MonitorCancellationSource = null;
-
-            if (cancellationSource == null)
+            if (IsEnded)
             {
                 return;
             }
 
-            cancellationSource.Cancel();
-            cancellationSource.Dispose();
+            m_BlendedInDelegate.Invoke();
+        }
+
+        private void HandleMontageBlendingOut(
+            GameplayAbilityMontage montage,
+            bool wasInterrupted)
+        {
+            if (IsEnded)
+            {
+                return;
+            }
+
+            AbilitySystemComponent.ClearAnimatingAbility(
+                Ability);
+
+            if (wasInterrupted)
+            {
+                FinishInterrupted();
+
+                return;
+            }
+
+            m_BlendOutDelegate.Invoke();
+        }
+
+        private void HandleMontageEnded(
+            GameplayAbilityMontage montage,
+            bool wasInterrupted)
+        {
+            if (IsEnded)
+            {
+                return;
+            }
+
+            if (wasInterrupted)
+            {
+                FinishInterrupted();
+
+                return;
+            }
+
+            FinishCompleted();
         }
     }
 }

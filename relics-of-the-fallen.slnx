@@ -1,5 +1,4 @@
 ﻿<Solution>
-  <Project Path="RelicsOfTheFallen.Abilities.csproj" />
   <Project Path="Unity.Mirror.CodeGen.csproj" />
   <Project Path="Edgegap.csproj" />
   <Project Path="Mirror.Components.csproj" />
@@ -28,6 +27,7 @@
   <Project Path="RelicsOfTheFallen.Application.Composition.csproj" />
   <Project Path="GAS.Mirror.Tests.csproj" />
   <Project Path="RelicsOfTheFallen.Networking.UI.csproj" />
+  <Project Path="RelicsOfTheFallen.Abilities.csproj" />
   <Project Path="Mirror.CompilerSymbols.csproj" />
   <Project Path="RelicsOfTheFallen.Character.Cinemachine.csproj" />
   <Project Path="RelicsOfTheFallen.Player.csproj" />

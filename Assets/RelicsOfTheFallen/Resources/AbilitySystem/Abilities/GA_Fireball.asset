@@ -9,16 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63a63878496a55c48b8acc6670d08054, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d0f087f910cb894fbac5906e746100c, type: 3}
   m_Name: GA_Fireball
-  m_EditorClassIdentifier: RelicsOfTheFallen.Abilities::RelicsOfTheFallen.Abilities.FireballAbilitySO
+  m_EditorClassIdentifier: RelicsOfTheFallen.Abilities::RelicsOfTheFallen.Abilities.ProjectileAbilitySO
   ga:
-    rid: 6914737510856523980
+    rid: 6914737579896864938
   references:
     version: 2
     RefIds:
-    - rid: 6914737510856523980
-      type: {class: FireballAbility, ns: RelicsOfTheFallen.Abilities, asm: RelicsOfTheFallen.Abilities}
+    - rid: 6914737579896864938
+      type: {class: ProjectileAbility, ns: RelicsOfTheFallen.Abilities, asm: RelicsOfTheFallen.Abilities}
       data:
         name: Fireball
         m_CooldownGameplayEffect: {fileID: 0}
@@ -26,7 +26,7 @@ MonoBehaviour:
         effectsSO: []
         effects: []
         abilityTags:
-          rid: 6914737510856523981
+          rid: 6914737579896864939
         source: {fileID: 0}
         owner: {fileID: 0}
         cuesTags: []
@@ -35,18 +35,28 @@ MonoBehaviour:
         Level: 1
         IsActive: 0
         <ActivationPolicy>k__BackingField: 0
-        <ActivationGroup>k__BackingField: 1
-        <CastingGameplayEffect>k__BackingField: {fileID: 11400000, guid: 8a79d04cfacfc5946ad9bcd5b978ba01, type: 2}
-        <DamageGameplayEffect>k__BackingField: {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
-        <BurnGameplayEffect>k__BackingField: {fileID: 11400000, guid: 166e4beb56926a7458ca9c2088e6d6f2, type: 2}
+        <ActivationGroup>k__BackingField: 2
+        <CastTime>k__BackingField:
+          <Value>k__BackingField: 0.5
+          <Curve>k__BackingField:
+            serializedVersion: 2
+            m_Curve: []
+            m_PreInfinity: 2
+            m_PostInfinity: 2
+            m_RotationOrder: 4
+        <HitGameplayEffects>k__BackingField:
+        - {fileID: 11400000, guid: f15d001c76931ee4cb39b6bb47eb244f, type: 2}
+        - {fileID: 11400000, guid: 166e4beb56926a7458ca9c2088e6d6f2, type: 2}
         <CastMontage>k__BackingField: {fileID: 11400000, guid: 37218a0488d099b4882543ea09cb2076, type: 2}
+        <CastReleaseEventTag>k__BackingField: {fileID: 11400000, guid: b6529c7b3b28856449376ea094b0b9a1, type: 2}
         <ProjectilePrefab>k__BackingField: {fileID: 7883263366049447357, guid: 7cb85d73b618613409771da9c994fbc6, type: 3}
         <ProjectileSpeed>k__BackingField: 12
         <ProjectileLifetime>k__BackingField: 5
-    - rid: 6914737510856523981
+    - rid: 6914737579896864939
       type: {class: AbilityTags, ns: GAS, asm: GAS}
       data:
-        ActivationOwnedTags: []
+        ActivationOwnedTags:
+        - {fileID: 11400000, guid: 47a7c4ada14715a4c95b58d80cd5f938, type: 2}
         DescriptionTags: []
         CancelAbilitiesWithTags: []
         BlockAbilitiesWithTags: []
@@ -54,7 +64,7 @@ MonoBehaviour:
         SourceTagsForbidden: []
         TargetTagsRequired: []
         TargetTagsForbidden: []
-        initialized: 0
+        initialized: 1
         stringActivationOwnedTags: []
         stringDescriptionTags: []
         stringCancelAbilitiesWithTags: []
